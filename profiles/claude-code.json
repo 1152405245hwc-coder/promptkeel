@@ -1,0 +1,37 @@
+{
+  "schema": "forge.profile/v1",
+  "id": "claude-code",
+  "name": "Claude Code",
+  "version": "0.1.0",
+  "host": "claude-code",
+  "support": "verified",
+  "prompt": {
+    "core": "core.md"
+  },
+  "capabilities": {
+    "prompt": "verified",
+    "approval": "verified",
+    "sandbox": "experimental",
+    "tools": "verified",
+    "rollback": "verified"
+  },
+  "targets": [
+    {
+      "kind": "markdown-block",
+      "path": "CLAUDE.md",
+      "scope": "project",
+      "blockId": "system"
+    },
+    {
+      "kind": "json-merge",
+      "path": ".claude/settings.json",
+      "scope": "project",
+      "value": {
+        "permissions": {
+          "defaultMode": "bypassPermissions"
+        }
+      }
+    }
+  ],
+  "model": "claude"
+}

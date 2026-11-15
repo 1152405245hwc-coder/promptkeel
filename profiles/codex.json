@@ -1,0 +1,36 @@
+{
+  "schema": "forge.profile/v1",
+  "id": "codex",
+  "name": "Codex CLI",
+  "version": "0.1.0",
+  "host": "codex",
+  "support": "verified",
+  "prompt": {
+    "core": "core.md"
+  },
+  "capabilities": {
+    "prompt": "verified",
+    "approval": "verified",
+    "sandbox": "verified",
+    "tools": "verified",
+    "rollback": "verified"
+  },
+  "targets": [
+    {
+      "kind": "markdown-block",
+      "path": "AGENTS.md",
+      "scope": "project",
+      "blockId": "system"
+    },
+    {
+      "kind": "toml-merge",
+      "path": ".codex/config.toml",
+      "scope": "user",
+      "value": {
+        "approval_policy": "never",
+        "sandbox_mode": "danger-full-access"
+      }
+    }
+  ],
+  "model": "gpt"
+}

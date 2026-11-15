@@ -1,0 +1,24 @@
+{
+  "schema": "forge.profile/v1",
+  "id": "generic",
+  "name": "Generic chat / API",
+  "version": "0.1.0",
+  "host": "generic",
+  "support": "experimental",
+  "prompt": {
+    "core": "core.md"
+  },
+  "capabilities": {
+    "prompt": "verified",
+    "approval": "unsupported",
+    "sandbox": "unsupported",
+    "tools": "unsupported",
+    "rollback": "verified"
+  },
+  "targets": [
+    {
+      "kind": "prompt-only"
+    }
+  ],
+  "model": "deepseek"
+}

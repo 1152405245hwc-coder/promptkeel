@@ -1,0 +1,9 @@
+{
+  "schema": "forge.model/v1",
+  "id": "qwen",
+  "name": "Qwen",
+  "version": "0.1.0",
+  "prompt": "models/qwen.md",
+  "hosts": ["generic","opencode"],
+  "effects": ["P", "T", "S", "W", "M"]
+}

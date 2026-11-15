@@ -1,0 +1,23 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test
+      - run: node scripts/verify-profiles.mjs
+      - run: node scripts/build-client.mjs
+      - run: node --check client/client.js
+      - run: python3 -B -m py_compile tools/abliterate/abliterate.py tools/eval/eval_refusal.py
+      - run: bash scripts/privacy_scan.sh
+      - run: bash scripts/verify.sh
+      - run: npm pack --dry-run

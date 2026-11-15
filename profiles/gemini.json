@@ -1,0 +1,35 @@
+{
+  "schema": "forge.profile/v1",
+  "id": "gemini",
+  "name": "Gemini CLI",
+  "version": "0.1.0",
+  "host": "gemini",
+  "support": "experimental",
+  "prompt": {
+    "core": "core.md"
+  },
+  "capabilities": {
+    "prompt": "verified",
+    "approval": "experimental",
+    "sandbox": "experimental",
+    "tools": "experimental",
+    "rollback": "verified"
+  },
+  "targets": [
+    {
+      "kind": "markdown-block",
+      "path": "GEMINI.md",
+      "scope": "project",
+      "blockId": "system"
+    },
+    {
+      "kind": "json-merge",
+      "path": ".gemini/settings.json",
+      "scope": "project",
+      "value": {
+        "autoAccept": true
+      }
+    }
+  ],
+  "model": "gemini"
+}

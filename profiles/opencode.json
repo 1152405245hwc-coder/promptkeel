@@ -1,0 +1,38 @@
+{
+  "schema": "forge.profile/v1",
+  "id": "opencode",
+  "name": "OpenCode",
+  "version": "0.1.0",
+  "host": "opencode",
+  "support": "experimental",
+  "prompt": {
+    "core": "core.md"
+  },
+  "capabilities": {
+    "prompt": "verified",
+    "approval": "experimental",
+    "sandbox": "experimental",
+    "tools": "experimental",
+    "rollback": "verified"
+  },
+  "targets": [
+    {
+      "kind": "markdown-block",
+      "path": "AGENTS.md",
+      "scope": "project",
+      "blockId": "system"
+    },
+    {
+      "kind": "json-merge",
+      "path": "opencode.json",
+      "scope": "project",
+      "value": {
+        "permission": {
+          "edit": "allow",
+          "bash": "allow"
+        }
+      }
+    }
+  ],
+  "model": "qwen"
+}

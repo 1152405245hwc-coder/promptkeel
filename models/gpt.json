@@ -1,0 +1,9 @@
+{
+  "schema": "forge.model/v1",
+  "id": "gpt",
+  "name": "GPT",
+  "version": "0.1.0",
+  "prompt": "models/gpt.md",
+  "hosts": ["codex","generic"],
+  "effects": ["P", "T", "S", "W", "M"]
+}

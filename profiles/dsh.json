@@ -1,0 +1,30 @@
+{
+  "schema": "forge.profile/v1",
+  "id": "dsh",
+  "name": "DeepSeek Harness (native)",
+  "version": "0.1.0",
+  "host": "dsh",
+  "support": "verified",
+  "prompt": {
+    "core": "core.md"
+  },
+  "capabilities": {
+    "prompt": "verified",
+    "approval": "verified",
+    "sandbox": "verified",
+    "tools": "verified",
+    "rollback": "verified"
+  },
+  "targets": [
+    {
+      "kind": "dsh-patches",
+      "patches": "all"
+    },
+    {
+      "kind": "file",
+      "path": ".dsh/prompt-inject.md",
+      "scope": "user"
+    }
+  ],
+  "model": "deepseek"
+}

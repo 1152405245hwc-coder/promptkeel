@@ -1,0 +1,9 @@
+{
+  "schema": "forge.model/v1",
+  "id": "local",
+  "name": "Local open weights",
+  "version": "0.1.0",
+  "prompt": "models/local.md",
+  "hosts": ["generic"],
+  "effects": ["P", "T", "S", "W", "M"]
+}

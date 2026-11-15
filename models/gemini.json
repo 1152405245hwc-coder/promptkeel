@@ -1,0 +1,9 @@
+{
+  "schema": "forge.model/v1",
+  "id": "gemini",
+  "name": "Gemini",
+  "version": "0.1.0",
+  "prompt": "models/gemini.md",
+  "hosts": ["gemini","generic"],
+  "effects": ["P", "T", "S", "W", "M"]
+}

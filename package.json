@@ -1,0 +1,88 @@
+{
+  "name": "dsh-forge",
+  "version": "0.1.0",
+  "description": "Prompt injection, declarative host patches, and deterministic cross-host profiles for DeepSeek Harness (DSH), Claude Code, Codex CLI, Gemini CLI, and OpenCode",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "dsh-forge": "bin/dsh-forge.js"
+  },
+  "files": [
+    "bin/",
+    "models/",
+    "profiles/",
+    "hosts/",
+    "core/",
+    "lib/",
+    "prompt/",
+    "client/src/",
+    "client/client.js",
+    "client/preview/",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "NOTICE.md",
+    "docs/",
+    "scripts/",
+    "tools/",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "build:client": "node scripts/build-client.mjs",
+    "privacy:scan": "bash scripts/privacy_scan.sh",
+    "verify": "bash scripts/verify.sh",
+    "pack:check": "npm pack --dry-run",
+    "verify:profiles": "node scripts/verify-profiles.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "claude-code",
+    "codex",
+    "gemini-cli",
+    "opencode",
+    "prompt",
+    "patching",
+    "cross-host",
+    "governance"
+  ],
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": "./client/client.js",
+    "./package.json": "./package.json",
+    "./core/*": "./core/*.mjs",
+    "./hosts/*": "./hosts/*.mjs",
+    "./lib/*": "./lib/*.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-sidebar-right"
+      ]
+    },
+    "compatibility": {
+      "dsh": ">=0.2.1-rc.1 <0.3.0",
+      "profiles": [
+        "desktop",
+        "web"
+      ]
+    }
+  }
+}
