@@ -15,7 +15,7 @@
 └────────────┘              └──────────────┘              └───────────────┘
 ┌────────────┐   dry-run    ┌──────────────┐   backup     ┌───────────────┐
 │ table.mjs  │ ───────────▶ │ lib/engine   │ ───────────▶ │ 宿主文件与    │
-│ 8 条补丁   │              │ 校验+原子写  │              │ manifest 备份 │
+│ 10 条补丁   │              │ 校验+原子写  │              │ manifest 备份 │
 └────────────┘              └──────────────┘              └───────────────┘
 ```
 
@@ -27,7 +27,7 @@
 
 | 维度 | 传统社区补丁包做法 | `dsh-forge` 工程化方案 |
 | :--- | :--- | :--- |
-| **宿主补丁收敛面** | 80+ 条散落在压缩前端与运行时的字符串替换，宿主小版本更新即失锚 | **仅保留 8 条核心锚点补丁**（覆盖 5 个 `@deepseek-ai/*` 文件），支持多版本区间 `variants` |
+| **宿主补丁收敛面** | 80+ 条散落在压缩前端与运行时的字符串替换，宿主小版本更新即失锚 | **仅保留 10 条核心锚点补丁**（覆盖 6 个 `@deepseek-ai/*` 文件），支持多版本区间 `variants` |
 | **提示词组合机制** | 单一超长硬编码提示词或手工改写会话记录 | `core + model/adapter + host + mode` 分层组合（默认约 693 tokens），内置 3200 tokens 预算门禁与 `sha256` 头部标识 |
 | **可验证性** | 仅展示前端状态开关 | 3 项运行时证明（`proof1-patches`、`proof2-prompt`、`proof3-session` 会话日志校验）+ 12 项 `doctor` 诊断 |
 | **管理面板体积** | 650+ KB 外部打包产物 | **15 KB 零运行时依赖侧栏面板**（涵盖总览、补丁、提示词、策略、日志） |
@@ -41,7 +41,7 @@
 `dsh-forge` 采用双层解耦架构，共享统一的 CLI 入口与模块化提示词库：
 
 1. **跨宿主编译器与事务执行器（`core/`、`hosts/`、`profiles/`、`models/`）**：负责 Schema 校验、多层提示词渲染、生成与机器路径无关的 `planId` 执行计划，并以受管区块或键值合并方式写入各宿主标准配置文件。
-2. **DeepSeek Harness 原生治理引擎（`lib/`、`client/`）**：负责 `app.asar` 只读解析与原子解包、8 条版本门控补丁（`lib/table.mjs`）的合并原子写入、Cordis `forge:prompt` 段落注册，以及本地回环 `/dsh-forge/api` 管理接口。
+2. **DeepSeek Harness 原生治理引擎（`lib/`、`client/`）**：负责 `app.asar` 只读解析与原子解包、10 条版本门控补丁（`lib/table.mjs`）的合并原子写入、Cordis `forge:prompt` 段落注册，以及本地回环 `/dsh-forge/api` 管理接口。
 
 ```text
 dsh-forge/
@@ -69,7 +69,7 @@ dsh-forge/
 │   ├── models/             # 各模型族行为微调层
 │   └── modes/              # 任务模式微调层（coding, research, writing）
 ├── lib/                    # DSH 原生运行时、ASAR 解包器、补丁引擎与 Cordis 插件
-│   ├── table.mjs           # 8 条版本门控宿主补丁定义（支持多版本 variants）
+│   ├── table.mjs           # 10 条版本门控宿主补丁定义（支持多版本 variants）
 │   ├── engine.mjs          # inspectPatch, dryRun, 按文件合并原子 apply, revert, upgrade
 │   ├── asar.mjs            # app.asar 只读头部/文件读取器与原子解包器
 │   ├── inject.mjs          # DSH 提示词组合、预算校验、会话日志三阶段证明校验
@@ -96,7 +96,7 @@ DSH 是原生且能力最完整的目标宿主；同一套分层提示词与事�
 
 | 宿主 | Profile | 写入位置 | 支持级别 |
 | :--- | :--- | :--- | :--- |
-| **DSH (macOS / Linux / Windows)** | `dsh` | 8 条 JS 补丁（`@deepseek-ai/*`）+ `~/.dsh/prompt-inject.md` | `verified` |
+| **DSH (macOS / Linux / Windows)** | `dsh` | 10 条 JS 补丁（`@deepseek-ai/*`）+ `~/.dsh/prompt-inject.md` | `verified` |
 | **Claude Code** | `claude-code` | `CLAUDE.md`（受管区块）+ `.claude/settings.json` | `verified` |
 | **Codex CLI** | `codex` | `AGENTS.md`（受管区块，仅当前项目） | `verified` |
 | **Gemini CLI** | `gemini` | `GEMINI.md`（受管区块）+ `.gemini/settings.json` | `experimental` |
@@ -137,7 +137,7 @@ pnpm add /path/to/dsh-forge
 # 2) 写入 profile 的 dsh.profile.bundles（自动排在 dsh-purge* 之后并备份 package.json）
 npx dsh-forge profile enable --profile desktop
 
-# 3) 运行 12 项诊断、预检并应用 8 条宿主补丁
+# 3) 运行 12 项诊断、预检并应用 10 条宿主补丁
 npx dsh-forge doctor
 npx dsh-forge apply --dry-run
 npx dsh-forge apply --yes
@@ -176,7 +176,7 @@ npx dsh-forge upgrade --yes
 DSH 客户端升级会覆盖应用包目录下的文件。`revert` 会校验备份记录的 `hostVersion`，阻止将旧版 DSH 的备份文件写回新版宿主。升级 DSH 后按以下顺序处理：
 
 ```bash
-# 检查新版宿主的 8 条补丁锚点是否全部命中
+# 检查新版宿主的 10 条补丁锚点是否全部命中
 dsh-forge adapt
 
 # 若全部为 ready，一键重新写入补丁

@@ -15,7 +15,7 @@
 └────────────┘              └──────────────┘              └───────────────┘
 ┌────────────┐   dry-run    ┌──────────────┐   backup     ┌───────────────┐
 │ table.mjs  │ ───────────▶ │ lib/engine   │ ───────────▶ │ host files &  │
-│ 8 patches  │              │ verify+apply │              │ manifest      │
+│ 10 patches  │              │ verify+apply │              │ manifest      │
 └────────────┘              └──────────────┘              └───────────────┘
 ```
 
@@ -203,7 +203,7 @@ dsh-forge explain <patch-id>
 | `dsh-forge upgrade [--dry-run\|--yes]` | Revert same-version backup if present and re-apply the current patch table |
 | `dsh-forge revert [--id <backup>] [--force]` | Restore host files from a backup manifest with `sha256` and `hostVersion` verification |
 | `dsh-forge verify [--profile desktop\|web] [--json]` | Verify patch markers, prompt channel budget/registration, and newest session log |
-| `dsh-forge adapt [--json]` | Check anchor readiness across all 8 patches after a DSH host update |
+| `dsh-forge adapt [--json]` | Check anchor readiness across all 10 patches after a DSH host update |
 | `dsh-forge explain <patch-id>` | Print anchor match counts and target file preview for a specific patch |
 | `dsh-forge profile [status\|enable\|disable] [--profile desktop]` | Inspect or update `dsh.profile.bundles` in `~/.dsh/profiles/<profile>/package.json` |
 | `dsh-forge prompt compose [--adapter deepseek] [--mode coding] [--out file]` | Compose `core + adapter + mode` and validate against the token budget |

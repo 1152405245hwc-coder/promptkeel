@@ -243,7 +243,7 @@ test("dsh profile applyPlan, verifyPlan, and revertPlan track patch state accura
   const verified = verifyPlan(applied.id, { stateRoot: state });
   assert.equal(verified.ok, true);
   const dshRow = verified.rows.find((r) => r.dsh);
-  assert.ok(dshRow && Array.isArray(dshRow.patches) && dshRow.patches.length === 8);
+  assert.ok(dshRow && Array.isArray(dshRow.patches) && dshRow.patches.length === 10);
 
   const reverted = revertPlan(applied.id, { env: { stateRoot: state } });
   assert.equal(reverted.ok, true);

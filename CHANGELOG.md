@@ -6,6 +6,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Sem
 
 ### Added
 
+- Two more breakage patches: `sandbox-policy-brand-neutral` (policy lines stop naming the host product) and `harness-identity-off` (stock self-description section is not injected). Both anchors verified against DSH 0.2.2-rc.3.
+- Research notes for the next phases: `docs/research/BREAKOUT_PATCH_MATRIX.md` (90 patch names from six dsh-purge forks graded by portability), `docs/research/PERSONA_CHANNEL_DESIGN.md` (four modes, persona layout, four channels), `docs/research/PLATFORM_BREAKOUT_MATRIX.md` (support grades for ten hosts).
 - Host-neutral core (`core/contract.mjs`, `core/profile.mjs`, `core/prompt.mjs`, `core/compile.mjs`, `core/executor.mjs`, `core/verify.mjs`, `core/capabilities.mjs`) with machine-independent plan IDs and byte-exact rollback.
 - Six profiles: `dsh`, `claude-code`, `codex`, `gemini`, `opencode`, `generic`; model overlays under `models/` and `prompt/models/`.
 - Managed Markdown blocks, JSON merge and root-table-aware TOML key replacement; `compile`, `plans`, `verify-plan`, `revert-plan`, `profiles`, `hosts`, `models` CLI commands.

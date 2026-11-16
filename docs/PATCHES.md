@@ -12,6 +12,8 @@ All patches in `lib/table.mjs` are declarative: target file path relative to the
 | 6 | `sandbox-default-full` | `dsh-sandbox-policy/lib/index.js` | Change default sandbox mode from `"read-only"` to `"danger-full-access"` |
 | 7 | `workspace-intro-precedence` | `dsh-agent-instructions/lib/index.js` | Mark workspace instructions as active and binding |
 | 8 | `approval-types-sentences` | `dsh-user-approval/lib/types/index.js` | Sync `NEVER_SENTENCE` and `ASK_SENTENCE` in the types module |
+| 9 | `sandbox-policy-brand-neutral` | `dsh-sandbox-policy/lib/index.js` | Policy lines say `Current file policy: <mode>` instead of naming the host product |
+| 10 | `harness-identity-off` | `dsh-system-prompt/lib/index.js` | `includeHarnessIdentity` defaults to `false`, so the stock self-description section is never injected |
 
 ## Adding or Updating a Patch
 

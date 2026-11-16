@@ -47,7 +47,7 @@ try {
   const res = spawnSync(process.execPath, ["bin/dsh-forge.js", "adapt", "--json", "--host-root", root], { encoding: "utf8" });
   const rows = JSON.parse(res.stdout);
   const bad = rows.filter((r) => r.status !== "ready");
-  console.log(bad.length ? "drifted: " + bad.map((r) => r.id).join(", ") : `all 8 patches ready (${tempDir ? "synthetic fixture" : "local host"})`);
+  console.log(bad.length ? "drifted: " + bad.map((r) => r.id).join(", ") : `all ${rows.length} patches ready (${tempDir ? "synthetic fixture" : "local host"})`);
   process.exit(bad.length || res.status !== 0 ? 1 : 0);
 } finally {
   if (tempDir) fs.rmSync(tempDir, { recursive: true, force: true });

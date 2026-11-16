@@ -33,11 +33,11 @@ function fixture(t, version = "0.2.2-rc.2") {
   return root;
 }
 
-test("dry-run reports all 8 patches as hittable", (t) => {
+test("dry-run reports all 10 patches as hittable", (t) => {
   const hostRoot = fixture(t);
   const report = dryRun(PATCHES, { hostRoot });
   assert.equal(report.ok, true);
-  assert.equal(report.patches.length, 8);
+  assert.equal(report.patches.length, 10);
   assert.ok(report.patches.every((p) => p.status === "hit"));
 });
 
@@ -54,7 +54,7 @@ test("apply then verify then revert restores every byte", (t) => {
   const result = apply(PATCHES, { hostRoot, dshHome }, { backupRoot: path.join(dshHome, "backups") });
   assert.equal(result.ok, true);
   assert.equal(result.changed.length, new Set(result.changed).size, "changed list has no duplicate paths");
-  assert.equal(result.changed.length, 5);
+  assert.equal(result.changed.length, 6);
   const verified = verifyApplied(PATCHES, { hostRoot });
   assert.equal(verified.ok, true);
 
