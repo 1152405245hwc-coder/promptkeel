@@ -31,6 +31,13 @@
           "defaultMode": "bypassPermissions"
         }
       }
+    },
+    {
+      "kind": "command",
+      "path": ".claude/commands/dsh-forge.md",
+      "scope": "project",
+      "description": "Re-deliver the dsh-forge prompt in this session",
+      "hint": "[topic]"
     }
   ],
   "model": "claude",

@@ -190,6 +190,10 @@ dsh-forge explain <patch-id>
 
 ---
 
+## Delivery grades
+
+`core/grades.mjs` records how much of a host's own prompt each profile can displace: `replace-full`, `replace-with-residue`, `append-only`, `shim-only`, `unobservable`. Every row names the mechanism that decides the grade and whether it was measured here or read from host documentation. `compile` reports the grade on `plan.delivery`; `dsh-forge grades` prints the table. Details in [docs/GRADES.md](docs/GRADES.md).
+
 ## Delivery channels
 
 Every action a profile compiles belongs to one channel: `project` (repository files), `install` (host runtime and user-scope prompt files), `shim` (a wrapper that exports the prompt and execs the host binary), `slash` (commands the host registers in a session), or `none` (prompt composed, nothing written). `compile` reports the classification and timing on `plan.channels`; `dsh-forge channels --all` prints the measured matrix for every profile. `dsh-forge shim` renders the wrapper. Details in [docs/CHANNELS.md](docs/CHANNELS.md).

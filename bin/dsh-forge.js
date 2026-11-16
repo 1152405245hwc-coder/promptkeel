@@ -21,6 +21,7 @@ import * as dshProvider from "../lib/dsh-provider.mjs";
 import { normalizeContext } from "../core/context.mjs";
 import { listPersonas } from "../core/persona.mjs";
 import { renderShim } from "../core/shim.mjs";
+import { gradeTable } from "../core/grades.mjs";
 
 registerProvider(dshProvider);
 
@@ -107,6 +108,7 @@ Usage:
   dsh-forge audit [--limit 50]                  read the structured operation log
   dsh-forge personas [--json]                   list bundled personas
   dsh-forge channels [--all] [--json]           show delivery channel per action
+  dsh-forge grades [--json]                     show how much of the host prompt each profile displaces
   dsh-forge shim --binary <path> [--prompt <file>] [--env K=V] [--out <file>]
   dsh-forge compile [profile] [--model <id>] [--mode <mode>] [--persona <id>] [--persona-mode off|replace|strict|append] [--home <dir>] [--project <dir>] [--budget 3200] [--out plan.json]
   dsh-forge apply --profile <profile> [--model <model>] [--home <dir>] [--project <dir>] [--state <dir>] [--preview file] [--dry-run|--yes]
@@ -352,6 +354,13 @@ function cmdPersonas() {
   rows.forEach((row) => process.stdout.write(`${row.id.padEnd(12)} ${row.mode.padEnd(8)} ${row.harness.padEnd(10)} ${row.chars} chars  ${row.name}\n`));
 }
 
+function cmdGrades() {
+  const rows = gradeTable(listProfiles());
+  if (flags.has("--json")) return out({ ok: true, grades: rows }, true);
+  banner(`delivery grades ${rows.length} profiles`);
+  rows.forEach((row) => process.stdout.write(`${row.id.padEnd(12)} ${row.grade.padEnd(21)} ${row.source.padEnd(9)} ${row.mechanism}\n`));
+}
+
 function cmdChannels() {
   if (flags.has("--all")) {
     const rows = listProfiles().map((profile) => {
@@ -512,6 +521,7 @@ try {
     case "personas": cmdPersonas(); break;
     case "channels": cmdChannels(); break;
     case "shim": cmdShim(); break;
+    case "grades": cmdGrades(); break;
     case "version": process.stdout.write(`${VERSION}\n`); break;
     default: usage();
   }

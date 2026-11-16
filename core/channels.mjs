@@ -13,6 +13,7 @@ export const TIMINGS = ["next-turn", "next-session", "host-restart", "shell-rest
 
 const FILE_CHANNELS = {
   "dsh-patches": { channel: "install", timing: "host-restart" },
+  command: { channel: "slash", timing: "next-session" },
   file: null,
   "markdown-block": { channel: "project", timing: "next-turn" },
   "json-merge": { channel: "project", timing: "next-turn" },

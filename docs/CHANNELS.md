@@ -7,7 +7,7 @@ A profile decides *what* gets delivered; a channel is *how* it reaches the host.
 | `project` | file or managed block inside the repository (`AGENTS.md`, `.cursorrules`, `CONVENTIONS.md`) | next turn | 11 actions across 8 profiles |
 | `install` | host runtime state (`dsh.patches`, `~/.dsh/prompt-inject.md`) | host restart / next session | 2 actions, DSH only |
 | `shim` | a wrapper script that exports the prompt and execs the host binary | shell restart | 0 automatic, renderable with `dsh-forge shim` |
-| `slash` | a command file the host registers inside a session | session start | 0 — no target kind emits it yet |
+| `slash` | a command file the host registers inside a session (`.claude/commands/*.md`) | session start | 1 action, `claude-code` |
 | `none` | prompt composed but never written (`prompt-only`) | n/a | 1 profile (`generic`) |
 
 `dsh-forge channels` prints the rows for one profile; `dsh-forge channels --all` prints the matrix for every profile in `profiles/`. The matrix is measured from the compiled plans, so it cannot drift from what `apply` would actually do.

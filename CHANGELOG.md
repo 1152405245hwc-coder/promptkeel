@@ -6,6 +6,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Sem
 
 ### Added
 
+- Slash channel is real: a `command` target kind renders a markdown command file with frontmatter, and the `claude-code` profile now delivers `.claude/commands/dsh-forge.md`.
+- Delivery grades: `core/grades.mjs` records `replace-full` / `replace-with-residue` / `append-only` / `shim-only` / `unobservable` per host with its mechanism and source, `plan.delivery` carries the grade, and `dsh-forge grades` prints the table.
 - Channel model: `core/channels.mjs` classifies every compiled action as `project` / `install` / `shim` / `slash` / `none` with an effect timing, `plan.channels` carries the summary, and `dsh-forge channels [--all]` prints one profile or the whole matrix. `core/shim.mjs` plus `dsh-forge shim` render a deterministic POSIX wrapper that exports the prompt and execs the host binary.
 - Persona layer: `core/persona.mjs`, three bundled personas (`direct`, `engineer`, `tutor`), `dsh-forge personas`, and `--persona` / `--persona-mode` on `compile`. Modes are `replace`, `strict`, `append`, `off`; `off` reproduces the plain composition byte for byte.
 - Five more breakage patches (15 total): sandbox escalation hint no longer promises an approval prompt, seatbelt blanket write deny removed, filesystem fence branches removed, badge skill description neutral, deliverable guidance no longer forbids `present`. Every entry now carries a `layer` (`approval` / `sandbox` / `turn` / `persona`).

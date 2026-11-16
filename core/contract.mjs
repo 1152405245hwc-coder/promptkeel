@@ -7,7 +7,7 @@ import { getAdapter } from "../hosts/registry.mjs";
 export const PROFILE_SCHEMA = "forge.profile/v1";
 export const MODEL_SCHEMA = "forge.model/v1";
 export const HOSTS = ["dsh", "claude-code", "codex", "gemini", "opencode", "generic"];
-export const TARGET_KINDS = ["markdown-block", "json-merge", "toml-merge", "file", "dsh-patches", "prompt-only"];
+export const TARGET_KINDS = ["markdown-block", "json-merge", "toml-merge", "file", "command", "dsh-patches", "prompt-only"];
 export const SCOPES = ["user", "project", "absolute"];
 export const SUPPORT_LEVELS = ["verified", "experimental", "unsupported"];
 export const RISK_LEVELS = ["low", "medium", "high"];

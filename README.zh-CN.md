@@ -188,6 +188,10 @@ dsh-forge explain <patch-id>
 
 ---
 
+## 投递分级
+
+`core/grades.mjs` 记录每个 profile 能顶掉宿主自带提示词的多少：`replace-full`、`replace-with-residue`、`append-only`、`shim-only`、`unobservable`。每一行都写明判定机制，并标注是在本机实测还是来自宿主文档。`compile` 把分级写进 `plan.delivery`，`dsh-forge grades` 打印整张表。细节见 [docs/GRADES.md](docs/GRADES.md)。
+
 ## 投递通道
 
 每条编译出的动作都属于一个通道：`project`（仓库内文件）、`install`（宿主运行时与用户级提示词文件）、`shim`（导出提示词并 exec 宿主二进制的包装脚本）、`slash`（宿主在会话内注册的命令），以及 `none`（只组合提示词、不落盘）。`compile` 会把分类和生效时机写在 `plan.channels`，`dsh-forge channels --all` 打印全部 profile 的实测矩阵，`dsh-forge shim` 渲染包装脚本。细节见 [docs/CHANNELS.md](docs/CHANNELS.md)。
