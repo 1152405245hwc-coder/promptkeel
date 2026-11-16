@@ -31,5 +31,12 @@
       }
     }
   ],
-  "model": "gemini"
+  "model": "gemini",
+  "risk": "high",
+  "mutatesHost": true,
+  "requiresRestart": true,
+  "activationEvidence": [
+    "config",
+    "session"
+  ]
 }

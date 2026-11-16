@@ -23,5 +23,12 @@
       "blockId": "system"
     }
   ],
-  "model": "gpt"
+  "model": "gpt",
+  "risk": "medium",
+  "mutatesHost": false,
+  "requiresRestart": true,
+  "activationEvidence": [
+    "config",
+    "session"
+  ]
 }

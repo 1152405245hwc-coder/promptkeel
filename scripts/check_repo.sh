@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# Repository-level quality gate. This is intentionally narrower than verify.sh:
+# it checks release hygiene, reproducible installation, and CLI/package shape.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/dsh-forge-check.XXXXXX")"
+trap 'rm -rf "$tmp_dir"' EXIT
+
+echo "== tracked generated state"
+if git ls-files -z | grep -zEq '(^|/)(\.dsh-forge-state|\.dsh-forge|node_modules)(/|$)|\.tgz$'; then
+  echo "generated or dependency artifacts are tracked" >&2
+  exit 1
+fi
+
+echo "== schema and profile compilation"
+node scripts/verify-profiles.mjs
+
+echo "== CLI surface"
+help="$(node bin/dsh-forge.js --help)"
+for command in doctor status apply verify compile audit plans verify-plan revert-plan profiles hosts models; do
+  grep -Fq "dsh-forge ${command}" <<<"$help" || {
+    echo "CLI help is missing command: ${command}" >&2
+    exit 1
+  }
+done
+
+echo "== JavaScript syntax"
+while IFS= read -r -d '' file; do
+  node --check "$file"
+done < <(find bin core hosts lib scripts test -type f \( -name '*.mjs' -o -name '*.js' \) -print0 | sort -z)
+
+echo "== lockfile consistency"
+node --input-type=module <<'NODE'
+import fs from "node:fs";
+const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+const lock = JSON.parse(fs.readFileSync("package-lock.json", "utf8"));
+if (lock.lockfileVersion < 3) throw new Error("package-lock.json must use lockfileVersion 3+");
+if (lock.name !== pkg.name || lock.version !== pkg.version) throw new Error("package-lock root metadata does not match package.json");
+const root = lock.packages?.[""];
+if (!root || root.name !== pkg.name || root.version !== pkg.version) throw new Error("package-lock packages[''] metadata does not match package.json");
+for (const section of ["dependencies", "devDependencies", "optionalDependencies"]) {
+  const expected = JSON.stringify(pkg[section] || {});
+  const actual = JSON.stringify(root[section] || {});
+  if (expected !== actual) throw new Error(`package-lock ${section} is out of sync`);
+}
+console.log(`lockfile v${lock.lockfileVersion}: ${Object.keys(lock.packages || {}).length} package entries`);
+NODE
+
+echo "== privacy"
+bash scripts/privacy_scan.sh
+
+echo "== package contents"
+npm --cache "$tmp_dir/npm-cache" pack --dry-run --json >"$tmp_dir/pack.json"
+node --input-type=module - "$tmp_dir/pack.json" <<'NODE'
+import fs from "node:fs";
+const report = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+const files = new Set(report[0]?.files?.map((entry) => entry.path) || []);
+for (const required of ["package.json", "bin/dsh-forge.js", "client/client.js", "scripts/verify.sh"]) {
+  if (!files.has(required)) throw new Error(`package is missing ${required}`);
+}
+for (const forbidden of [".dsh-forge-state/", "node_modules/", ".git/"]) {
+  if ([...files].some((file) => file.startsWith(forbidden))) throw new Error(`package contains ${forbidden}`);
+}
+console.log(`package files: ${files.size}`);
+NODE
+
+echo "== diff hygiene"
+git diff --check
+echo "check:repo PASS"

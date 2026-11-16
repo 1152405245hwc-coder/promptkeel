@@ -33,6 +33,7 @@
     "build:client": "node scripts/build-client.mjs",
     "privacy:scan": "bash scripts/privacy_scan.sh",
     "verify": "bash scripts/verify.sh",
+    "check:repo": "bash scripts/check_repo.sh",
     "pack:check": "npm pack --dry-run",
     "verify:profiles": "node scripts/verify-profiles.mjs"
   },

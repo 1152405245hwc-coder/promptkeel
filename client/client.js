@@ -139,12 +139,21 @@ function Overview({ data, okCount }) {
   const d = data.doctor;
   const patchCheck = d.checks.find((c) => c.id === "patches");
   const tokenCheck = d.checks.find((c) => c.id === "prompt-budget");
+  const activation = d.activation || {};
   return h("div", null,
     h("div", { className: "df-cards" },
       h(Card, { k: "宿主版本", v: d.version }),
       h(Card, { k: "补丁", v: patchCheck ? patchCheck.detail.split(" ")[0] : "—" }),
       h(Card, { k: "提示词预算", v: tokenCheck ? tokenCheck.detail.split("/")[0] : "—" }),
       h(Card, { k: "策略", v: data.policy }),
+      h(Card, { k: "生效状态", v: activation.state || "—" }),
+    ),
+    h("section", { className: "df-sec" },
+      h("h3", null, "生效证据"),
+      h("div", { className: "df-row" }, h("span", { className: "df-name" }, "配置"), h("span", { className: "df-detail" }, activation.configured ? "已配置" : "未配置")),
+      h("div", { className: "df-row" }, h("span", { className: "df-name" }, "宿主"), h("span", { className: "df-detail" }, activation.hostReady ? "已就绪" : "待应用")),
+      h("div", { className: "df-row" }, h("span", { className: "df-name" }, "会话"), h("span", { className: "df-detail" }, activation.sessionLoaded ? "已加载" : "需新建会话")),
+      h("div", { className: "df-row" }, h("span", { className: "df-name" }, "风险"), h("span", { className: "df-detail" }, activation.risk || "未记录")),
     ),
     h("section", { className: "df-sec" },
       h("h3", null, "体检 · " + okCount + "/" + d.checks.length + " 通过"),

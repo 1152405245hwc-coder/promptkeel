@@ -38,6 +38,7 @@ export function preflight(profile, { host, model }) {
     problems,
     rows: capabilityRows(profile),
     support: profile.support || weakest(profile),
+    risk: profile.risk || "medium",
   };
 }
 

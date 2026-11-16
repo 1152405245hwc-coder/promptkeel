@@ -106,17 +106,17 @@ DSH 是原生且能力最完整的目标宿主；同一套分层提示词与事�
 # 1. 纯编译：不触碰任何宿主文件，生成确定性执行计划
 node bin/dsh-forge.js compile claude-code --model claude --mode coding --out /tmp/plan.json
 
-# 2. 预检目标文件变更（不加 --yes 不会写入磁盘）
-node bin/dsh-forge.js apply --profile codex --dry-run
+# 2. 保存目标文件预览（不加 --yes 不会写入磁盘）
+node bin/dsh-forge.js apply --profile codex --dry-run --preview /tmp/forge-preview.json
 
-# 3. 事务式应用：每个目标文件均生成 manifest 备份与 sha256 校验
-node bin/dsh-forge.js apply --profile codex --yes
+# 3. 仅在预览文件的 SHA-256 仍匹配时应用
+node bin/dsh-forge.js apply --profile codex --yes --preview /tmp/forge-preview.json
 node bin/dsh-forge.js plans
 node bin/dsh-forge.js verify-plan <plan-id>
 node bin/dsh-forge.js revert-plan <plan-id>
 ```
 
-所有 Profile 均通过 `core/contract.mjs` 校验。能力矩阵与 Schema 规范详见 [docs/PORTABILITY.md](docs/PORTABILITY.md)。
+所有 Profile 均通过 `core/contract.mjs` 校验。Profile 还声明 `risk`、`mutatesHost`、`requiresRestart` 与 `activationEvidence`，用于说明操作影响和验收证据，不会静默改变现有高权限行为。可先执行 `apply --dry-run --preview /tmp/forge-preview.json`，审阅后再用同一个文件配合 `--yes`；若目标文件在预览后发生变化，工具会拒绝覆盖。能力矩阵与 Schema 规范详见 [docs/PORTABILITY.md](docs/PORTABILITY.md)。
 
 ---
 
@@ -208,7 +208,7 @@ dsh-forge explain <patch-id>
 | 命令 | 说明 |
 | :--- | :--- |
 | `dsh-forge compile [profile] [--model <id>] [--mode <mode>] [--out file] [--json]` | 纯编译跨宿主执行计划，不改写任何磁盘文件 |
-| `dsh-forge apply --profile <id> [--model <id>] [--mode <mode>] [--dry-run\|--yes]` | 预检或事务式应用跨宿主 Profile 计划 |
+| `dsh-forge apply --profile <id> [--model <id>] [--mode <mode>] [--preview file] [--dry-run\|--yes]` | 预检或事务式应用跨宿主 Profile 计划，并可启用预览 SHA 冲突保护 |
 | `dsh-forge plans [--json]` | 列出 `~/.dsh-forge/plans/` 下的历史执行计划记录 |
 | `dsh-forge verify-plan <plan-id> [--json]` | 重新校验已应用计划内所有目标文件的 `sha256` 与补丁状态 |
 | `dsh-forge revert-plan <plan-id> [--force]` | 字节级回滚已应用的计划（目标文件被外部修改时默认拒绝覆盖） |
@@ -216,11 +216,17 @@ dsh-forge explain <patch-id>
 | `dsh-forge models [--json]` | 列出 `models/*.json` 中的全部模型定义 |
 | `dsh-forge hosts [--json]` | 探测本机已安装的 AI 编程助手宿主环境 |
 
+`status --json` 会明确区分生效阶段：`doctor.activation.state` 为 `inactive`、`configured` 或 `active`。`configured` 表示提示词通道已经写入或注册；`active` 表示最近会话已经加载 Forge 头部；`requiresRestart` 表示配置已存在但仍需新建宿主会话。
+
 ---
 
 ## 验证与质量门禁
 
 ```bash
+# 可复现安装与仓库质量门禁
+npm ci --ignore-scripts
+npm run check:repo
+
 # 运行单元、集成、安全边界、ASAR 与 HTTP API 测试套件
 npm test
 

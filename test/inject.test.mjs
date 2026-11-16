@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { composePrompt, resolvePrompt, estimateTokens, checkBudget, writeInject, verifyProofs } from "../lib/inject.mjs";
+import { composePrompt, resolvePrompt, estimateTokens, checkBudget, writeInject, verifyProofs, injectionSource } from "../lib/inject.mjs";
 import { setPolicy, readPolicy, shouldStripWorkspace, enableProfile, disableProfile, profileStatus } from "../lib/preset.mjs";
 import { doctor } from "../lib/doctor.mjs";
 
@@ -140,6 +140,15 @@ test("profileStatus reports invalid package.json instead of throwing", (t) => {
   assert.equal(status.reason, "invalid-package-json");
 });
 
+test("injectionSource only reports a managed AGENTS.md block", (t) => {
+  const projectRoot = tmpDir(t, "forge-source-");
+  const agents = path.join(projectRoot, "AGENTS.md");
+  fs.writeFileSync(agents, "# unrelated project instructions\n");
+  assert.equal(injectionSource({ projectRoot }).kind, "builtin");
+  fs.writeFileSync(agents, "<!-- dsh-forge:begin system -->\nmanaged\n<!-- dsh-forge:end system -->\n");
+  assert.equal(injectionSource({ projectRoot }).kind, "agents-md");
+});
+
 test("doctor runs all 12 checks against an isolated environment", (t) => {
   const dshHome = tmpDir(t, "forge-doc-home-");
   const hostRoot = tmpDir(t, "forge-doc-host-");
@@ -147,4 +156,6 @@ test("doctor runs all 12 checks against an isolated environment", (t) => {
   assert.equal(report.checks.length, 12);
   assert.equal(report.checks.find((c) => c.id === "host-root")?.status, "fail");
   assert.equal(report.ok, false);
+  assert.equal(report.activation.sessionLoaded, false);
+  assert.equal(report.activation.requiresRestart, report.activation.configured);
 });

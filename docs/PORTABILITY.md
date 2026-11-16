@@ -26,6 +26,8 @@ Profile JSON ──▶ Host Adapter ──▶ Compiler (core/compile) ──▶ 
 
 `verified` means the full `compile → apply → verify-plan → revert-plan` cycle is covered by automated tests for the profile's target files.
 
+Each profile may also declare `risk`, `mutatesHost`, `requiresRestart`, and `activationEvidence`. These are operational metadata used by status, diagnostics, and the control panel. They document impact and proof requirements without changing the profile's existing behavior.
+
 ## 2. Model Overlays
 
 Model overlays (`models/*.json` + `prompt/models/*.md`) tune instruction style per model family without forking `prompt/core.md`. Composition order is fixed:
@@ -63,6 +65,10 @@ core.md ──▶ models/<model>.md ──▶ hosts/<host>.md ──▶ modes/<m
   "version": "0.1.0",
   "host": "codex",
   "support": "verified",
+  "risk": "medium",
+  "mutatesHost": false,
+  "requiresRestart": true,
+  "activationEvidence": ["config", "session"],
   "prompt": { "core": "core.md" },
   "model": "gpt",
   "capabilities": {

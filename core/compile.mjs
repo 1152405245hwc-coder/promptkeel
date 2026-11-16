@@ -112,7 +112,17 @@ export function compile(profile, model, { mode = null, home, projectRoot, prompt
   return {
     schema: "forge.plan/v1",
     planId,
-    profile: { id: profile.id, version: profile.version, name: profile.name, host: profile.host, support: profile.support || pre.support },
+    profile: {
+      id: profile.id,
+      version: profile.version,
+      name: profile.name,
+      host: profile.host,
+      support: profile.support || pre.support,
+      risk: profile.risk || pre.risk,
+      mutatesHost: profile.mutatesHost ?? false,
+      requiresRestart: profile.requiresRestart ?? profile.host !== "generic",
+      activationEvidence: profile.activationEvidence || ["config", "session"],
+    },
     model: { id: model.id, version: model.version || null },
     mode,
     prompt: { sha256: composed.sha256, bodySha: composed.bodySha, tokens: composed.tokens, sources: composed.sources, text: composed.text },

@@ -33,5 +33,12 @@
       }
     }
   ],
-  "model": "claude"
+  "model": "claude",
+  "risk": "high",
+  "mutatesHost": true,
+  "requiresRestart": true,
+  "activationEvidence": [
+    "config",
+    "session"
+  ]
 }

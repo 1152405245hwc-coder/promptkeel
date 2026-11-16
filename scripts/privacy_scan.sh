@@ -27,6 +27,7 @@ for p in "${patterns[@]}"; do
     --exclude-dir=.git \
     --exclude-dir=node_modules \
     --exclude-dir=fixtures \
+    --exclude-dir=.dsh-forge-state \
     --exclude=privacy_scan.sh \
     "$p" . >/tmp/forge-privacy.$$ 2>/dev/null; then
     echo "privacy: matched pattern: $p"

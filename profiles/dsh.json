@@ -26,5 +26,13 @@
       "scope": "user"
     }
   ],
-  "model": "deepseek"
+  "model": "deepseek",
+  "risk": "high",
+  "mutatesHost": true,
+  "requiresRestart": true,
+  "activationEvidence": [
+    "profile",
+    "patches",
+    "session"
+  ]
 }

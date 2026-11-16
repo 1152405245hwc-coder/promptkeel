@@ -9,6 +9,8 @@ export const HOSTS = ["dsh", "claude-code", "codex", "gemini", "opencode", "gene
 export const TARGET_KINDS = ["markdown-block", "json-merge", "toml-merge", "file", "dsh-patches", "prompt-only"];
 export const SCOPES = ["user", "project", "absolute"];
 export const SUPPORT_LEVELS = ["verified", "experimental", "unsupported"];
+export const RISK_LEVELS = ["low", "medium", "high"];
+export const ACTIVATION_EVIDENCE = ["profile", "config", "patches", "session"];
 export const EFFECTS = ["P", "T", "S", "W", "M"];
 const PATCH_IDS = new Set(PATCHES.map((patch) => patch.id));
 
@@ -70,6 +72,13 @@ export function validateProfile(profile, { file = "<profile>" } = {}) {
   assert(HOSTS.includes(profile.host), "profile-host", `${file}: unknown host ${JSON.stringify(profile.host)}`);
   assert(profile.model === undefined || isString(profile.model), "profile-model", `${file}: model must be a string`);
   assert(profile.support === undefined || SUPPORT_LEVELS.includes(profile.support), "profile-support", `${file}: bad support level`);
+  assert(profile.risk === undefined || RISK_LEVELS.includes(profile.risk), "profile-risk", `${file}: bad risk level`);
+  assert(profile.mutatesHost === undefined || typeof profile.mutatesHost === "boolean", "profile-mutates-host", `${file}: mutatesHost must be boolean`);
+  assert(profile.requiresRestart === undefined || typeof profile.requiresRestart === "boolean", "profile-restart", `${file}: requiresRestart must be boolean`);
+  if (profile.activationEvidence !== undefined) {
+    assert(Array.isArray(profile.activationEvidence) && profile.activationEvidence.length > 0, "profile-activation", `${file}: activationEvidence must be a non-empty array`);
+    assert(profile.activationEvidence.every((item) => ACTIVATION_EVIDENCE.includes(item)), "profile-activation", `${file}: unknown activation evidence`);
+  }
   assert(profile.prompt && typeof profile.prompt === "object", "profile-prompt", `${file}: prompt config is required`);
   assert(isString(profile.prompt.core) && !profile.prompt.core.includes(".."), "profile-prompt", `${file}: prompt.core is required`);
   assert(profile.capabilities && typeof profile.capabilities === "object", "profile-capabilities", `${file}: capabilities are required`);

@@ -12,6 +12,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Sem
 - Transactional apply with per-file backups, `beforeSha`/`afterSha`, drift refusal, symlink preflight checks, and DSH patch delegation/verification.
 - Windows host candidate paths and `--host-root` override; `planId` excludes absolute paths so the same profile compiles identically across machines.
 
+### Changed
+
+- `doctor` and `status --json` now report configuration, host readiness, session loading, and restart requirements as separate activation fields.
+- Privacy checks ignore the local `.dsh-forge-state/` plan ledger, which is runtime state and is now excluded from Git.
+- Profiles now expose risk, host mutation, restart, and activation-evidence metadata; existing high-permission behavior remains unchanged.
+- CI runs on Node 20 and 22 with a reproducible npm lockfile and repository quality gate.
+
+### Fixed
+
+- Prompt section tests no longer depend on an incidental `AGENTS.md` in the checkout.
+- `injectionSource` only recognizes an `AGENTS.md` that contains a dsh-forge managed block.
+- Cross-host applies can persist a `forge.preview/v1` file and refuse to overwrite files whose SHA-256 changed after preview.
+
 ## [0.1.0] - 2026-11-14
 
 ### Added

@@ -34,5 +34,12 @@
       }
     }
   ],
-  "model": "qwen"
+  "model": "qwen",
+  "risk": "high",
+  "mutatesHost": true,
+  "requiresRestart": true,
+  "activationEvidence": [
+    "config",
+    "session"
+  ]
 }

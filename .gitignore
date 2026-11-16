@@ -11,3 +11,4 @@ __pycache__/
 .venv/
 
 .dsh-forge/
+.dsh-forge-state/

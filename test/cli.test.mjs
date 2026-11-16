@@ -63,3 +63,25 @@ test("profiles and models CLI commands return valid catalogs", () => {
   const mods = JSON.parse(modelResult.stdout);
   assert.equal(mods.models.length, 6);
 });
+
+test("profile apply preview rejects a changed target", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "forge-cli-preview-"));
+  try {
+    const project = path.join(root, "project");
+    const home = path.join(root, "home");
+    const state = path.join(root, "state");
+    const preview = path.join(root, "preview.json");
+    fs.mkdirSync(project, { recursive: true });
+    fs.writeFileSync(path.join(project, "AGENTS.md"), "user text\n");
+    const args = ["apply", "--profile", "codex", "--project", project, "--home", home, "--state", state, "--preview", preview, "--json"];
+    const dry = run([...args, "--dry-run"]);
+    assert.equal(dry.status, 0);
+    assert.equal(fs.existsSync(preview), true);
+    fs.appendFileSync(path.join(project, "AGENTS.md"), "changed\n");
+    const applied = run([...args, "--yes"]);
+    assert.equal(applied.status, 1);
+    assert.equal(JSON.parse(applied.stdout).code, "preview-conflict");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

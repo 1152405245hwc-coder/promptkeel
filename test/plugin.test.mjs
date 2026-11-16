@@ -14,7 +14,9 @@ test("plugin registers a forge prompt section", () => {
   };
   assert.equal(name, "dsh-forge");
   assert.deepEqual(inject, ["systemPrompt"]);
-  apply(ctx, { enabled: true, adapter: "deepseek" });
+  // Pin the policy so the test is independent of any AGENTS.md in the
+  // checkout that happens to run it.
+  apply(ctx, { enabled: true, adapter: "deepseek", policy: "always" });
   assert.equal(sections.length, 1);
   assert.equal(sections[0].name, "forge:prompt");
   assert.equal(sections[0].order, 500);

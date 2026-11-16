@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
 import { PATCHES } from "../lib/table.mjs";
-import { apply as applyPatches, revert as revertPatches, verifyApplied as verifyAppliedPatches } from "../lib/engine.mjs";
+import { apply as applyPatches, dryRun as dryRunPatches, revert as revertPatches, verifyApplied as verifyAppliedPatches } from "../lib/engine.mjs";
 import { restorePackedAsar } from "../lib/asar.mjs";
 import { fail } from "./errors.mjs";
 import { sha256 } from "./prompt.mjs";
@@ -183,11 +183,74 @@ function previewFile(action) {
   };
 }
 
+function previewRecord(preview) {
+  if (!preview || typeof preview !== "object") return null;
+  if (preview.schema !== "forge.preview/v1") return { code: "preview-schema", message: `unsupported preview ${preview.schema || "(missing)"}` };
+  if (!Array.isArray(preview.files)) return { code: "preview-files", message: "preview files must be an array" };
+  return null;
+}
+
+/**
+ * Compare a previously generated dry-run preview with the current files.
+ * This is intentionally opt-in so existing callers that apply immediately
+ * retain their behavior; callers that show a preview must pass it back.
+ */
+export function checkPreview(plan, preview) {
+  const invalid = previewRecord(preview);
+  if (invalid) return { ok: false, ...invalid, conflicts: [] };
+  if (preview.planId !== plan.planId) {
+    return {
+      ok: false,
+      code: "preview-plan-mismatch",
+      message: `preview belongs to plan ${preview.planId || "(missing)"}, received ${plan.planId}`,
+      conflicts: [],
+    };
+  }
+  const conflicts = [];
+  for (const expected of preview.files) {
+    ensureNotSymlink(expected.path);
+    const current = readBytes(expected.path);
+    const currentSha = current ? sha256Bytes(current) : null;
+    const currentExists = current !== null;
+    if (currentExists !== Boolean(expected.existed) || currentSha !== (expected.beforeSha || null)) {
+      conflicts.push({
+        path: expected.path,
+        reason: "modified-after-preview",
+        expected: { existed: Boolean(expected.existed), beforeSha: expected.beforeSha || null },
+        current: { existed: currentExists, beforeSha: currentSha },
+      });
+    }
+  }
+  return conflicts.length
+    ? { ok: false, code: "preview-conflict", message: "refusing to overwrite files changed after preview", conflicts }
+    : { ok: true, conflicts: [] };
+}
+
+export function previewPlan(plan, { env = {} } = {}) {
+  const fileActions = plan.actions.filter((a) => ["write-file", "merge-block", "merge-json", "merge-toml"].includes(a.op));
+  const patches = actionPatches(plan.actions);
+  const changes = fileActions.map(previewFile);
+  return {
+    ok: !(plan.budget && plan.budget.ok === false),
+    dryRun: true,
+    planId: plan.planId,
+    changes,
+    preview: {
+      schema: "forge.preview/v1",
+      planId: plan.planId,
+      createdAt: new Date().toISOString(),
+      files: changes.map(({ path: file, op, existed, beforeSha, afterSha }) => ({ path: file, op, existed, beforeSha, afterSha })),
+    },
+    dsh: patches.length ? dryRunPatches(patches, env) : null,
+    message: "preview only; pass the preview back to applyPlan to enforce SHA conflict checks",
+  };
+}
+
 /**
  * Apply a compiled plan transactionally. All file bytes are backed up before
  * the first write; any failure restores every touched file.
  */
-export function applyPlan(plan, { dryRun = false, env = {}, yes = false } = {}) {
+export function applyPlan(plan, { dryRun = false, env = {}, yes = false, preview = null } = {}) {
   const fileActions = plan.actions.filter((a) => ["write-file", "merge-block", "merge-json", "merge-toml"].includes(a.op));
   const patches = actionPatches(plan.actions);
   const previews = fileActions.map(previewFile);
@@ -200,9 +263,19 @@ export function applyPlan(plan, { dryRun = false, env = {}, yes = false } = {}) 
       dryRun: true,
       planId: plan.planId,
       changes: previews,
+      preview: {
+        schema: "forge.preview/v1",
+        planId: plan.planId,
+        createdAt: new Date().toISOString(),
+        files: previews.map(({ path: file, op, existed, beforeSha, afterSha }) => ({ path: file, op, existed, beforeSha, afterSha })),
+      },
       dsh: patches.length ? dryRunPatches(patches, env) : null,
-      message: "preview only; pass --yes to write",
+      message: "preview only; pass the preview back to applyPlan to enforce SHA conflict checks",
     };
+  }
+  if (preview) {
+    const checked = checkPreview(plan, preview);
+    if (!checked.ok) return { ok: false, planId: plan.planId, ...checked };
   }
   const root = stateRoot(env);
   const id = randomId();

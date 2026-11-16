@@ -43,6 +43,7 @@ const { values: opts, positionals } = parseArgs({
     project: { type: "string" },
     home: { type: "string" },
     state: { type: "string" },
+    preview: { type: "string" },
   },
 });
 
@@ -91,8 +92,9 @@ Usage:
   dsh-forge preset [strict|fallback|always]
   dsh-forge collect                             export redacted diagnostics tarball
   dsh-forge log [--limit 50|--clear]
+  dsh-forge audit [--limit 50]                  read the structured operation log
   dsh-forge compile [profile] [--model <id>] [--mode <mode>] [--home <dir>] [--project <dir>] [--budget 3200] [--out plan.json]
-  dsh-forge apply --profile <profile> [--model <model>] [--home <dir>] [--project <dir>] [--state <dir>] [--dry-run|--yes]
+  dsh-forge apply --profile <profile> [--model <model>] [--home <dir>] [--project <dir>] [--state <dir>] [--preview file] [--dry-run|--yes]
   dsh-forge plans [--json]
   dsh-forge verify-plan <plan-id> [--json]
   dsh-forge revert-plan <plan-id> [--force]
@@ -116,6 +118,9 @@ function cmdDoctor() {
     const mark = c.status === "ok" ? "OK  " : c.status === "warn" ? "WARN" : "FAIL";
     process.stdout.write(`${String(i + 1).padStart(2)}. ${mark}  ${c.label.padEnd(18)} ${c.detail}\n`);
   });
+  if (report.activation) {
+    process.stdout.write(`Activation: ${report.activation.state} · session=${report.activation.sessionLoaded ? "loaded" : "pending"} · risk=${report.activation.risk}\n`);
+  }
   const verdict = report.ok ? "PASS" : "FAIL";
   process.stdout.write(`\nVERDICT: ${verdict}\n`);
 }
@@ -336,7 +341,15 @@ function cmdCompile() {
 function cmdForgeApply() {
   const { plan, context } = forgeContext();
   const isDry = flags.has("--dry-run") || !flags.has("--yes");
-  const result = applyPlan(plan, { ...context, dryRun: isDry, yes: flags.has("--yes") });
+  const previewPath = optionValue("preview", null);
+  let preview = null;
+  if (previewPath && !isDry) preview = JSON.parse(fs.readFileSync(path.resolve(previewPath), "utf8"));
+  const result = applyPlan(plan, { ...context, dryRun: isDry, yes: flags.has("--yes"), preview });
+  if (previewPath && isDry && result.preview) {
+    ensureDir(path.dirname(path.resolve(previewPath)));
+    fs.writeFileSync(path.resolve(previewPath), JSON.stringify(result.preview, null, 2) + "\n");
+    result.previewPath = path.resolve(previewPath);
+  }
   out(result, flags.has("--json"));
   process.exitCode = result.ok ? 0 : 1;
 }
@@ -402,6 +415,7 @@ try {
     case "preset": cmdPreset(); break;
     case "collect": cmdCollect(); break;
     case "log": cmdLog(); break;
+    case "audit": cmdLog(); break;
     case "compile": cmdCompile(); break;
     case "apply-profile": cmdForgeApply(); break;
     case "plans": cmdPlans(); break;

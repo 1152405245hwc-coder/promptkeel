@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { loadProfile, loadModel, validateProfile, PROFILE_SCHEMA } from "../core/contract.mjs";
 import { compile } from "../core/compile.mjs";
-import { applyPlan, revertPlan, verifyPlan, mergeBlock, mergeJson, mergeToml } from "../core/executor.mjs";
+import { applyPlan, previewPlan, checkPreview, revertPlan, verifyPlan, mergeBlock, mergeJson, mergeToml } from "../core/executor.mjs";
 import { renderPrompt } from "../core/prompt.mjs";
 import { verifyCompiled } from "../core/verify.mjs";
 import { PATCHES } from "../lib/table.mjs";
@@ -20,6 +20,16 @@ test("profile validation rejects duplicate targets", () => {
     targets: [{ kind: "markdown-block", path: "AGENTS.md" }, { kind: "markdown-block", path: "AGENTS.md" }],
   };
   assert.throws(() => validateProfile(profile), /duplicates/);
+});
+
+test("profile validation rejects unknown risk and activation evidence", () => {
+  const base = {
+    schema: PROFILE_SCHEMA, id: "risk-test", name: "Risk test", version: "1", host: "generic",
+    prompt: { core: "core.md" }, capabilities: { prompt: "verified" },
+    targets: [{ kind: "prompt-only" }],
+  };
+  assert.throws(() => validateProfile({ ...base, risk: "critical" }), /bad risk level/);
+  assert.throws(() => validateProfile({ ...base, activationEvidence: ["unknown"] }), /unknown activation evidence/);
 });
 
 test("prompt render is deterministic and changes with model", () => {
@@ -120,6 +130,34 @@ test("applyPlan refuses a plan whose prompt exceeds the token budget", () => {
   const result = applyPlan(plan, { dryRun: true, yes: true });
   assert.equal(result.ok, false);
   assert.equal(result.reason, "budget-exceeded");
+});
+
+test("applyPlan rejects files changed after a persisted dry-run preview", () => {
+  const home = tmp(); const project = tmp(); const state = tmp();
+  const target = path.join(project, "CLAUDE.md");
+  fs.writeFileSync(target, "user content\n");
+  const plan = compile(loadProfile("claude-code"), loadModel("claude"), { home, projectRoot: project });
+  const preview = previewPlan(plan, { env: { stateRoot: state } });
+  assert.equal(preview.ok, true);
+  fs.appendFileSync(target, "user edit\n");
+  const check = checkPreview(plan, preview.preview);
+  assert.equal(check.ok, false);
+  assert.equal(check.code, "preview-conflict");
+  const result = applyPlan(plan, { yes: true, env: { stateRoot: state }, preview: preview.preview });
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "preview-conflict");
+  assert.match(fs.readFileSync(target, "utf8"), /user edit/);
+});
+
+test("applyPlan accepts an unchanged preview and records the plan", () => {
+  const home = tmp(); const project = tmp(); const state = tmp();
+  const plan = compile(loadProfile("codex"), loadModel("gpt"), { home, projectRoot: project });
+  const preview = previewPlan(plan);
+  assert.equal(checkPreview(plan, preview.preview).ok, true);
+  const result = applyPlan(plan, { yes: true, env: { stateRoot: state }, preview: preview.preview });
+  assert.equal(result.ok, true);
+  assert.equal(result.planId, plan.planId);
+  assert.equal(revertPlan(result.id, { env: { stateRoot: state } }).ok, true);
 });
 
 test("mergeToml inserts top-level keys before [table] sections and stays idempotent", () => {

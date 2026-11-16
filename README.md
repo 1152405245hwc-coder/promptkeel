@@ -106,17 +106,19 @@ DSH is the native full-capability target. The same modular prompt and transactio
 # 1. Pure compile: inspect or export the execution plan without touching any host files
 node bin/dsh-forge.js compile claude-code --model claude --mode coding --out /tmp/plan.json
 
-# 2. Preview target file diffs (no disk writes without --yes)
-node bin/dsh-forge.js apply --profile codex --dry-run
+# 2. Save a target preview (no disk writes without --yes)
+node bin/dsh-forge.js apply --profile codex --dry-run --preview /tmp/forge-preview.json
 
-# 3. Transactionally apply with per-file backups and SHA-256 manifest verification
-node bin/dsh-forge.js apply --profile codex --yes
+# 3. Apply only if previewed files still have the same SHA-256 values
+node bin/dsh-forge.js apply --profile codex --yes --preview /tmp/forge-preview.json
 node bin/dsh-forge.js plans
 node bin/dsh-forge.js verify-plan <plan-id>
 node bin/dsh-forge.js revert-plan <plan-id>
 ```
 
 Every profile is validated against `core/contract.mjs`. See [docs/PORTABILITY.md](docs/PORTABILITY.md) for the capability matrix and schema specification.
+
+Profiles also declare `risk`, `mutatesHost`, `requiresRestart`, and `activationEvidence`. These fields describe operational impact and proof requirements; they do not silently change the existing high-permission behavior. Use `apply --dry-run --preview /tmp/forge-preview.json`, review the result, then pass the same file with `--yes` to reject files changed after the preview.
 
 ---
 
@@ -208,7 +210,7 @@ dsh-forge explain <patch-id>
 | Command | Description |
 | :--- | :--- |
 | `dsh-forge compile [profile] [--model <id>] [--mode <mode>] [--out file] [--json]` | Compile a cross-host execution plan without touching any files on disk |
-| `dsh-forge apply --profile <id> [--model <id>] [--mode <mode>] [--dry-run\|--yes]` | Preview or transactionally apply a cross-host profile plan |
+| `dsh-forge apply --profile <id> [--model <id>] [--mode <mode>] [--preview file] [--dry-run\|--yes]` | Preview or transactionally apply a cross-host profile plan with optional SHA conflict protection |
 | `dsh-forge plans [--json]` | List recorded execution plan manifests under `~/.dsh-forge/plans/` |
 | `dsh-forge verify-plan <plan-id> [--json]` | Re-verify target file hashes and DSH patch markers for an applied plan |
 | `dsh-forge revert-plan <plan-id> [--force]` | Byte-exact rollback of an applied plan (refuses drifted files unless `--force`) |
@@ -216,11 +218,17 @@ dsh-forge explain <patch-id>
 | `dsh-forge models [--json]` | List all validated model definitions in `models/*.json` |
 | `dsh-forge hosts [--json]` | Detect local agent harness installations (`dsh`, `claude-code`, `codex`, `gemini`, `opencode`, `generic`) |
 
+`status --json` keeps activation state explicit: `doctor.activation.state` is `inactive`, `configured`, or `active`; `configured` means the prompt channel is written or registered, while `active` means a recent session has loaded the Forge header. `requiresRestart` is true when configuration is present but a new host session is still needed.
+
 ---
 
 ## Verification & Quality Gate
 
 ```bash
+# Reproducible install and repository hygiene gate
+npm ci --ignore-scripts
+npm run check:repo
+
 # Run unit, integration, security, ASAR, and HTTP API tests
 npm test
 

@@ -16,6 +16,10 @@ test("all shipped profiles validate and compile within budget", () => {
     assert.equal(plan.budget.ok, true, `${profile.id} budget`);
     assert.ok(plan.actions.length >= 1);
     assert.ok(preflight(profile, { host: profile.host, model }).ok);
+    assert.ok(["low", "medium", "high"].includes(plan.profile.risk), `${profile.id} risk`);
+    assert.equal(typeof plan.profile.mutatesHost, "boolean");
+    assert.equal(typeof plan.profile.requiresRestart, "boolean");
+    assert.ok(Array.isArray(plan.profile.activationEvidence));
   }
 });
 

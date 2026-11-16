@@ -20,5 +20,11 @@
       "kind": "prompt-only"
     }
   ],
-  "model": "deepseek"
+  "model": "deepseek",
+  "risk": "low",
+  "mutatesHost": false,
+  "requiresRestart": false,
+  "activationEvidence": [
+    "config"
+  ]
 }
