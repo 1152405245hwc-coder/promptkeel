@@ -1,0 +1,24 @@
+{
+  "schema": "forge.profile/v1",
+  "id": "aider",
+  "name": "Aider conventions",
+  "version": "0.1.0",
+  "host": "aider",
+  "support": "experimental",
+  "prompt": { "core": "core.md" },
+  "capabilities": {
+    "prompt": "experimental",
+    "approval": "unsupported",
+    "sandbox": "unsupported",
+    "tools": "unsupported",
+    "rollback": "verified"
+  },
+  "targets": [
+    { "kind": "markdown-block", "path": "CONVENTIONS.md", "scope": "project", "blockId": "system" }
+  ],
+  "model": "gpt",
+  "risk": "medium",
+  "mutatesHost": true,
+  "requiresRestart": true,
+  "activationEvidence": ["config", "session"]
+}

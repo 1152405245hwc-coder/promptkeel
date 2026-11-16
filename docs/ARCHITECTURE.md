@@ -14,12 +14,14 @@ dsh-forge/
 │   ├── prompt.mjs          # Deterministic multi-layer prompt renderer & CJK-aware token estimator
 │   ├── compile.mjs         # Pure compiler: (profile, model, mode) -> machine-independent plan
 │   ├── executor.mjs        # Transactional writer (mergeBlock, mergeJson, mergeToml, backups, rollback)
+│   ├── batch.mjs           # Multi-platform compile/apply, conflict checks, locks, and compensation rollback
 │   ├── verify.mjs          # Internal plan hash check & post-apply target verification
 │   ├── profile.mjs         # Public re-export facade for contract primitives
 │   └── errors.mjs          # Structured ForgeError with stable machine-readable error codes
 ├── hosts/                  # Per-host environment detectors & configuration target descriptors
-│   ├── registry.mjs        # Host catalog (detectHost, detectAll)
-│   └── *.mjs               # dsh, claude-code, codex, gemini, opencode, generic
+│   ├── adapter.mjs         # forge.host/v1 normalization and detection evidence
+│   ├── registry.mjs        # Host catalog and adapter lookup (detectHost, detectAll, getAdapter)
+│   └── *.mjs               # ten registered host adapters
 ├── profiles/               # Declarative target profiles (forge.profile/v1)
 ├── models/                 # Model family metadata & overlay bindings (forge.model/v1)
 ├── prompt/                 # Modular prompt sources
@@ -114,6 +116,8 @@ The plugin registers a `systemPrompt` section (`forge:prompt`) through Cordis. I
 | `forge.preview/v1` | Optional dry-run preview carrying target `beforeSha` values; `apply` refuses drifted files when the preview is supplied |
 
 ## 6. Cross-Host Compiler and Executor
+
+The host registry is the platform boundary. `hosts/adapter.mjs` normalizes legacy host modules into `forge.host/v1`; `core/compile.mjs` consumes optional adapter hooks and otherwise falls back to the stable v1 target handlers. `core/batch.mjs` compiles and applies several platform plans with deterministic ordering, target conflict detection, one preview, a batch lock, and per-plan compensation rollback. DSH patching remains an adapter-owned provider; ordinary platform profiles do not load or invoke the DSH patch engine.
 
 ```mermaid
 flowchart LR

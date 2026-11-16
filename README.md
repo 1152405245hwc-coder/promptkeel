@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-000?style=flat-square)](LICENSE)
 [![Runtime Dependencies: 0](https://img.shields.io/badge/Runtime%20Deps-0-000?style=flat-square)](package.json)
 
-**Prompt injection, declarative host patches, and a deterministic cross-host profile compiler for DeepSeek Harness (DSH), Claude Code, Codex CLI, Gemini CLI, OpenCode, and local open-weight runtimes.**
+**Prompt injection, declarative host patches, and a deterministic multi-platform profile compiler for DeepSeek Harness (DSH), Claude Code, Codex CLI, Gemini CLI, OpenCode, Cursor, Windsurf, Aider, Continue, and local open-weight runtimes.**
 
 ```text
 ┌────────────┐   compose    ┌──────────────┐   section    ┌───────────────┐
@@ -32,7 +32,7 @@
 | **Verification** | Visual status badge only | 3-stage proof check (`proof1-patches`, `proof2-prompt`, `proof3-session` on `session.v4.jsonl.zstd`) + 12-check `doctor` |
 | **Control Panel** | 650+ KB external bundle | **15 KB dependency-free sidebar bundle** (`Overview`, `Patches`, `Prompt`, `Policy`, `Logs`) |
 | **Backup & Rollback** | Single `.bak` file overwritten on re-run | Timestamped `manifest.json` + original file `sha256` + `hostVersion` guard + symlink refusal (`lstatSync`) |
-| **Cross-Host Portability** | Locked to a single host | Pure compiler (`core/compile.mjs`) + transactional executor (`core/executor.mjs`) across 6 host profiles |
+| **Cross-Host Portability** | Locked to a single host | Adapter registry + pure compiler + transactional executor across 10 host profiles |
 
 ---
 
@@ -53,13 +53,14 @@ dsh-forge/
 │   ├── prompt.mjs          # Deterministic multi-layer prompt renderer & CJK-aware token estimator
 │   ├── compile.mjs         # Pure compiler: (profile, model, mode) -> machine-independent plan
 │   ├── executor.mjs        # Transactional writer (mergeBlock, mergeJson, mergeToml, backups, rollback)
+│   ├── batch.mjs           # Multi-platform batch compile/apply and compensation rollback
 │   ├── verify.mjs          # Internal plan hash check & post-apply target verification
 │   ├── profile.mjs         # Public re-export facade for contract primitives
 │   └── errors.mjs          # Structured ForgeError with stable machine-readable error codes
 ├── hosts/                  # Per-host environment detectors & configuration target descriptors
 │   ├── registry.mjs        # Host catalog (detectHost, detectAll)
-│   └── *.mjs               # dsh, claude-code, codex, gemini, opencode, generic
-├── profiles/               # Declarative target profiles (dsh, claude-code, codex, gemini, opencode, generic)
+│   └── *.mjs               # dsh, claude-code, codex, gemini, opencode, generic, cursor, windsurf, aider, continue
+├── profiles/               # Declarative target profiles for the ten registered adapters
 ├── models/                 # Model family metadata & overlay bindings (deepseek, claude, gpt, gemini, qwen, local)
 ├── prompt/                 # Modular prompt sources
 │   ├── core.md             # Base execution rubric (routing, boundary handling, A-D evidence grading)
@@ -100,6 +101,10 @@ DSH is the native full-capability target. The same modular prompt and transactio
 | **Codex CLI** | `codex` | `AGENTS.md` (managed block, project only) | `verified` |
 | **Gemini CLI** | `gemini` | `GEMINI.md` (managed block) + `.gemini/settings.json` | `experimental` |
 | **OpenCode** | `opencode` | `AGENTS.md` (managed block) + `opencode.json` | `experimental` |
+| **Cursor** | `cursor` | `.cursorrules` (legacy managed block) | `experimental` |
+| **Windsurf** | `windsurf` | `.windsurfrules` (legacy managed block) | `experimental` |
+| **Aider** | `aider` | `CONVENTIONS.md` (managed block) | `experimental` |
+| **Continue** | `continue` | `.continue/rules/dsh-forge.md` (managed block) | `experimental` |
 | **Generic API / Local Weights** | `generic` | System prompt payload only (`prompt-only`) | `experimental` |
 
 ```bash
@@ -119,6 +124,8 @@ node bin/dsh-forge.js revert-plan <plan-id>
 Every profile is validated against `core/contract.mjs`. See [docs/PORTABILITY.md](docs/PORTABILITY.md) for the capability matrix and schema specification.
 
 Profiles also declare `risk`, `mutatesHost`, `requiresRestart`, and `activationEvidence`. These fields describe operational impact and proof requirements; they do not silently change the existing high-permission behavior. Use `apply --dry-run --preview /tmp/forge-preview.json`, review the result, then pass the same file with `--yes` to reject files changed after the preview.
+
+For multi-platform orchestration, `core/batch.mjs` exports `compileMany()` and `applyBatch()`. They sort plans deterministically, reject conflicting writes to the same target, take one preview across all targets, and keep a batch manifest plus per-plan rollback records. The CLI single-profile commands remain compatible while this API is the integration seam for a future batch command.
 
 ---
 
@@ -216,7 +223,7 @@ dsh-forge explain <patch-id>
 | `dsh-forge revert-plan <plan-id> [--force]` | Byte-exact rollback of an applied plan (refuses drifted files unless `--force`) |
 | `dsh-forge profiles [--json]` | List all validated profiles in `profiles/*.json` |
 | `dsh-forge models [--json]` | List all validated model definitions in `models/*.json` |
-| `dsh-forge hosts [--json]` | Detect local agent harness installations (`dsh`, `claude-code`, `codex`, `gemini`, `opencode`, `generic`) |
+| `dsh-forge hosts [--json]` | Detect local agent harness installations across all registered adapters |
 
 `status --json` keeps activation state explicit: `doctor.activation.state` is `inactive`, `configured`, or `active`; `configured` means the prompt channel is written or registered, while `active` means a recent session has loaded the Forge header. `requiresRestart` is true when configuration is present but a new host session is still needed.
 
@@ -232,7 +239,7 @@ npm run check:repo
 # Run unit, integration, security, ASAR, and HTTP API tests
 npm test
 
-# Smoke-compile and preflight all 6 cross-host profiles
+# Smoke-compile and preflight all registered profiles
 npm run verify:profiles
 
 # Full verification suite (tests, profiles, client bundle, Python AST check, anchor drift, privacy scan)

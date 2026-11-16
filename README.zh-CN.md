@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-000?style=flat-square)](LICENSE)
 [![Runtime Dependencies: 0](https://img.shields.io/badge/Runtime%20Deps-0-000?style=flat-square)](package.json)
 
-**面向 DeepSeek Harness (DSH)、Claude Code、Codex CLI、Gemini CLI、OpenCode 及本地开源权重运行时的提示词注入、声明式宿主补丁与确定性跨宿主 Profile 编译器。**
+**面向 DeepSeek Harness (DSH)、Claude Code、Codex CLI、Gemini CLI、OpenCode、Cursor、Windsurf、Aider、Continue 及本地开源权重运行时的提示词注入、声明式宿主补丁与确定性多平台 Profile 编译器。**
 
 ```text
 ┌────────────┐   compose    ┌──────────────┐   section    ┌───────────────┐
@@ -32,7 +32,7 @@
 | **可验证性** | 仅展示前端状态开关 | 3 项运行时证明（`proof1-patches`、`proof2-prompt`、`proof3-session` 会话日志校验）+ 12 项 `doctor` 诊断 |
 | **管理面板体积** | 650+ KB 外部打包产物 | **15 KB 零运行时依赖侧栏面板**（涵盖总览、补丁、提示词、策略、日志） |
 | **备份与事务回滚** | 单文件 `.bak` 覆盖，缺乏版本与篡改保护 | 每次执行生成独立 `manifest.json` + 原始文件 `sha256` + `hostVersion` 防降级覆盖校验 + 符号链接拒绝（`lstatSync`） |
-| **跨宿主可移植性** | 绑定单一宿主 | 纯函数编译器（`core/compile.mjs`）+ 事务执行器（`core/executor.mjs`），一套提示词与策略可编译至 6 类宿主 |
+| **跨宿主可移植性** | 绑定单一宿主 | Adapter registry + 纯函数编译器 + 事务执行器，一套提示词与策略可编译至 10 类宿主 |
 
 ---
 
@@ -53,13 +53,14 @@ dsh-forge/
 │   ├── prompt.mjs          # 确定性多层提示词渲染器与中英混合 Token 估算器
 │   ├── compile.mjs         # 纯函数编译器：(profile, model, mode) -> 机器无关执行计划
 │   ├── executor.mjs        # 事务写入器（mergeBlock, mergeJson, mergeToml, 备份与回滚）
+│   ├── batch.mjs           # 多平台批量编译/应用、冲突检查与补偿回滚
 │   ├── verify.mjs          # 计划内部哈希校验与执行后目标文件完整性校验
 │   ├── profile.mjs         # 面向外部调用的契约导出门面
 │   └── errors.mjs          # 结构化异常 ForgeError 与稳定机器可读错误码
 ├── hosts/                  # 各宿主环境探测器与配置槽位描述符
 │   ├── registry.mjs        # 宿主注册表（detectHost, detectAll）
-│   └── *.mjs               # dsh, claude-code, codex, gemini, opencode, generic
-├── profiles/               # 声明式宿主 Profile 清单（dsh, claude-code, codex, gemini, opencode, generic）
+│   └── *.mjs               # dsh, claude-code, codex, gemini, opencode, generic, cursor, windsurf, aider, continue
+├── profiles/               # 十个已注册宿主的声明式 Profile 清单
 ├── models/                 # 模型族元数据与提示词绑定（deepseek, claude, gpt, gemini, qwen, local）
 ├── prompt/                 # 模块化提示词源
 │   ├── core.md             # 核心执行准则（任务分流、边界处理、A-D 证据分级）
@@ -100,6 +101,10 @@ DSH 是原生且能力最完整的目标宿主；同一套分层提示词与事�
 | **Codex CLI** | `codex` | `AGENTS.md`（受管区块，仅当前项目） | `verified` |
 | **Gemini CLI** | `gemini` | `GEMINI.md`（受管区块）+ `.gemini/settings.json` | `experimental` |
 | **OpenCode** | `opencode` | `AGENTS.md`（受管区块）+ `opencode.json` | `experimental` |
+| **Cursor** | `cursor` | `.cursorrules`（legacy 受管区块） | `experimental` |
+| **Windsurf** | `windsurf` | `.windsurfrules`（legacy 受管区块） | `experimental` |
+| **Aider** | `aider` | `CONVENTIONS.md`（受管区块） | `experimental` |
+| **Continue** | `continue` | `.continue/rules/dsh-forge.md`（受管区块） | `experimental` |
 | **通用 API / 本地权重** | `generic` | 仅输出合成后的 system prompt（`prompt-only`） | `experimental` |
 
 ```bash
@@ -117,6 +122,8 @@ node bin/dsh-forge.js revert-plan <plan-id>
 ```
 
 所有 Profile 均通过 `core/contract.mjs` 校验。Profile 还声明 `risk`、`mutatesHost`、`requiresRestart` 与 `activationEvidence`，用于说明操作影响和验收证据，不会静默改变现有高权限行为。可先执行 `apply --dry-run --preview /tmp/forge-preview.json`，审阅后再用同一个文件配合 `--yes`；若目标文件在预览后发生变化，工具会拒绝覆盖。能力矩阵与 Schema 规范详见 [docs/PORTABILITY.md](docs/PORTABILITY.md)。
+
+多平台编排可使用 `core/batch.mjs` 导出的 `compileMany()` 与 `applyBatch()`：计划会稳定排序，同一目标的冲突写入会被拒绝，预览一次覆盖所有目标，并保留批次 manifest 与各计划的回滚记录。CLI 的单 Profile 命令保持兼容，批量 API 是后续批量命令的集成边界。
 
 ---
 
@@ -230,7 +237,7 @@ npm run check:repo
 # 运行单元、集成、安全边界、ASAR 与 HTTP API 测试套件
 npm test
 
-# 对全部 6 个跨宿主 Profile 执行编译与预检冒烟测试
+# 对全部已注册 Profile 执行编译与预检冒烟测试
 npm run verify:profiles
 
 # 运行完整端到端验证（测试、Profile、前端构建、Python 语法、锚点漂移、隐私扫描）

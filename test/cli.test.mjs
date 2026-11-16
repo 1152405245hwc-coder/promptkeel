@@ -57,7 +57,11 @@ test("profiles and models CLI commands return valid catalogs", () => {
   const profResult = run(["profiles", "--json"]);
   assert.doesNotMatch(profResult.stdout, /\/Users\//);
   const profs = JSON.parse(profResult.stdout);
-  assert.equal(profs.profiles.length, 6);
+  assert.equal(profs.profiles.length, 10);
+  assert.deepEqual(
+    profs.profiles.map((profile) => profile.id).sort(),
+    ["aider", "claude-code", "codex", "continue", "cursor", "dsh", "gemini", "generic", "opencode", "windsurf"],
+  );
   const modelResult = run(["models", "--json"]);
   assert.doesNotMatch(modelResult.stdout, /\/Users\//);
   const mods = JSON.parse(modelResult.stdout);
@@ -81,6 +85,39 @@ test("profile apply preview rejects a changed target", () => {
     const applied = run([...args, "--yes"]);
     assert.equal(applied.status, 1);
     assert.equal(JSON.parse(applied.stdout).code, "preview-conflict");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("profile plan lifecycle uses the explicit state directory", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "forge-cli-state-"));
+  try {
+    const project = path.join(root, "project");
+    const home = path.join(root, "home");
+    const state = path.join(root, "state");
+    fs.mkdirSync(project, { recursive: true });
+    const args = ["apply", "--profile", "codex", "--project", project, "--home", home, "--state", state, "--json"];
+
+    const applied = run([...args, "--yes"]);
+    assert.equal(applied.status, 0, applied.stderr);
+    const appliedBody = JSON.parse(applied.stdout);
+    assert.equal(appliedBody.ok, true);
+    assert.ok(appliedBody.id);
+    assert.equal(fs.existsSync(path.join(state, "plans", appliedBody.id, "manifest.json")), true);
+
+    const plans = run(["plans", "--state", state, "--json"]);
+    assert.equal(plans.status, 0, plans.stderr);
+    assert.equal(JSON.parse(plans.stdout).plans.some((plan) => plan.id === appliedBody.id), true);
+
+    const verified = run(["verify-plan", appliedBody.id, "--state", state, "--json"]);
+    assert.equal(verified.status, 0, verified.stderr);
+    assert.equal(JSON.parse(verified.stdout).ok, true);
+
+    const reverted = run(["revert-plan", appliedBody.id, "--state", state, "--json"]);
+    assert.equal(reverted.status, 0, reverted.stderr);
+    assert.equal(JSON.parse(reverted.stdout).ok, true);
+    assert.equal(JSON.parse(run(["plans", "--state", state, "--json"]).stdout).plans.find((plan) => plan.id === appliedBody.id).status, "reverted");
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

@@ -1,9 +1,9 @@
 # Cross-Host Portability
 
-`dsh-forge` separates host-specific runtime patching from portable agent configuration:
+`dsh-forge` separates host-specific runtime patching from portable agent configuration. The host registry currently includes ten adapters; DSH is one high-permission adapter rather than the core platform assumption:
 
 1. **Native DSH profile (`dsh`)** — applies the 8 version-gated JS patches (`lib/table.mjs`), handles `app.asar` unpacking, and installs `~/.dsh/prompt-inject.md`.
-2. **Host-adapter profiles (`claude-code`, `codex`, `gemini`, `opencode`, `generic`)** — compile the same modular prompt and permission policy into each harness's documented configuration files without patching minified runtime code.
+2. **Host-adapter profiles (`claude-code`, `codex`, `gemini`, `opencode`, `cursor`, `windsurf`, `aider`, `continue`, `generic`)** — compile the same modular prompt into each harness's documented configuration files without patching minified runtime code.
 
 ```
 Profile JSON ──▶ Host Adapter ──▶ Compiler (core/compile) ──▶ Executor (core/executor)
@@ -23,8 +23,12 @@ Profile JSON ──▶ Host Adapter ──▶ Compiler (core/compile) ──▶ 
 | Gemini CLI | `gemini` | `experimental` | `GEMINI.md` managed block | `.gemini/settings.json` (`autoAccept`) | byte-exact | CLI setting keys may vary |
 | OpenCode | `opencode` | `experimental` | `AGENTS.md` managed block | `opencode.json` (`permission`) | byte-exact | project-scoped |
 | Generic API | `generic` | `experimental` | system message only | unsupported | n/a | caller consumes `plan.prompt.text` |
+| Cursor | `cursor` | `experimental` | `.cursorrules` legacy managed block | unsupported | byte-exact | active session unobservable |
+| Windsurf | `windsurf` | `experimental` | `.windsurfrules` legacy managed block | unsupported | byte-exact | active session unobservable |
+| Aider | `aider` | `experimental` | `CONVENTIONS.md` managed block | unsupported | byte-exact | file must be read by Aider |
+| Continue | `continue` | `experimental` | `.continue/rules/dsh-forge.md` managed block | unsupported | byte-exact | active session unobservable |
 
-`verified` means the full `compile → apply → verify-plan → revert-plan` cycle is covered by automated tests for the profile's target files.
+`verified` means the full `compile → apply → verify-plan → revert-plan` cycle is covered by automated tests for the profile's target files. It does not by itself prove that a real host session loaded the configuration; adapters report runtime activation separately as `active`, `unobservable`, or `NOT_COVERED`.
 
 Each profile may also declare `risk`, `mutatesHost`, `requiresRestart`, and `activationEvidence`. These are operational metadata used by status, diagnostics, and the control panel. They document impact and proof requirements without changing the profile's existing behavior.
 
@@ -40,7 +44,7 @@ core.md ──▶ models/<model>.md ──▶ hosts/<host>.md ──▶ modes/<m
 |---|---|---|---|
 | `deepseek` | `prompt/models/deepseek.md` | `dsh`, `generic` | Concise Chinese output, tool-first verification, `path:line` references |
 | `claude` | `prompt/models/claude.md` | `claude-code`, `generic` | Direct artifact delivery without policy preamble |
-| `gpt` | `prompt/models/gpt.md` | `codex`, `generic` | Decisive answer with falsifier and copy-pasteable commands |
+| `gpt` | `prompt/models/gpt.md` | `codex`, `cursor`, `windsurf`, `aider`, `continue`, `generic` | Decisive answer with falsifier and copy-pasteable commands |
 | `gemini` | `prompt/models/gemini.md` | `gemini`, `generic` | Numbered multi-step execution and verification evidence |
 | `qwen` | `prompt/models/qwen.md` | `opencode`, `generic` | Simplified Chinese default, direct tool execution |
 | `local` | `prompt/models/local.md` | `generic` | Short single-task paragraphs for open-weight models |

@@ -4,6 +4,6 @@
   "name": "GPT",
   "version": "0.1.0",
   "prompt": "models/gpt.md",
-  "hosts": ["codex","generic"],
+  "hosts": ["codex","cursor","windsurf","aider","continue","generic"],
   "effects": ["P", "T", "S", "W", "M"]
 }

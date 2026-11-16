@@ -309,14 +309,20 @@ function forgeContext() {
   const profile = loadProfile(profileId);
   const modelId = optionValue("model", profile.model || "deepseek");
   const model = loadModel(modelId);
+  // Keep the executor environment as a flat object.  The compile context also
+  // exposes these values at the top level so adapters can observe the same
+  // host/state selection as the executor.
+  const stateRoot = optionValue("state", process.env.DSH_FORGE_STATE || undefined);
+  const hostRoot = optionValue("host-root", process.env.DSH_FORGE_HOST_ROOT || undefined);
+  const home = optionValue("home", process.env.HOME || process.env.USERPROFILE);
+  const env = { stateRoot, hostRoot, dshHome: home ? path.join(home, ".dsh") : undefined };
   const context = {
     mode: optionValue("mode", null),
     projectRoot: optionValue("project", process.cwd()),
-    home: optionValue("home", process.env.HOME || process.env.USERPROFILE),
-    env: {
-      stateRoot: optionValue("state", process.env.DSH_FORGE_STATE || undefined),
-      hostRoot: optionValue("host-root", process.env.DSH_FORGE_HOST_ROOT || undefined),
-    },
+    home,
+    stateRoot,
+    hostRoot,
+    env,
     budget: Number(optionValue("budget", 3200)),
   };
   const plan = compile(profile, model, context);
@@ -344,7 +350,7 @@ function cmdForgeApply() {
   const previewPath = optionValue("preview", null);
   let preview = null;
   if (previewPath && !isDry) preview = JSON.parse(fs.readFileSync(path.resolve(previewPath), "utf8"));
-  const result = applyPlan(plan, { ...context, dryRun: isDry, yes: flags.has("--yes"), preview });
+  const result = applyPlan(plan, { ...context, env: context.env, dryRun: isDry, yes: flags.has("--yes"), preview });
   if (previewPath && isDry && result.preview) {
     ensureDir(path.dirname(path.resolve(previewPath)));
     fs.writeFileSync(path.resolve(previewPath), JSON.stringify(result.preview, null, 2) + "\n");
@@ -355,13 +361,19 @@ function cmdForgeApply() {
 }
 
 function cmdPlans() {
-  out({ plans: listPlans({ stateRoot: optionValue("state", process.env.DSH_FORGE_STATE || undefined) }) }, flags.has("--json"));
+  out({ plans: listPlans({
+    stateRoot: optionValue("state", process.env.DSH_FORGE_STATE || undefined),
+    hostRoot: optionValue("host-root", process.env.DSH_FORGE_HOST_ROOT || undefined),
+  }) }, flags.has("--json"));
 }
 
 function cmdVerifyPlan() {
   const id = positional[0];
   if (!id) { usage(); process.exitCode = 2; return; }
-  const result = verifyPlan(id, { stateRoot: optionValue("state", process.env.DSH_FORGE_STATE || undefined) });
+  const result = verifyPlan(id, {
+    stateRoot: optionValue("state", process.env.DSH_FORGE_STATE || undefined),
+    hostRoot: optionValue("host-root", process.env.DSH_FORGE_HOST_ROOT || undefined),
+  });
   out(result, flags.has("--json"));
   process.exitCode = result.ok ? 0 : 1;
 }
@@ -369,7 +381,13 @@ function cmdVerifyPlan() {
 function cmdRevertPlan() {
   const id = positional[0] || optionValue("plan", null);
   if (!id) { usage(); process.exitCode = 2; return; }
-  const result = revertPlan(id, { force: flags.has("--force"), env: { stateRoot: optionValue("state", process.env.DSH_FORGE_STATE || undefined) } });
+  const result = revertPlan(id, {
+    force: flags.has("--force"),
+    env: {
+      stateRoot: optionValue("state", process.env.DSH_FORGE_STATE || undefined),
+      hostRoot: optionValue("host-root", process.env.DSH_FORGE_HOST_ROOT || undefined),
+    },
+  });
   out(result, flags.has("--json"));
   process.exitCode = result.ok ? 0 : 1;
 }

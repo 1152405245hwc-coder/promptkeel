@@ -3,11 +3,14 @@ import assert from "node:assert/strict";
 import { loadProfile, loadModel, listProfiles, listModels, PROFILE_SCHEMA } from "../core/contract.mjs";
 import { compile, resolveTargetPath } from "../core/compile.mjs";
 import { preflight } from "../core/capabilities.mjs";
+import { HOST_IDS, listAdapters } from "../hosts/registry.mjs";
 
-const expected = ["claude-code", "codex", "dsh", "gemini", "generic", "opencode"];
+const expected = [...HOST_IDS].sort();
+const expectedAdapters = ["aider", "claude-code", "codex", "continue", "cursor", "dsh", "gemini", "generic", "opencode", "windsurf"];
 
 test("all shipped profiles validate and compile within budget", () => {
   assert.deepEqual(listProfiles().map((p) => p.id), expected);
+  assert.deepEqual(listAdapters().map((adapter) => adapter.id), expectedAdapters);
   for (const profile of listProfiles()) {
     const model = listModels().find((m) => m.id === profile.model);
     assert.ok(model, `${profile.id} has default model`);

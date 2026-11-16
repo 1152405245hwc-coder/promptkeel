@@ -1,0 +1,24 @@
+{
+  "schema": "forge.profile/v1",
+  "id": "continue",
+  "name": "Continue project rules",
+  "version": "0.1.0",
+  "host": "continue",
+  "support": "experimental",
+  "prompt": { "core": "core.md" },
+  "capabilities": {
+    "prompt": "experimental",
+    "approval": "unsupported",
+    "sandbox": "unsupported",
+    "tools": "unsupported",
+    "rollback": "verified"
+  },
+  "targets": [
+    { "kind": "markdown-block", "path": ".continue/rules/dsh-forge.md", "scope": "project", "blockId": "system" }
+  ],
+  "model": "gpt",
+  "risk": "medium",
+  "mutatesHost": true,
+  "requiresRestart": false,
+  "activationEvidence": ["config", "session"]
+}

@@ -25,5 +25,5 @@ Earlier community patch bundles modified 80+ minified strings across UI componen
 ## Out of Scope
 
 - Built-in package managers or background auto-updaters (handled by `pnpm` and `dsh-forge upgrade`).
-- Patching minified JavaScript on non-DSH harnesses (Claude Code, Codex, Gemini, and OpenCode profiles write only to documented Markdown, JSON, and TOML configuration files).
+- Patching minified JavaScript on non-DSH harnesses (all non-DSH profiles write only to documented Markdown, JSON, or TOML configuration files; Cursor, Windsurf, Aider, and Continue are experimental and their active sessions remain unobservable).
 - Modifying base model weights by default (`tools/abliterate/` is strictly an opt-in local script for open-weight models).

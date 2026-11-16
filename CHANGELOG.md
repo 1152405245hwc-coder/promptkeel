@@ -14,6 +14,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Sem
 
 ### Changed
 
+- Host support now uses a normalized adapter registry and includes Cursor, Windsurf, Aider, and Continue profiles; DSH remains one adapter with its native patch provider.
+- Added `compileMany()`/`applyBatch()` for deterministic multi-platform plans, target conflict detection, batch previews, locks, and compensation rollback.
 - `doctor` and `status --json` now report configuration, host readiness, session loading, and restart requirements as separate activation fields.
 - Privacy checks ignore the local `.dsh-forge-state/` plan ledger, which is runtime state and is now excluded from Git.
 - Profiles now expose risk, host mutation, restart, and activation-evidence metadata; existing high-permission behavior remains unchanged.

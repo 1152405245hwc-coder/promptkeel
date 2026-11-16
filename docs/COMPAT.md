@@ -22,4 +22,4 @@ The 8 patches modify 5 files across 4 packages under `node_modules/@deepseek-ai/
 - **Operating Systems**:
   - macOS layout (`/Applications/DeepSeek Harness.app/Contents/Resources/app/dsh` or sealed `app.asar`) is verified.
   - Linux and Windows candidate paths are built into `lib/paths.mjs` and can be overridden with `--host-root` or `DSH_FORGE_HOST_ROOT`.
-  - Cross-host profiles (`claude-code`, `codex`, `gemini`, `opencode`, `generic`) are platform-independent across macOS, Linux, and Windows. See [PORTABILITY.md](PORTABILITY.md).
+  - Cross-host profiles (`claude-code`, `codex`, `gemini`, `opencode`, `cursor`, `windsurf`, `aider`, `continue`, `generic`) are platform-independent across macOS, Linux, and Windows at the configuration-plan layer. Runtime activation for experimental adapters remains `NOT_COVERED`. See [PORTABILITY.md](PORTABILITY.md).

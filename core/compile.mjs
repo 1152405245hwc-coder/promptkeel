@@ -1,8 +1,27 @@
 import path from "node:path";
 import { sha256, renderPrompt } from "./prompt.mjs";
 import { preflight } from "./capabilities.mjs";
-import { validateProfile, validateModel } from "./contract.mjs";
+import { normalizeProfile, validateModel } from "./contract.mjs";
 import { fail } from "./errors.mjs";
+import { getAdapter } from "../hosts/registry.mjs";
+import { detectWithAdapter } from "../hosts/adapter.mjs";
+
+function targetMetadataEnabled(profile) {
+  return Boolean(profile.__adapterExplicit)
+    || Boolean(profile.__activationExplicit)
+    || Boolean(profile.__targetMetadataExplicit);
+}
+
+function withTargetMetadata(action, target, profile) {
+  if (!targetMetadataEnabled(profile)) return action;
+  return {
+    ...action,
+    targetId: target.id,
+    required: target.required,
+    owner: target.owner,
+    conflict: target.conflict,
+  };
+}
 
 export function resolveTargetPath(target, { home = process.env.HOME || process.env.USERPROFILE, projectRoot = process.cwd() } = {}) {
   const scope = target.scope || "project";
@@ -21,24 +40,69 @@ export function resolveTargetPath(target, { home = process.env.HOME || process.e
  * Compile a profile into a pure data plan. This function performs no writes.
  * Identical inputs must produce an identical planId on every machine.
  */
-export function compile(profile, model, { mode = null, home, projectRoot, promptRoot, budget = 3200 } = {}) {
-  validateProfile(profile);
+export function compile(profile, model, { mode = null, home, projectRoot, promptRoot, budget = 3200, env } = {}) {
+  const normalizedProfile = normalizeProfile(profile);
   validateModel(model);
   const maxTokens = Number(budget);
   if (!Number.isInteger(maxTokens) || maxTokens <= 0) fail("budget", `budget must be a positive integer, got ${budget}`);
-  if (!model.hosts.includes(profile.host)) {
-    fail("model-host-mismatch", `model ${model.id} does not target host ${profile.host}`, { model: model.id, host: profile.host });
+  if (!model.hosts.includes(normalizedProfile.host)) {
+    fail("model-host-mismatch", `model ${model.id} does not target host ${normalizedProfile.host}`, { model: model.id, host: normalizedProfile.host });
   }
-  const pre = preflight(profile, { host: profile.host, model });
+  const adapter = getAdapter(normalizedProfile.adapter || normalizedProfile.host);
+  const adapterContext = { home, projectRoot, mode, profile: normalizedProfile, model, env };
+  let detection;
+  let adapterPreflight = { ok: true, problems: [], warnings: [] };
+  try {
+    detection = detectWithAdapter(adapter, adapterContext);
+    if (typeof adapter.preflight === "function") {
+      adapterPreflight = adapter.preflight(normalizedProfile, detection, adapterContext) || { ok: true, problems: [], warnings: [] };
+    }
+  } catch (error) {
+    if (error?.code) throw error;
+    fail("adapter-unavailable", `adapter ${adapter.id} preflight failed: ${error.message}`, { adapter: adapter.id });
+  }
+  if (adapterPreflight.ok === false) {
+    fail("adapter-unavailable", `adapter ${adapter.id} preflight failed`, {
+      adapter: adapter.id,
+      problems: adapterPreflight.problems || [],
+      warnings: adapterPreflight.warnings || [],
+    });
+  }
+  const pre = preflight(normalizedProfile, { host: normalizedProfile.host, model });
   if (!pre.ok) fail("preflight", "profile preflight failed", { problems: pre.problems });
-  const composed = renderPrompt({ profile, model, mode, root: promptRoot });
+  const composed = renderPrompt({ profile: normalizedProfile, model, mode, root: promptRoot });
   const actions = [];
-  for (const target of profile.targets) {
+  const compileContext = {
+    profile: normalizedProfile,
+    model,
+    mode,
+    composed,
+    home,
+    projectRoot,
+    promptRoot,
+    env,
+    adapter,
+  };
+  for (const target of normalizedProfile.targets) {
     const abs = target.kind === "dsh-patches"
       ? null
       : target.kind === "prompt-only"
         ? null
         : resolveTargetPath(target, { home, projectRoot });
+    if (typeof adapter.compileTarget === "function") {
+      const custom = adapter.compileTarget(target, { ...compileContext, path: abs });
+      if (custom !== undefined) {
+        const customActions = Array.isArray(custom) ? custom : [custom];
+        for (const action of customActions) {
+          if (!action || typeof action !== "object") fail("adapter-action", `adapter ${adapter.id} returned an invalid action`, { target: target.id });
+          actions.push(withTargetMetadata(action, target, normalizedProfile));
+        }
+        continue;
+      }
+    }
+    const targetMetadata = targetMetadataEnabled(normalizedProfile)
+      ? { targetId: target.id, required: target.required, owner: target.owner, conflict: target.conflict }
+      : {};
     switch (target.kind) {
       case "markdown-block":
         actions.push({
@@ -48,6 +112,7 @@ export function compile(profile, model, { mode = null, home, projectRoot, prompt
           scope: target.scope || "project",
           blockId: target.blockId || "system",
           content: composed.text,
+          ...targetMetadata,
         });
         break;
       case "file":
@@ -57,6 +122,7 @@ export function compile(profile, model, { mode = null, home, projectRoot, prompt
           path: abs,
           scope: target.scope || "project",
           content: composed.text,
+          ...targetMetadata,
         });
         break;
       case "json-merge":
@@ -66,6 +132,7 @@ export function compile(profile, model, { mode = null, home, projectRoot, prompt
           path: abs,
           scope: target.scope || "project",
           value: target.value,
+          ...targetMetadata,
         });
         break;
       case "toml-merge":
@@ -75,13 +142,14 @@ export function compile(profile, model, { mode = null, home, projectRoot, prompt
           path: abs,
           scope: target.scope || "project",
           value: target.value,
+          ...targetMetadata,
         });
         break;
       case "dsh-patches":
-        actions.push({ op: "dsh-patches", kind: target.kind, patches: target.patches || "all" });
+        actions.push({ op: "dsh-patches", kind: target.kind, patches: target.patches || "all", ...targetMetadata });
         break;
       case "prompt-only":
-        actions.push({ op: "prompt-only", kind: target.kind });
+        actions.push({ op: "prompt-only", kind: target.kind, ...targetMetadata });
         break;
       default:
         fail("target-kind", `unsupported target kind ${target.kind}`);
@@ -93,7 +161,7 @@ export function compile(profile, model, { mode = null, home, projectRoot, prompt
     return ka < kb ? -1 : ka > kb ? 1 : 0;
   });
   // planId must be machine-independent: never hash absolute target paths.
-  const canonicalTargets = profile.targets.map((target) => ({
+  const canonicalTargets = normalizedProfile.targets.map((target) => ({
     kind: target.kind,
     scope: target.scope || "project",
     path: target.path || null,
@@ -101,27 +169,45 @@ export function compile(profile, model, { mode = null, home, projectRoot, prompt
     value: target.value || null,
     patches: target.patches || null,
   }));
+  const metadataEnabled = targetMetadataEnabled(normalizedProfile);
   const digestInput = JSON.stringify({
-    profile: { id: profile.id, version: profile.version, host: profile.host },
+    profile: {
+      id: normalizedProfile.id,
+      version: normalizedProfile.version,
+      host: normalizedProfile.host,
+      ...(metadataEnabled ? { adapter: adapter.id, adapterVersion: adapter.adapterVersion } : {}),
+    },
     model: { id: model.id, version: model.version || null },
     mode,
     promptSha: composed.sha256,
-    targets: canonicalTargets,
+    targets: metadataEnabled
+      ? normalizedProfile.targets.map((target, index) => ({ ...canonicalTargets[index], id: target.id, required: target.required, owner: target.owner, conflict: target.conflict }))
+      : canonicalTargets,
   });
   const planId = sha256(digestInput).slice(0, 16);
   return {
     schema: "forge.plan/v1",
     planId,
     profile: {
-      id: profile.id,
-      version: profile.version,
-      name: profile.name,
-      host: profile.host,
-      support: profile.support || pre.support,
-      risk: profile.risk || pre.risk,
-      mutatesHost: profile.mutatesHost ?? false,
-      requiresRestart: profile.requiresRestart ?? profile.host !== "generic",
-      activationEvidence: profile.activationEvidence || ["config", "session"],
+      id: normalizedProfile.id,
+      version: normalizedProfile.version,
+      name: normalizedProfile.name,
+      host: normalizedProfile.host,
+      adapter: adapter.id,
+      support: normalizedProfile.support || pre.support,
+      risk: normalizedProfile.risk || pre.risk,
+      mutatesHost: normalizedProfile.mutatesHost ?? false,
+      requiresRestart: normalizedProfile.requiresRestart ?? (normalizedProfile.activation.restart === "required" || normalizedProfile.host !== "generic"),
+      activationEvidence: normalizedProfile.activation.evidence,
+      platform: normalizedProfile.platform,
+      activation: normalizedProfile.activation,
+    },
+    adapter: {
+      id: adapter.id,
+      adapterVersion: adapter.adapterVersion,
+      schema: adapter.schema,
+      detection,
+      preflight: { ok: adapterPreflight.ok !== false, warnings: adapterPreflight.warnings || [] },
     },
     model: { id: model.id, version: model.version || null },
     mode,

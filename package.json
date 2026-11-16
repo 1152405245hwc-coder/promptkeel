@@ -1,7 +1,7 @@
 {
   "name": "dsh-forge",
   "version": "0.1.0",
-  "description": "Prompt injection, declarative host patches, and deterministic cross-host profiles for DeepSeek Harness (DSH), Claude Code, Codex CLI, Gemini CLI, and OpenCode",
+  "description": "Prompt injection, declarative host adapters, and deterministic multi-platform profiles for DSH, Claude Code, Codex CLI, Gemini CLI, OpenCode, Cursor, Windsurf, Aider, and Continue",
   "type": "module",
   "license": "MIT",
   "bin": {
@@ -47,6 +47,10 @@
     "codex",
     "gemini-cli",
     "opencode",
+    "cursor",
+    "windsurf",
+    "aider",
+    "continue",
     "prompt",
     "patching",
     "cross-host",

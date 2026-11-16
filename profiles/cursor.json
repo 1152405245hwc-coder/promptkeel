@@ -1,0 +1,24 @@
+{
+  "schema": "forge.profile/v1",
+  "id": "cursor",
+  "name": "Cursor project rules",
+  "version": "0.1.0",
+  "host": "cursor",
+  "support": "experimental",
+  "prompt": { "core": "core.md" },
+  "capabilities": {
+    "prompt": "experimental",
+    "approval": "unsupported",
+    "sandbox": "unsupported",
+    "tools": "unsupported",
+    "rollback": "verified"
+  },
+  "targets": [
+    { "kind": "markdown-block", "path": ".cursorrules", "scope": "project", "blockId": "system" }
+  ],
+  "model": "gpt",
+  "risk": "medium",
+  "mutatesHost": true,
+  "requiresRestart": false,
+  "activationEvidence": ["config", "session"]
+}

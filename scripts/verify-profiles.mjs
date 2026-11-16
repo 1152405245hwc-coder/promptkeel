@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-import { loadProfile, listModels } from "../core/contract.mjs";
+import { loadProfile, listModels, listProfiles } from "../core/contract.mjs";
 import { compile } from "../core/compile.mjs";
 import { preflight } from "../core/capabilities.mjs";
 
-const profiles = ["dsh", "claude-code", "codex", "gemini", "opencode", "generic"];
+const profiles = listProfiles().map((profile) => profile.id).sort();
 let failed = 0;
 for (const id of profiles) {
   try {
