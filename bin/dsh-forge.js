@@ -22,6 +22,8 @@ import { normalizeContext } from "../core/context.mjs";
 import { listPersonas } from "../core/persona.mjs";
 import { renderShim } from "../core/shim.mjs";
 import { gradeTable } from "../core/grades.mjs";
+import { acquireLock, createConsole, renderOverview, CONSOLE_HOST, CONSOLE_PORT } from "../core/console.mjs";
+import { consoleState } from "../lib/console-state.mjs";
 
 registerProvider(dshProvider);
 
@@ -44,6 +46,8 @@ const { values: opts, positionals } = parseArgs({
     binary: { type: "string" },
     prompt: { type: "string" },
     env: { type: "string", multiple: true },
+    port: { type: "string" },
+    once: { type: "boolean" },
     "persona-mode": { type: "string" },
     out: { type: "string" },
     budget: { type: "string" },
@@ -109,6 +113,8 @@ Usage:
   dsh-forge personas [--json]                   list bundled personas
   dsh-forge channels [--all] [--json]           show delivery channel per action
   dsh-forge grades [--json]                     show how much of the host prompt each profile displaces
+  dsh-forge console [--port 7788] [--state <dir>]   serve the read-only console on 127.0.0.1
+  dsh-forge console --once [--json]             render the overview page and exit
   dsh-forge shim --binary <path> [--prompt <file>] [--env K=V] [--out <file>]
   dsh-forge compile [profile] [--model <id>] [--mode <mode>] [--persona <id>] [--persona-mode off|replace|strict|append] [--home <dir>] [--project <dir>] [--budget 3200] [--out plan.json]
   dsh-forge apply --profile <profile> [--model <model>] [--home <dir>] [--project <dir>] [--state <dir>] [--preview file] [--dry-run|--yes]
@@ -354,6 +360,42 @@ function cmdPersonas() {
   rows.forEach((row) => process.stdout.write(`${row.id.padEnd(12)} ${row.mode.padEnd(8)} ${row.harness.padEnd(10)} ${row.chars} chars  ${row.name}\n`));
 }
 
+function cmdConsole() {
+  const stateRoot = optionValue("state", process.env.DSH_FORGE_STATE || path.join(optionValue("home", process.env.HOME || process.env.USERPROFILE || "."), ".dsh", "dsh-forge"));
+  const projectRoot = optionValue("project", process.cwd());
+  const state = () => consoleState({ stateRoot }, { projectRoot });
+  if (flags.has("--once")) {
+    const snapshot = state();
+    if (flags.has("--json")) return out({ ok: true, state: snapshot }, true);
+    return process.stdout.write(renderOverview(snapshot));
+  }
+  const port = Number(optionValue("port", CONSOLE_PORT));
+  if (!Number.isInteger(port) || port < 0 || port > 65535) {
+    process.exitCode = 1;
+    return out({ ok: false, code: "console-port", error: `invalid port ${optionValue("port", null)}` }, true);
+  }
+  const lock = acquireLock(stateRoot);
+  const server = createConsole({ state, port });
+  server.on("error", (error) => {
+    lock.release();
+    process.exitCode = 1;
+    out({ ok: false, code: "console-listen", error: error.message }, true);
+  });
+  server.listen(port, CONSOLE_HOST, () => {
+    const actual = server.address().port;
+    banner(`console http://${CONSOLE_HOST}:${actual}`);
+    process.stdout.write(`read-only · state ${stateRoot} · ctrl-c to stop\n`);
+  });
+  const stop = () => {
+    server.close(() => {
+      lock.release();
+      process.exit(0);
+    });
+  };
+  process.on("SIGINT", stop);
+  process.on("SIGTERM", stop);
+}
+
 function cmdGrades() {
   const rows = gradeTable(listProfiles());
   if (flags.has("--json")) return out({ ok: true, grades: rows }, true);
@@ -522,6 +564,7 @@ try {
     case "channels": cmdChannels(); break;
     case "shim": cmdShim(); break;
     case "grades": cmdGrades(); break;
+    case "console": cmdConsole(); break;
     case "version": process.stdout.write(`${VERSION}\n`); break;
     default: usage();
   }

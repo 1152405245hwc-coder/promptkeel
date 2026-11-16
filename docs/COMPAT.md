@@ -2,16 +2,16 @@
 
 | DSH Version | dsh-forge | Status |
 |---|---|---|
-| `0.2.1-rc.1` – `0.2.2-rc.3` | `0.1.x` | Verified on `0.2.2-rc.2` and `0.2.2-rc.3` (8/8 anchors match across 5 files; `apply` and `revert` restore identical `sha256` hashes, including packed `app.asar` builds) |
+| `0.2.1-rc.1` – `0.2.2-rc.3` | `0.1.x` | Verified on `0.2.2-rc.2` and `0.2.2-rc.3` (15/15 anchors match across 10 files; `apply` and `revert` restore identical `sha256` hashes, including packed `app.asar` builds) |
 | `< 0.2.1` | — | Unsupported (`systemPrompt.section` and client slot packages unavailable) |
 | `>= 0.3.0` | — | Blocked by default version range until anchors are verified with `dsh-forge adapt` |
 
 ## Handling DSH Upgrades
 
-The 8 patches modify 5 files across 4 packages under `node_modules/@deepseek-ai/`. When DSH updates:
+The 15 patches modify 10 files across 9 packages under `node_modules/@deepseek-ai/`. When DSH updates:
 
-1. Run `dsh-forge adapt` to inspect all 8 patch anchors without modifying disk files.
-2. If all 8 report `ready`, run `dsh-forge upgrade --yes`.
+1. Run `dsh-forge adapt` to inspect all 15 patch anchors without modifying disk files.
+2. If all 15 report `ready`, run `dsh-forge upgrade --yes`.
 3. If any patch reports `miss` or `partial`, run `dsh-forge explain <patch-id>` to inspect the target file and add a versioned entry to `variants` in `lib/table.mjs`.
 4. `dsh-forge revert` checks `manifest.hostVersion` against the current DSH version and refuses to write older backups over a newer host unless `--force` is specified.
 

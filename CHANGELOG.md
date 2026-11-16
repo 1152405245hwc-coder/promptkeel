@@ -6,6 +6,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Sem
 
 ### Added
 
+- Read-only console: `dsh-forge console [--port 7788] [--state <dir>]` serves doctor checks, patch layers, channel counts, delivery grades and personas on `127.0.0.1`, with `/api/state` as JSON and `--once` for a printed overview. `core/console.mjs` keeps a single instance per state directory through `console.pid`, answers `405` to non-`GET` requests, and renders state-builder failures into the response.
+
 - Slash channel is real: a `command` target kind renders a markdown command file with frontmatter, and the `claude-code` profile now delivers `.claude/commands/dsh-forge.md`.
 - Delivery grades: `core/grades.mjs` records `replace-full` / `replace-with-residue` / `append-only` / `shim-only` / `unobservable` per host with its mechanism and source, `plan.delivery` carries the grade, and `dsh-forge grades` prints the table.
 - Channel model: `core/channels.mjs` classifies every compiled action as `project` / `install` / `shim` / `slash` / `none` with an effect timing, `plan.channels` carries the summary, and `dsh-forge channels [--all]` prints one profile or the whole matrix. `core/shim.mjs` plus `dsh-forge shim` render a deterministic POSIX wrapper that exports the prompt and execs the host binary.

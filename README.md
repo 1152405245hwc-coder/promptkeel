@@ -139,7 +139,7 @@ pnpm add /path/to/dsh-forge
 # 2) Register dsh-forge in dsh.profile.bundles (automatically ordered after dsh-purge* with backup)
 npx dsh-forge profile enable --profile desktop
 
-# 3) Run the 12-check diagnostic, preflight, and apply the 8 host patches
+# 3) Run the 12-check diagnostic, preflight, and apply the 15 host patches
 npx dsh-forge doctor
 npx dsh-forge apply --dry-run
 npx dsh-forge apply --yes
@@ -202,6 +202,10 @@ Every action a profile compiles belongs to one channel: `project` (repository fi
 
 `prompt/personas/*.md` holds prompt-level identity layers that travel across adapters. A persona composes with the host prompt in one of four modes: `replace` keeps host working rules while dropping identity claims, `strict` keeps the persona alone, `append` adds it after the host prompt, `off` disables it. `dsh-forge personas` lists what ships; `dsh-forge compile codex --persona engineer --persona-mode strict` selects one, and `off` reproduces the plain build byte for byte. Details in [docs/PERSONAS.md](docs/PERSONAS.md).
 
+## Console
+
+`dsh-forge console` serves the same facts on `http://127.0.0.1:7788`: doctor checks, patch layers, channel counts, delivery grades and personas, plus the whole state as JSON on `/api/state`. Pages are read-only (non-`GET` requests get `405`), one instance owns a state directory through `console.pid`, and `--once` prints the overview instead of serving. Details in [docs/CONSOLE.md](docs/CONSOLE.md).
+
 ## CLI Reference
 
 ### DeepSeek Harness (`dsh`) Native Commands
@@ -210,7 +214,7 @@ Every action a profile compiles belongs to one channel: `project` (repository fi
 | :--- | :--- |
 | `dsh-forge doctor [--profile desktop\|web] [--json]` | Run 12 host, version, anchor, token budget, conflict, and profile bundle checks |
 | `dsh-forge status [--profile desktop\|web] [--json]` | Print `doctor` report, active workspace policy, profile status, and backups |
-| `dsh-forge apply [--dry-run\|--yes]` | Preflight or atomically apply the 8 host patches (automatically unpacks sealed `app.asar` on `--yes`) |
+| `dsh-forge apply [--dry-run\|--yes]` | Preflight or atomically apply the 15 host patches (automatically unpacks sealed `app.asar` on `--yes`) |
 | `dsh-forge unpack [--dry-run\|--yes]` | Unpack sealed `Contents/Resources/app.asar` into `Contents/Resources/app` |
 | `dsh-forge upgrade [--dry-run\|--yes]` | Revert same-version backup if present and re-apply the current patch table |
 | `dsh-forge revert [--id <backup>] [--force]` | Restore host files from a backup manifest with `sha256` and `hostVersion` verification |
@@ -269,8 +273,12 @@ npm run pack:check
 ## Documentation
 
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Module layering, sequence diagrams, patch state machine, and cross-host compiler pipeline.
-- **[docs/PATCHES.md](docs/PATCHES.md)** — Detailed specification of the 8 declarative host patches and multi-version `variants`.
+- **[docs/PATCHES.md](docs/PATCHES.md)** — Detailed specification of the 15 declarative host patches and multi-version `variants`.
 - **[docs/COMPAT.md](docs/COMPAT.md)** — Supported DSH versions (`0.2.1-rc.1` – `0.2.2-rc.3`), host upgrade workflow, and runtime requirements.
+- **[docs/GRADES.md](docs/GRADES.md)** — Delivery grades per host with the mechanism and evidence behind each one.
+- **[docs/CHANNELS.md](docs/CHANNELS.md)** — Channel classification, effect timing, and the `shim` wrapper.
+- **[docs/PERSONAS.md](docs/PERSONAS.md)** — Persona file format and the four composition modes.
+- **[docs/CONSOLE.md](docs/CONSOLE.md)** — Loopback console routes, single-instance lock, and why the page matches the CLI.
 - **[docs/DEBUG.md](docs/DEBUG.md)** — Troubleshooting decision tree, common error codes, and post-install smoke checks.
 - **[docs/DESIGN.md](docs/DESIGN.md)** — Architectural rationale and engineering trade-offs.
 - **[docs/PORTABILITY.md](docs/PORTABILITY.md)** — Cross-host capability matrix, model overlays, and `forge.profile/v1` schema.
