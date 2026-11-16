@@ -37,6 +37,24 @@ test("compileMany rejects conflicting writes to the same target", () => {
   assert.ok(result.conflicts.length > 0);
 });
 
+test("serialized batch apply is explicit and preserves target actions", () => {
+  const root = tmp();
+  const project = path.join(root, "project");
+  const state = path.join(root, "state");
+  fs.mkdirSync(project, { recursive: true });
+  const batch = compileMany([entry("codex", project)]);
+  const serialized = JSON.parse(JSON.stringify(batch));
+  const preview = applyBatch(serialized, { dryRun: true, env: { stateRoot: state } });
+  assert.equal(preview.ok, true);
+  const blocked = applyBatch(serialized, { yes: true, env: { stateRoot: state }, preview: preview.preview });
+  assert.equal(blocked.ok, false);
+  assert.equal(blocked.code, "experimental-disabled");
+  const applied = applyBatch(serialized, { yes: true, allowExperimental: true, env: { stateRoot: state }, preview: preview.preview });
+  assert.equal(applied.ok, true);
+  assert.equal(fs.existsSync(path.join(project, "AGENTS.md")), true);
+  for (const plan of applied.plans) assert.equal(revertPlan(plan.id, { env: { stateRoot: state } }).ok, true);
+});
+
 test("applyBatch refuses a file changed after its batch preview", () => {
   const root = tmp();
   const project = path.join(root, "project");
@@ -48,7 +66,7 @@ test("applyBatch refuses a file changed after its batch preview", () => {
   const preview = applyBatch(batch, { dryRun: true, env: { stateRoot: state } });
   assert.equal(preview.ok, true);
   fs.appendFileSync(target, "changed\n");
-  const applied = applyBatch(batch, { yes: true, env: { stateRoot: state }, preview: preview.preview });
+  const applied = applyBatch(batch, { yes: true, allowExperimental: true, env: { stateRoot: state }, preview: preview.preview });
   assert.equal(applied.ok, false);
   assert.equal(applied.code, "preview-conflict");
   assert.match(fs.readFileSync(target, "utf8"), /changed/);
@@ -60,9 +78,11 @@ test("applyBatch writes a manifest and per-plan rollback restores bytes", () => 
   const state = path.join(root, "state");
   fs.mkdirSync(project, { recursive: true });
   const batch = compileMany([entry("codex", project), entry("cursor", project)]);
-  const applied = applyBatch(batch, { yes: true, env: { stateRoot: state } });
+  const preview = applyBatch(batch, { dryRun: true, env: { stateRoot: state } });
+  assert.equal(preview.ok, true);
+  const applied = applyBatch(batch, { yes: true, allowExperimental: true, env: { stateRoot: state }, preview: preview.preview });
   assert.equal(applied.ok, true);
-  assert.equal(fs.existsSync(path.join(state, "batches", batch.batchId, "manifest.json")), true);
+  assert.equal(fs.existsSync(path.join(applied.dir, "manifest.json")), true);
   for (const plan of applied.plans) assert.equal(revertPlan(plan.id, { env: { stateRoot: state } }).ok, true);
   assert.equal(fs.existsSync(path.join(project, "AGENTS.md")), false);
   assert.equal(fs.existsSync(path.join(project, ".cursorrules")), false);

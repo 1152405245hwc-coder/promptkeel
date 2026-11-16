@@ -2,11 +2,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
-import { PATCHES } from "../lib/table.mjs";
-import { apply as applyPatches, dryRun as dryRunPatches, revert as revertPatches, verifyApplied as verifyAppliedPatches } from "../lib/engine.mjs";
-import { restorePackedAsar } from "../lib/asar.mjs";
 import { fail } from "./errors.mjs";
 import { sha256 } from "./prompt.mjs";
+import { getProvider } from "./provider.mjs";
 
 export function stateRoot(env = {}) {
   return path.resolve(env.stateRoot || process.env.DSH_FORGE_STATE || path.join(os.homedir(), ".dsh-forge"));
@@ -159,13 +157,11 @@ function mergeFile(existing, action) {
 }
 
 function actionPatches(actions) {
-  const wanted = new Set();
-  for (const action of actions) {
-    if (action.op !== "dsh-patches") continue;
-    if (action.patches === "all") for (const patch of PATCHES) wanted.add(patch.id);
-    else for (const id of action.patches || []) wanted.add(id);
-  }
-  return PATCHES.filter((patch) => wanted.has(patch.id));
+  return actions.filter((action) => action.op === "dsh-patches");
+}
+
+function dshProvider(actions) {
+  return actions.length ? getProvider("dsh.patches") : null;
 }
 
 function previewFile(action) {
@@ -229,6 +225,7 @@ export function checkPreview(plan, preview) {
 export function previewPlan(plan, { env = {} } = {}) {
   const fileActions = plan.actions.filter((a) => ["write-file", "merge-block", "merge-json", "merge-toml"].includes(a.op));
   const patches = actionPatches(plan.actions);
+  const provider = dshProvider(patches);
   const changes = fileActions.map(previewFile);
   return {
     ok: !(plan.budget && plan.budget.ok === false),
@@ -241,7 +238,7 @@ export function previewPlan(plan, { env = {} } = {}) {
       createdAt: new Date().toISOString(),
       files: changes.map(({ path: file, op, existed, beforeSha, afterSha }) => ({ path: file, op, existed, beforeSha, afterSha })),
     },
-    dsh: patches.length ? dryRunPatches(patches, env) : null,
+    dsh: patches.length ? provider.preview(patches, env) : null,
     message: "preview only; pass the preview back to applyPlan to enforce SHA conflict checks",
   };
 }
@@ -253,6 +250,7 @@ export function previewPlan(plan, { env = {} } = {}) {
 export function applyPlan(plan, { dryRun = false, env = {}, yes = false, preview = null } = {}) {
   const fileActions = plan.actions.filter((a) => ["write-file", "merge-block", "merge-json", "merge-toml"].includes(a.op));
   const patches = actionPatches(plan.actions);
+  const provider = dshProvider(patches);
   const previews = fileActions.map(previewFile);
   if (plan.budget && plan.budget.ok === false) {
     return { ok: false, reason: "budget-exceeded", planId: plan.planId, budget: plan.budget, changes: previews };
@@ -269,7 +267,7 @@ export function applyPlan(plan, { dryRun = false, env = {}, yes = false, preview
         createdAt: new Date().toISOString(),
         files: previews.map(({ path: file, op, existed, beforeSha, afterSha }) => ({ path: file, op, existed, beforeSha, afterSha })),
       },
-      dsh: patches.length ? dryRunPatches(patches, env) : null,
+      dsh: patches.length ? provider.preview(patches, env) : null,
       message: "preview only; pass the preview back to applyPlan to enforce SHA conflict checks",
     };
   }
@@ -314,14 +312,15 @@ export function applyPlan(plan, { dryRun = false, env = {}, yes = false, preview
     }
     let dshResult = null;
     if (patches.length) {
-      dshResult = applyPatches(patches, env, { dryRun: false });
+      dshResult = provider.apply(patches, env);
       if (!dshResult.ok) fail("dsh-apply", "DSH patch apply failed", { result: dshResult });
       manifest.dsh = {
         backupDir: dshResult.dir,
         hostRoot: dshResult.manifest?.hostRoot || env.hostRoot || null,
         dshHome: dshResult.manifest?.dshHome || env.dshHome || null,
         unpackedAsar: dshResult.unpackedAsar || null,
-        patches: patches.map((p) => p.id),
+        patches: dshResult.patches || [],
+        provider: provider.id,
       };
     }
     for (let i = 0; i < fileActions.length; i += 1) {
@@ -341,18 +340,9 @@ export function applyPlan(plan, { dryRun = false, env = {}, yes = false, preview
     const rollbackErrors = [];
     if (manifest.dsh?.backupDir) {
       try {
-        const dshEnv = {
-          ...env,
-          hostRoot: env.hostRoot || manifest.dsh.hostRoot || undefined,
-          dshHome: env.dshHome || manifest.dsh.dshHome || undefined,
-        };
-        const result = revertPatches(dshEnv, path.basename(manifest.dsh.backupDir), path.dirname(manifest.dsh.backupDir), { force: true });
+        const result = provider.revert(manifest.dsh, env, true);
         if (!result.ok) rollbackErrors.push(result);
       } catch (err) { rollbackErrors.push(err.message); }
-    }
-    if (manifest.dsh?.unpackedAsar) {
-      const result = restorePackedAsar(manifest.dsh.unpackedAsar, env);
-      if (!result.ok) rollbackErrors.push(result);
     }
     for (const record of [...touched].reverse()) {
       try {
@@ -425,12 +415,7 @@ export function revertPlan(id, { force = false, env = {} } = {}) {
     } catch (error) { errors.push({ path: record.path, error: error.message }); }
   }
   if (manifest.dsh?.backupDir) {
-    const dshEnv = {
-      ...env,
-      hostRoot: env.hostRoot || manifest.dsh.hostRoot || undefined,
-      dshHome: env.dshHome || manifest.dsh.dshHome || undefined,
-    };
-    const result = revertPatches(dshEnv, path.basename(manifest.dsh.backupDir), path.dirname(manifest.dsh.backupDir), { force });
+    const result = getProvider(manifest.dsh.provider || "dsh.patches").revert(manifest.dsh, env, force);
     if (!result.ok) errors.push({ dsh: result });
   }
   manifest.status = "reverted";
@@ -448,13 +433,7 @@ export function verifyPlan(id, env = {}) {
     return { path: record.path, ok: exists && current === record.afterSha, current, expected: record.afterSha };
   });
   if (manifest.dsh?.patches?.length) {
-    const patches = PATCHES.filter((patch) => manifest.dsh.patches.includes(patch.id));
-    const dshEnv = {
-      ...env,
-      hostRoot: env.hostRoot || manifest.dsh.hostRoot || undefined,
-      dshHome: env.dshHome || manifest.dsh.dshHome || undefined,
-    };
-    const result = verifyAppliedPatches(patches, dshEnv);
+    const result = getProvider(manifest.dsh.provider || "dsh.patches").verify(manifest.dsh, env);
     rows.push({ dsh: true, ok: result.ok, patches: result.patches });
   }
   return { ok: rows.every((row) => row.ok), id, status: manifest.status, rows };

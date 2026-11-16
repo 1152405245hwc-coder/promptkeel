@@ -15,6 +15,7 @@ dsh-forge/
 │   ├── compile.mjs         # Pure compiler: (profile, model, mode) -> machine-independent plan
 │   ├── executor.mjs        # Transactional writer (mergeBlock, mergeJson, mergeToml, backups, rollback)
 │   ├── batch.mjs           # Multi-platform compile/apply, conflict checks, locks, and compensation rollback
+│   ├── provider.mjs        # Synchronous provider registry for non-file actions
 │   ├── verify.mjs          # Internal plan hash check & post-apply target verification
 │   ├── profile.mjs         # Public re-export facade for contract primitives
 │   └── errors.mjs          # Structured ForgeError with stable machine-readable error codes
@@ -31,6 +32,7 @@ dsh-forge/
 │   ├── models/             # Per-model-family behavioral overlays
 │   └── modes/              # Task-specific overlays (coding, research, writing)
 ├── lib/                    # DSH-native runtime, ASAR unpacker, patch engine & Cordis plugin
+│   ├── dsh-provider.mjs    # Explicit bridge from core provider actions to DSH engine/ASAR
 │   ├── table.mjs           # 8 version-gated host patches (with per-version variants support)
 │   ├── engine.mjs          # inspectPatch, dryRun, coalesced atomic apply, revert, upgrade
 │   ├── asar.mjs            # Read-only app.asar header/file reader & atomic unpacker
@@ -117,7 +119,7 @@ The plugin registers a `systemPrompt` section (`forge:prompt`) through Cordis. I
 
 ## 6. Cross-Host Compiler and Executor
 
-The host registry is the platform boundary. `hosts/adapter.mjs` normalizes legacy host modules into `forge.host/v1`; `core/compile.mjs` consumes optional adapter hooks and otherwise falls back to the stable v1 target handlers. `core/batch.mjs` compiles and applies several platform plans with deterministic ordering, target conflict detection, one preview, a batch lock, and per-plan compensation rollback. DSH patching remains an adapter-owned provider; ordinary platform profiles do not load or invoke the DSH patch engine.
+The host registry is the platform boundary. `hosts/adapter.mjs` normalizes legacy host modules into `forge.host/v1`; `core/compile.mjs` consumes optional adapter hooks and otherwise falls back to the stable v1 target handlers. `core/batch.mjs` provides deterministic multi-plan compilation and an experimental, explicitly enabled apply path; it is not yet a stable CLI lifecycle. DSH patching remains an adapter-owned provider; ordinary core profiles do not invoke the DSH patch provider.
 
 ```mermaid
 flowchart LR

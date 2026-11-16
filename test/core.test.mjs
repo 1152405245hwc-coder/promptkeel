@@ -10,6 +10,10 @@ import { renderPrompt } from "../core/prompt.mjs";
 import { verifyCompiled } from "../core/verify.mjs";
 import { PATCHES } from "../lib/table.mjs";
 import { normalizeFiles, replacementsOf } from "../lib/engine.mjs";
+import { registerProvider } from "../core/provider.mjs";
+import * as dshProvider from "../lib/dsh-provider.mjs";
+
+registerProvider(dshProvider);
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "forge-core-"));
 

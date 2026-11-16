@@ -189,12 +189,19 @@ function sortPlans(plans) {
   return [...plans].sort((a, b) => String(a.planId || "").localeCompare(String(b.planId || "")));
 }
 
-function clonePlansForApply(plans, winnerByKey) {
-  const ordinalByPlan = new Map(plans.map((plan, index) => [plan, index]));
+function clonePlansForApply(plans, winnerByKey, persistedTargets = []) {
+  const serializedTargets = new Map();
+  for (const target of persistedTargets) {
+    if (target?.planId !== undefined && target?.actionIndex !== undefined) {
+      serializedTargets.set(`${target.planId}\u0000${target.actionIndex}`, target);
+    }
+  }
   return sortPlans(plans).map((plan) => {
-    const planOrdinal = ordinalByPlan.get(plan);
     const actions = plan.actions.filter((action, index) => {
-      const target = actionTarget(plan, action, index);
+      const persisted = serializedTargets.get(`${plan.planId}\u0000${index}`);
+      const target = persisted
+        ? { ...actionTarget(plan, action, index), key: persisted.key || actionTarget(plan, action, index).key }
+        : actionTarget(plan, action, index);
       const winner = winnerByKey.get(target.key);
       return !target.key || winner?.plan === plan && winner?.action === action;
     });
@@ -312,7 +319,7 @@ function targetManifest(entries, planResults) {
 
 /** Compile deterministic, conflict-checked plans for several profiles. */
 export function compileMany(inputs, options = {}) {
-  if (!Array.isArray(inputs)) return { schema: BATCH_SCHEMA, ok: false, code: "batch-input", error: "compileMany expects an array", plans: [], targets: [], conflicts: [] };
+  if (!Array.isArray(inputs)) return { schema: BATCH_SCHEMA, support: "experimental", ok: false, code: "batch-input", error: "compileMany expects an array", plans: [], targets: [], conflicts: [] };
   const ordered = inputs.map((entry, index) => ({ entry: entry || {}, index })).sort((a, b) => entryKey(a.entry).localeCompare(entryKey(b.entry)) || a.index - b.index);
   const plans = [];
   const errors = [];
@@ -329,7 +336,7 @@ export function compileMany(inputs, options = {}) {
       const record = { ...errorRecord(error), profile: entry.profile?.id || null, model: entry.model?.id || null, required };
       errors.push(record);
       if (required) {
-        return { schema: BATCH_SCHEMA, ok: false, code: record.code, error: record.error, errors, plans, targets: [], conflicts: [] };
+        return { schema: BATCH_SCHEMA, support: "experimental", ok: false, code: record.code, error: record.error, errors, plans, targets: [], conflicts: [] };
       }
     }
   }
@@ -354,38 +361,73 @@ export function compileMany(inputs, options = {}) {
     targets: canonicalTargets.map(({ key, scope, path: targetPath, kind, op, owner, blockId, provider, signature }) => ({ key, scope, path: targetPath, kind, op, owner, blockId, provider, signature })),
   })).slice(0, 16);
   if (conflicts.length) {
-    return { schema: BATCH_SCHEMA, batchId, ok: false, code: "batch-target-conflict", error: "batch contains conflicting targets", errors, plans, targets: canonicalTargets, conflicts };
+    return { schema: BATCH_SCHEMA, support: "experimental", runtimeActivation: "NOT_COVERED", batchId, ok: false, code: "batch-target-conflict", error: "batch contains conflicting targets", errors, plans, targets: canonicalTargets, conflicts };
   }
-  return { schema: BATCH_SCHEMA, batchId, ok: errors.length === 0, errors, plans, targets: canonicalTargets, conflicts };
+  return {
+    schema: BATCH_SCHEMA,
+    support: "experimental",
+    runtimeActivation: "NOT_COVERED",
+    warnings: ["batch apply is experimental and requires an explicit allowExperimental opt-in"],
+    batchId,
+    ok: errors.length === 0,
+    errors,
+    plans,
+    targets: canonicalTargets,
+    conflicts,
+  };
 }
 
 /** Apply a batch through existing per-plan transaction and rollback primitives. */
-export function applyBatch(batch, { dryRun = false, yes = false, env = {}, preview = null } = {}) {
+export function applyBatch(batch, { dryRun = false, yes = false, allowExperimental = false, reapply = false, env = {}, preview = null } = {}) {
   const normalised = normalisePlans(batch);
   if (normalised.error) return { ok: false, ...normalised.error, rollbackErrors: [] };
   if (normalised.errors.length) return { ok: false, code: normalised.errors[0].code, error: normalised.errors[0].message, errors: normalised.errors, rollbackErrors: [] };
   if (batch.ok === false || batch.conflicts?.length) return { ok: false, code: batch.code || "batch-target-conflict", error: batch.error || "batch contains conflicts", conflicts: batch.conflicts || [], rollbackErrors: [] };
   if (!batch.batchId || typeof batch.batchId !== "string") return { ok: false, code: "batch-id", error: "batchId is required", rollbackErrors: [] };
+  if (!dryRun && !allowExperimental) {
+    return { ok: false, code: "experimental-disabled", error: "batch apply is experimental; pass allowExperimental:true explicitly", rollbackErrors: [] };
+  }
+  if (!dryRun && !preview) {
+    return { ok: false, code: "preview-required", error: "batch apply requires a persisted preview", rollbackErrors: [] };
+  }
+  const serializedTargets = Array.isArray(batch.targets) ? batch.targets : [];
+  const serializedPlans = batch.plans.some((plan) => !Object.prototype.hasOwnProperty.call(plan, "__batchTargets"));
+  if (serializedPlans && serializedTargets.length === 0) {
+    return { ok: false, code: "batch-target-metadata", error: "serialized batch is missing target metadata", rollbackErrors: [] };
+  }
   const entries = makeTargetEntries(batch.plans, batch.targets || []);
   const { byKey, conflicts } = resolveConflicts(entries);
   if (conflicts.length) return { ok: false, code: "batch-target-conflict", error: "batch contains conflicting targets", conflicts, rollbackErrors: [] };
-  const plans = clonePlansForApply(batch.plans, byKey);
+  const plans = clonePlansForApply(batch.plans, byKey, serializedTargets);
   const root = path.resolve(env.stateRoot || process.env.DSH_FORGE_STATE || path.join(process.env.HOME || process.env.USERPROFILE || ".", ".dsh-forge"));
+  const storageKey = sha256(stableJson(plans.map((plan) => ({ planId: plan.planId, paths: plan.actions.map((action) => action.path || null) })))).slice(0, 12);
   let lock = null;
   if (!dryRun && yes) {
     try { lock = acquireLock(root, batch.batchId); }
     catch (error) { return { ok: false, code: error.code || "batch-lock", error: error.message, rollbackErrors: [] }; }
     if (!lock) return { ok: false, code: "batch-locked", error: `batch ${batch.batchId} is already active`, rollbackErrors: [] };
   }
-  const batchDir = path.join(root, "batches", batch.batchId);
+  const batchDir = path.join(root, "batches", batch.batchId, storageKey);
   const manifestPath = path.join(batchDir, "manifest.json");
+  if (!reapply && fs.existsSync(manifestPath)) {
+    try {
+      const prior = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+      if (["applying", "applied"].includes(prior.status)) {
+        return { ok: false, code: "batch-replay", error: `batch ${batch.batchId} is already ${prior.status}`, rollbackErrors: [] };
+      }
+    } catch (error) {
+      return { ok: false, code: "batch-manifest-invalid", error: error.message, rollbackErrors: [] };
+    }
+  }
   const manifest = {
     schema: "forge.batch-manifest/v1",
     batchId: batch.batchId,
+    storageKey,
+    support: "experimental",
     status: "preview",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    plans: plans.map((plan) => ({ planId: plan.planId, profile: plan.profile?.id || null, host: plan.profile?.host || null })),
+    plans: plans.map((plan) => ({ planId: plan.planId, profile: plan.profile?.id || null, host: plan.profile?.host || null, executionId: null })),
     targets: [],
     rollback: { attempted: false, errors: [] },
   };
@@ -406,7 +448,12 @@ export function applyBatch(batch, { dryRun = false, yes = false, env = {}, previ
     writeJsonAtomic(manifestPath, manifest);
     const applied = [];
     for (const plan of plans) {
-      const result = applyPlan(plan, { yes: true, env });
+      const planPreview = {
+        schema: PREVIEW_SCHEMA,
+        planId: plan.planId,
+        files: (preview.plans || []).find((item) => item.planId === plan.planId)?.files || [],
+      };
+      const result = applyPlan(plan, { yes: true, env, preview: planPreview });
       if (!result.ok) {
         const rollbackErrors = [];
         for (const done of [...applied].reverse()) {
@@ -422,6 +469,8 @@ export function applyBatch(batch, { dryRun = false, yes = false, env = {}, previ
         return { ok: false, code: result.code || "batch-apply-failed", error: result.error || "batch plan failed", details: result.details || {}, batchId: batch.batchId, rollbackErrors };
       }
       applied.push(result);
+      const manifestPlan = manifest.plans.find((item) => item.planId === plan.planId);
+      if (manifestPlan) manifestPlan.executionId = result.id || null;
       manifest.targets = targetManifest(entries, applied);
       manifest.updatedAt = new Date().toISOString();
       writeJsonAtomic(manifestPath, manifest);

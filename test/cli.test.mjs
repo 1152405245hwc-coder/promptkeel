@@ -122,3 +122,14 @@ test("profile plan lifecycle uses the explicit state directory", () => {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("compile propagates an explicit DSH host root to adapter detection", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "forge-cli-host-root-"));
+  try {
+    const result = run(["compile", "dsh", "--host-root", root, "--json"]);
+    assert.equal(result.status, 0);
+    assert.equal(JSON.parse(result.stdout).adapter.detection.root, root);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

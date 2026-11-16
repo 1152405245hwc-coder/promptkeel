@@ -125,7 +125,7 @@ Every profile is validated against `core/contract.mjs`. See [docs/PORTABILITY.md
 
 Profiles also declare `risk`, `mutatesHost`, `requiresRestart`, and `activationEvidence`. These fields describe operational impact and proof requirements; they do not silently change the existing high-permission behavior. Use `apply --dry-run --preview /tmp/forge-preview.json`, review the result, then pass the same file with `--yes` to reject files changed after the preview.
 
-For multi-platform orchestration, `core/batch.mjs` exports `compileMany()` and `applyBatch()`. They sort plans deterministically, reject conflicting writes to the same target, take one preview across all targets, and keep a batch manifest plus per-plan rollback records. The CLI single-profile commands remain compatible while this API is the integration seam for a future batch command.
+For multi-platform orchestration, `core/batch.mjs` exports `compileMany()` and an **experimental, opt-in** `applyBatch()`. Plans are sorted deterministically and conflicting writes are rejected. Batch writes require a persisted preview and explicit `allowExperimental: true`; there is no stable batch CLI or complete batch verify/revert lifecycle yet. The CLI single-profile commands remain the supported path.
 
 ---
 

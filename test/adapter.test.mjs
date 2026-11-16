@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { loadModel, normalizeProfile, PROFILE_SCHEMA, validateProfile } from "../core/contract.mjs";
 import { compile } from "../core/compile.mjs";
 import { detectHost, getAdapter, listAdapters, normalizeAdapter, registerAdapter } from "../hosts/registry.mjs";
+import { normalizeActivation } from "../core/evidence.mjs";
 
 test("legacy host modules normalize to the adapter contract and expose detection evidence", () => {
   const adapter = getAdapter("codex");
@@ -11,10 +12,18 @@ test("legacy host modules normalize to the adapter contract and expose detection
   assert.equal(typeof adapter.detect, "function");
   const result = detectHost("generic");
   assert.equal(result.id, "generic");
-  assert.equal(result.status, "configured");
+  assert.equal(result.status, "unobservable");
   assert.equal(result.ok, true);
   assert.ok(Array.isArray(result.evidence));
   assert.ok(Array.isArray(result.warnings));
+});
+
+test("activation never becomes active without runtime evidence", () => {
+  const downgraded = normalizeActivation({ status: "active", evidence: [] }, { id: "codex" });
+  assert.equal(downgraded.status, "configured");
+  assert.ok(downgraded.warnings.length > 0);
+  assert.equal(normalizeActivation({ ok: true }, { id: "generic" }).status, "unobservable");
+  assert.equal(normalizeActivation({ status: "active", evidence: [{ kind: "session", id: "s1" }] }, { id: "codex" }).status, "active");
 });
 
 test("registry rejects malformed and duplicate adapters", () => {

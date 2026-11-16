@@ -123,7 +123,7 @@ node bin/dsh-forge.js revert-plan <plan-id>
 
 所有 Profile 均通过 `core/contract.mjs` 校验。Profile 还声明 `risk`、`mutatesHost`、`requiresRestart` 与 `activationEvidence`，用于说明操作影响和验收证据，不会静默改变现有高权限行为。可先执行 `apply --dry-run --preview /tmp/forge-preview.json`，审阅后再用同一个文件配合 `--yes`；若目标文件在预览后发生变化，工具会拒绝覆盖。能力矩阵与 Schema 规范详见 [docs/PORTABILITY.md](docs/PORTABILITY.md)。
 
-多平台编排可使用 `core/batch.mjs` 导出的 `compileMany()` 与 `applyBatch()`：计划会稳定排序，同一目标的冲突写入会被拒绝，预览一次覆盖所有目标，并保留批次 manifest 与各计划的回滚记录。CLI 的单 Profile 命令保持兼容，批量 API 是后续批量命令的集成边界。
+多平台编排可使用 `core/batch.mjs` 导出的 `compileMany()` 与**实验性、显式 opt-in 的** `applyBatch()`：计划会稳定排序，同一目标的冲突写入会被拒绝；批量写入必须提供持久化预览并显式传入 `allowExperimental: true`。当前没有稳定的批量 CLI，也没有完整的批量 verify/revert 生命周期；CLI 单 Profile 命令仍是受支持路径。
 
 ---
 

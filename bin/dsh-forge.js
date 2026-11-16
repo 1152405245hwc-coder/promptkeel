@@ -16,6 +16,11 @@ import { ForgeError } from "../core/errors.mjs";
 import { compile } from "../core/compile.mjs";
 import { applyPlan, revertPlan, listPlans, verifyPlan } from "../core/executor.mjs";
 import { detectAll } from "../hosts/registry.mjs";
+import { registerProvider } from "../core/provider.mjs";
+import * as dshProvider from "../lib/dsh-provider.mjs";
+import { normalizeContext } from "../core/context.mjs";
+
+registerProvider(dshProvider);
 
 const { values: opts, positionals } = parseArgs({
   args: process.argv.slice(2),
@@ -315,16 +320,15 @@ function forgeContext() {
   const stateRoot = optionValue("state", process.env.DSH_FORGE_STATE || undefined);
   const hostRoot = optionValue("host-root", process.env.DSH_FORGE_HOST_ROOT || undefined);
   const home = optionValue("home", process.env.HOME || process.env.USERPROFILE);
-  const env = { stateRoot, hostRoot, dshHome: home ? path.join(home, ".dsh") : undefined };
-  const context = {
+  const context = normalizeContext({
+    hostId: profile.host,
+    profileId: profile.id,
     mode: optionValue("mode", null),
     projectRoot: optionValue("project", process.cwd()),
     home,
-    stateRoot,
-    hostRoot,
-    env,
     budget: Number(optionValue("budget", 3200)),
-  };
+    env: { stateRoot, hostRoot, dshHome: home ? path.join(home, ".dsh") : undefined },
+  });
   const plan = compile(profile, model, context);
   return { profile, model, plan, context };
 }

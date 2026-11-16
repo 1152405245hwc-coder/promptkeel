@@ -14,6 +14,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Sem
 
 ### Changed
 
+- Core compilation no longer imports DSH patch/ASAR runtime modules directly; DSH actions use an explicit synchronous provider bridge.
+- Activation evidence now rejects `active` without session/runtime proof and treats generic or unobservable hosts explicitly.
+- Batch application is experimental and opt-in; serialized target metadata, preview requirements, replay guards, and state-key isolation prevent silent empty applies.
 - Host support now uses a normalized adapter registry and includes Cursor, Windsurf, Aider, and Continue profiles; DSH remains one adapter with its native patch provider.
 - Added `compileMany()`/`applyBatch()` for deterministic multi-platform plans, target conflict detection, batch previews, locks, and compensation rollback.
 - `doctor` and `status --json` now report configuration, host readiness, session loading, and restart requirements as separate activation fields.

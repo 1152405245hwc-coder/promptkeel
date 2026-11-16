@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { assert, fail } from "./errors.mjs";
-import { PATCHES } from "../lib/table.mjs";
+import { DSH_PATCH_IDS } from "../lib/dsh-contract.mjs";
 import { getAdapter } from "../hosts/registry.mjs";
 
 export const PROFILE_SCHEMA = "forge.profile/v1";
@@ -16,7 +16,7 @@ export const ACTIVATION_RESTART = ["required", "optional", "none"];
 export const TARGET_CONFLICTS = ["merge", "abort", "replace-managed"];
 export const PLATFORM_OS = ["darwin", "linux", "win32"];
 export const EFFECTS = ["P", "T", "S", "W", "M"];
-const PATCH_IDS = new Set(PATCHES.map((patch) => patch.id));
+const PATCH_IDS = DSH_PATCH_IDS;
 
 export function packageRoot() {
   return path.resolve(import.meta.dirname, "..");

@@ -30,6 +30,12 @@ while IFS= read -r -d '' file; do
   node --check "$file"
 done < <(find bin core hosts lib scripts test -type f \( -name '*.mjs' -o -name '*.js' \) -print0 | sort -z)
 
+echo "== core DSH import boundary"
+if rg -n 'from .*\.\./lib/(table|engine|asar)\.mjs' core/contract.mjs core/compile.mjs; then
+  echo "core contract/compiler must not import DSH runtime modules" >&2
+  exit 1
+fi
+
 echo "== lockfile consistency"
 node --input-type=module <<'NODE'
 import fs from "node:fs";

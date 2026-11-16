@@ -1,10 +1,11 @@
 import { assert, fail } from "../core/errors.mjs";
+import { normalizeActivation } from "../core/evidence.mjs";
 
 /** Stable interface name for host adapters. The first version is intentionally
  * small: existing host modules only need id/label/support/detect. */
 export const ADAPTER_SCHEMA = "forge.host/v1";
 export const ADAPTER_VERSION = "1.0.0";
-export const DETECTION_STATUSES = ["installed", "configured", "active", "missing", "unknown"];
+export const DETECTION_STATUSES = ["installed", "configured", "active", "missing", "unknown", "unobservable"];
 export const DETECTION_CONFIDENCE = ["high", "medium", "low"];
 
 const METHODS = ["detect", "configTargets", "preflight", "compileTarget", "verifyTarget", "rollbackTarget"];
@@ -45,19 +46,14 @@ export function normalizeAdapter(module) {
  * activation that the old detector cannot observe. */
 export function normalizeDetection(result, { id, adapter, context = {} } = {}) {
   const raw = result && typeof result === "object" ? result : {};
-  let status = raw.status;
-  if (!status) {
-    if (raw.ok === false) status = "missing";
-    else if (raw.active === true) status = "active";
-    else if (raw.configured === true || raw.ok === true) status = "configured";
-    else status = "unknown";
-  }
+  const activation = normalizeActivation(raw, { id });
+  let status = activation.status;
   if (!DETECTION_STATUSES.includes(status)) status = "unknown";
   const evidence = evidenceFrom(raw);
   const confidence = DETECTION_CONFIDENCE.includes(raw.confidence)
     ? raw.confidence
     : raw.ok === true || raw.ok === false ? "high" : "low";
-  const warnings = Array.isArray(raw.warnings) ? raw.warnings : [];
+  const warnings = activation.warnings;
   const targets = raw.targets !== undefined
     ? raw.targets
     : typeof adapter?.configTargets === "function" ? adapter.configTargets(context) : undefined;
@@ -67,8 +63,9 @@ export function normalizeDetection(result, { id, adapter, context = {} } = {}) {
     status,
     ok: raw.ok === undefined ? status !== "missing" : Boolean(raw.ok),
     confidence,
-    evidence,
+    evidence: activation.evidence,
     warnings,
+    activation,
     ...(targets === undefined ? {} : { targets }),
   };
 }
