@@ -269,3 +269,9 @@ xxy0722/dsh-purge-deep 的「消息层」是**唯一一家**在补丁表之外�
 3. `SCOPE_INTRO` 与 `BASH_TIMEOUT_RESTORE` 的 6 条正则锚点在 0.2.2-rc.3 上**全部 0 命中**；前者匹配到模板结尾反引号，字面化难度高；后者源码注释自称「migration only」，可能已无实际作用 —— 需回源码确认是否放弃。
 4. 桌面端 5 条（`DESKTOP_*`、`OFFICIAL_DESKTOP_UPDATE_*`）锚点在 asar 根 `lib/main.js`（828 KB）里 0 命中，说明该文件在 0.2.2 已重新构建；需要人工重新定位，本次不判可移植。
 5. `dsh-experimental-inspector` 在宿主内但不是默认加载，两条 inspector 补丁的行为面收益待评估。
+
+## 6. 执行修正（2026-11-17）
+
+- **P1-12 `FRESH_SESSION_FULL_ACCESS` 判为冗余，不接。** `dsh-permission-presets/lib/index.js:182` 的 `inferredDefault = this.derive(EMPTY_KNOBS)` 是从部署层 sandbox/approval 组合推导出来的；`sandbox-default-full` 已把部署默认改成 `danger-full-access`，新会话的默认 preset 会跟着推导，不需要再改 `this.defaultPreset`。矩阵原判「互补而非重复」在本版本不成立。
+- **`fs-fence-disabled` 必须删整条分支。** engine 的 applied 判定是 `marker 存在 && 所有 find 计数为 0`（`lib/engine.mjs:162`），所以任何「在 find 前后插入内容」的替换都会让 find 继续命中、被判回 `hit`。改为删除 read-only 与 workspace-write 两条 throw 分支后才成立。
+- **P1-4 `TOOL_SHELL_DELETE_MOVE_NEUTRAL` 不接。** 那句是「删前确认路径」的操作纪律，去掉只增加误删风险，破甲收益为零。

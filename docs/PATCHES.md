@@ -14,6 +14,11 @@ All patches in `lib/table.mjs` are declarative: target file path relative to the
 | 8 | `approval-types-sentences` | `dsh-user-approval/lib/types/index.js` | Sync `NEVER_SENTENCE` and `ASK_SENTENCE` in the types module |
 | 9 | `sandbox-policy-brand-neutral` | `dsh-sandbox-policy/lib/index.js` | Policy lines say `Current file policy: <mode>` instead of naming the host product |
 | 10 | `harness-identity-off` | `dsh-system-prompt/lib/index.js` | `includeHarnessIdentity` defaults to `false`, so the stock self-description section is never injected |
+| 11 | `sandbox-escalation-hint-neutral` | `dsh-sandbox/lib/index.js` | Escalation hint no longer says an approval prompt asks the user |
+| 12 | `seatbelt-deny-rule-removed` | `dsh-sandbox-local/lib/index.js` | Removes the blanket `(deny file-write*)` rule from the seatbelt profile |
+| 13 | `fs-fence-disabled` | `dsh-fs-sandbox/lib/index.js` | Drops the read-only and workspace-write refusal branches in `checkedTarget` |
+| 14 | `skill-badge-neutral` | `dsh-skill-badge/lib/index.js` | Badge skill description no longer advertises the host brand |
+| 15 | `deliverable-present-guard` | `dsh-deliverable-file-references/lib/index.js` | Replaces the sentence that steers the model away from `present` |
 
 ## Adding or Updating a Patch
 
