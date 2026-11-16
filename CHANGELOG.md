@@ -6,6 +6,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Sem
 
 ### Added
 
+- Operation audit: `dsh-forge audit [--limit 100]` reads every daily log file, counts events per type, and reports unreadable lines instead of dropping them. `snapshot.written` and `console.start` are now recorded.
+- Snapshots: `dsh-forge snapshot [profile]` stores the composed prompt under `<state>/snapshots/` with UTC-stamped names, then prunes by age (7 days), count (5), and total size (200 MiB), always keeping the newest file. `--list` and `--json` report what is stored.
+
 - Read-only console: `dsh-forge console [--port 7788] [--state <dir>]` serves doctor checks, patch layers, channel counts, delivery grades and personas on `127.0.0.1`, with `/api/state` as JSON and `--once` for a printed overview. `core/console.mjs` keeps a single instance per state directory through `console.pid`, answers `405` to non-`GET` requests, and renders state-builder failures into the response.
 
 - Slash channel is real: a `command` target kind renders a markdown command file with frontmatter, and the `claude-code` profile now delivers `.claude/commands/dsh-forge.md`.

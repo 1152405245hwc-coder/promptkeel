@@ -5,7 +5,7 @@ import { fail } from "./errors.mjs";
 
 export const CONSOLE_HOST = "127.0.0.1";
 export const CONSOLE_PORT = 7788;
-export const CONSOLE_ROUTES = ["/", "/patches", "/channels", "/grades", "/personas", "/api/state"];
+export const CONSOLE_ROUTES = ["/", "/patches", "/channels", "/grades", "/personas", "/audit", "/api/state"];
 
 function alive(pid) {
   try {
@@ -53,7 +53,7 @@ function layout(title, body) {
 <html lang="en"><head><meta charset="utf-8"><title>dsh-forge · ${escapeHtml(title)}</title>
 <style>body{font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;margin:2rem;color:#111}table{border-collapse:collapse;margin:1rem 0}td,th{border:1px solid #ccc;padding:.25rem .6rem;text-align:left}th{background:#f4f4f4}.ok{color:#0a7}.warn{color:#b60}.fail{color:#b00}nav a{margin-right:1rem}</style>
 </head><body>
-<nav><a href="/">overview</a><a href="/patches">patches</a><a href="/channels">channels</a><a href="/grades">grades</a><a href="/personas">personas</a><a href="/api/state">api</a></nav>
+<nav><a href="/">overview</a><a href="/patches">patches</a><a href="/channels">channels</a><a href="/grades">grades</a><a href="/personas">personas</a><a href="/audit">audit</a><a href="/api/state">api</a></nav>
 <h1>${escapeHtml(title)}</h1>
 ${body}
 </body></html>
@@ -98,12 +98,24 @@ export function renderPersonas(state = {}) {
   return layout("personas", table(["persona", "mode", "harness", "chars"], rows));
 }
 
+export function renderAudit(state = {}) {
+  const counts = Object.entries(state.audit?.counts || {}).sort((a, b) => b[1] - a[1]);
+  const snapshotRows = (state.snapshots?.rows || []).map((row) => [row.at, row.bytes, row.label, row.name]);
+  const limits = state.snapshots?.limits || {};
+  return layout("audit", [
+    `<p>events <strong>${escapeHtml(state.audit?.total ?? 0)}</strong> · snapshots <strong>${snapshotRows.length}</strong> · keep ${escapeHtml(limits.keep ?? "?")} / days ${escapeHtml(limits.days ?? "?")} / max ${escapeHtml(limits.maxBytes ?? "?")} bytes</p>`,
+    table(["event", "count"], counts),
+    table(["snapshot", "bytes", "label", "file"], snapshotRows),
+  ].join("\n"));
+}
+
 const RENDERERS = {
   "/": renderOverview,
   "/patches": renderPatches,
   "/channels": renderChannels,
   "/grades": renderGrades,
   "/personas": renderPersonas,
+  "/audit": renderAudit,
 };
 
 /**

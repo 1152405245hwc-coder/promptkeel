@@ -202,6 +202,10 @@ Every action a profile compiles belongs to one channel: `project` (repository fi
 
 `prompt/personas/*.md` holds prompt-level identity layers that travel across adapters. A persona composes with the host prompt in one of four modes: `replace` keeps host working rules while dropping identity claims, `strict` keeps the persona alone, `append` adds it after the host prompt, `off` disables it. `dsh-forge personas` lists what ships; `dsh-forge compile codex --persona engineer --persona-mode strict` selects one, and `off` reproduces the plain build byte for byte. Details in [docs/PERSONAS.md](docs/PERSONAS.md).
 
+## Audit and snapshots
+
+`lib/log.mjs` appends one JSON line per host operation to `$DSH_HOME/dsh-forge/logs/`; `dsh-forge audit [--limit 100]` reads across days, counts events, and reports unreadable lines instead of hiding them. `dsh-forge snapshot [profile] [--keep 5] [--days 7] [--max-bytes N]` stores the composed prompt under `<state>/snapshots/` with timestamped names and prunes by age, count, and total size, keeping the newest entry. Details in [docs/AUDIT.md](docs/AUDIT.md).
+
 ## Console
 
 `dsh-forge console` serves the same facts on `http://127.0.0.1:7788`: doctor checks, patch layers, channel counts, delivery grades and personas, plus the whole state as JSON on `/api/state`. Pages are read-only (non-`GET` requests get `405`), one instance owns a state directory through `console.pid`, and `--once` prints the overview instead of serving. Details in [docs/CONSOLE.md](docs/CONSOLE.md).
@@ -278,6 +282,7 @@ npm run pack:check
 - **[docs/GRADES.md](docs/GRADES.md)** — Delivery grades per host with the mechanism and evidence behind each one.
 - **[docs/CHANNELS.md](docs/CHANNELS.md)** — Channel classification, effect timing, and the `shim` wrapper.
 - **[docs/PERSONAS.md](docs/PERSONAS.md)** — Persona file format and the four composition modes.
+- **[docs/AUDIT.md](docs/AUDIT.md)** — Operation log, cross-day `audit` queries, and snapshot retention.
 - **[docs/CONSOLE.md](docs/CONSOLE.md)** — Loopback console routes, single-instance lock, and why the page matches the CLI.
 - **[docs/DEBUG.md](docs/DEBUG.md)** — Troubleshooting decision tree, common error codes, and post-install smoke checks.
 - **[docs/DESIGN.md](docs/DESIGN.md)** — Architectural rationale and engineering trade-offs.

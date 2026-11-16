@@ -10,7 +10,7 @@ import { PATCHES } from "../lib/table.mjs";
 import { composePrompt, checkBudget, writeInject, verifyProofs } from "../lib/inject.mjs";
 import { readPolicy, setPolicy, POLICIES, profileStatus, enableProfile, disableProfile } from "../lib/preset.mjs";
 import { reportsDir, ensureDir, dshHome, promptInjectPath, displayPath, redactText, VERSION } from "../lib/paths.mjs";
-import { readLog, clearLogs, defaultLogFile } from "../lib/log.mjs";
+import { readLog, clearLogs, defaultLogFile, log, setLogFile } from "../lib/log.mjs";
 import { loadProfile, loadModel, listProfiles, listModels } from "../core/contract.mjs";
 import { ForgeError } from "../core/errors.mjs";
 import { compile } from "../core/compile.mjs";
@@ -24,6 +24,9 @@ import { renderShim } from "../core/shim.mjs";
 import { gradeTable } from "../core/grades.mjs";
 import { acquireLock, createConsole, renderOverview, CONSOLE_HOST, CONSOLE_PORT } from "../core/console.mjs";
 import { consoleState } from "../lib/console-state.mjs";
+import { readAudit, summarizeAudit } from "../core/audit.mjs";
+import { writeSnapshot, pruneSnapshots, listSnapshots, SNAPSHOT_DEFAULTS } from "../core/snapshot.mjs";
+import { logsDir } from "../lib/paths.mjs";
 
 registerProvider(dshProvider);
 
@@ -59,6 +62,11 @@ const { values: opts, positionals } = parseArgs({
     model: { type: "string" },
     project: { type: "string" },
     home: { type: "string" },
+    "dsh-home": { type: "string" },
+    keep: { type: "string" },
+    days: { type: "string" },
+    "max-bytes": { type: "string" },
+    list: { type: "boolean" },
     state: { type: "string" },
     preview: { type: "string" },
   },
@@ -109,7 +117,8 @@ Usage:
   dsh-forge preset [strict|fallback|always]
   dsh-forge collect                             export redacted diagnostics tarball
   dsh-forge log [--limit 50|--clear]
-  dsh-forge audit [--limit 50]                  read the structured operation log
+  dsh-forge audit [--limit 100] [--json]        read the operation log across days
+  dsh-forge snapshot [profile] [--keep 5] [--days 7] [--max-bytes N] [--list] [--json]
   dsh-forge personas [--json]                   list bundled personas
   dsh-forge channels [--all] [--json]           show delivery channel per action
   dsh-forge grades [--json]                     show how much of the host prompt each profile displaces
@@ -360,8 +369,53 @@ function cmdPersonas() {
   rows.forEach((row) => process.stdout.write(`${row.id.padEnd(12)} ${row.mode.padEnd(8)} ${row.harness.padEnd(10)} ${row.chars} chars  ${row.name}\n`));
 }
 
+function stateRootPath() {
+  return optionValue("state", process.env.DSH_FORGE_STATE || path.join(optionValue("home", process.env.HOME || process.env.USERPROFILE || "."), ".dsh", "dsh-forge"));
+}
+
+function cmdAudit() {
+  const limit = Number(optionValue("limit", 100)) || 100;
+  const dshHomeOpt = optionValue("dsh-home", null);
+  const result = readAudit(logsDir(dshHomeOpt ? { dshHome: dshHomeOpt } : {}), { limit });
+  const summary = summarizeAudit(result.events);
+  if (flags.has("--json")) return out({ ok: true, ...result, summary }, true);
+  banner(`audit ${summary.total} events · ${result.days} day(s)`);
+  Object.entries(summary.counts).sort((a, b) => b[1] - a[1]).forEach(([event, count]) => process.stdout.write(`${String(count).padStart(4)}  ${event}\n`));
+  result.events.slice(-10).forEach((event) => process.stdout.write(`${event.ts} ${(event.level || "info").padEnd(5)} ${event.event} ${JSON.stringify(Object.fromEntries(Object.entries(event).filter(([k]) => !["ts", "level", "event", "day"].includes(k))))}\n`));
+  if (result.skipped) process.stdout.write(`${result.skipped} unreadable line(s) skipped\n`);
+}
+
+function cmdSnapshot() {
+  const stateRoot = stateRootPath();
+  if (flags.has("--list")) {
+    const rows = listSnapshots(stateRoot);
+    if (flags.has("--json")) return out({ ok: true, snapshots: rows, limits: SNAPSHOT_DEFAULTS }, true);
+    banner(`snapshots ${rows.length}`);
+    rows.forEach((row) => process.stdout.write(`${row.at} ${String(row.bytes).padStart(8)}  ${row.label}  ${row.name}\n`));
+    return;
+  }
+  const limits = {
+    keep: Number(optionValue("keep", SNAPSHOT_DEFAULTS.keep)),
+    days: Number(optionValue("days", SNAPSHOT_DEFAULTS.days)),
+    maxBytes: Number(optionValue("max-bytes", SNAPSHOT_DEFAULTS.maxBytes)),
+  };
+  if (![limits.keep, limits.days, limits.maxBytes].every((n) => Number.isFinite(n) && n >= 0)) {
+    process.exitCode = 1;
+    return out({ ok: false, code: "snapshot-limits", error: "keep, days and max-bytes must be non-negative numbers" }, true);
+  }
+  const { plan } = forgeContext();
+  const written = writeSnapshot(stateRoot, { label: `prompt-${plan.profile.id}`, content: plan.prompt.text });
+  const pruned = pruneSnapshots(stateRoot, limits);
+  setLogFile(defaultLogFile({}));
+  log("snapshot.written", { profile: plan.profile.id, bytes: written.bytes, kept: pruned.kept.length, removed: pruned.removed.length });
+  if (flags.has("--json")) return out({ ok: true, written, pruned }, true);
+  banner(`snapshot ${plan.profile.id}`);
+  process.stdout.write(`${written.bytes} bytes → ${written.file}\n`);
+  process.stdout.write(`kept ${pruned.kept.length} · removed ${pruned.removed.length} · freed ${pruned.freedBytes} bytes (keep ${limits.keep}, days ${limits.days}, max ${limits.maxBytes})\n`);
+}
+
 function cmdConsole() {
-  const stateRoot = optionValue("state", process.env.DSH_FORGE_STATE || path.join(optionValue("home", process.env.HOME || process.env.USERPROFILE || "."), ".dsh", "dsh-forge"));
+  const stateRoot = stateRootPath();
   const projectRoot = optionValue("project", process.cwd());
   const state = () => consoleState({ stateRoot }, { projectRoot });
   if (flags.has("--once")) {
@@ -383,6 +437,8 @@ function cmdConsole() {
   });
   server.listen(port, CONSOLE_HOST, () => {
     const actual = server.address().port;
+    setLogFile(defaultLogFile({}));
+    log("console.start", { port: actual });
     banner(`console http://${CONSOLE_HOST}:${actual}`);
     process.stdout.write(`read-only · state ${stateRoot} · ctrl-c to stop\n`);
   });
@@ -551,7 +607,7 @@ try {
     case "preset": cmdPreset(); break;
     case "collect": cmdCollect(); break;
     case "log": cmdLog(); break;
-    case "audit": cmdLog(); break;
+    case "audit": cmdAudit(); break;
     case "compile": cmdCompile(); break;
     case "apply-profile": cmdForgeApply(); break;
     case "plans": cmdPlans(); break;
@@ -565,6 +621,7 @@ try {
     case "shim": cmdShim(); break;
     case "grades": cmdGrades(); break;
     case "console": cmdConsole(); break;
+    case "snapshot": cmdSnapshot(); break;
     case "version": process.stdout.write(`${VERSION}\n`); break;
     default: usage();
   }

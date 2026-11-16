@@ -278,6 +278,7 @@ npm run pack:check
 - **[docs/GRADES.md](docs/GRADES.md)** — Delivery grades per host with the mechanism and evidence behind each one.
 - **[docs/CHANNELS.md](docs/CHANNELS.md)** — Channel classification, effect timing, and the `shim` wrapper.
 - **[docs/PERSONAS.md](docs/PERSONAS.md)** — Persona file format and the four composition modes.
+- **[docs/AUDIT.md](docs/AUDIT.md)** — 操作日志、跨天 `audit` 查询与快照保留策略。
 - **[docs/CONSOLE.md](docs/CONSOLE.md)** — Loopback console routes, single-instance lock, and why the page matches the CLI.
 - **[docs/DEBUG.md](docs/DEBUG.md)** — Troubleshooting decision tree, common error codes, and post-install smoke checks.
 - **[docs/DESIGN.md](docs/DESIGN.md)** — Architectural rationale and engineering trade-offs.

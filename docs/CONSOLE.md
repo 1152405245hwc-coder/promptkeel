@@ -18,6 +18,7 @@ dsh-forge console --once [--json]
 | `/channels` | per-profile channel counts (`project`, `install`, `slash`, `none`) |
 | `/grades` | per-profile delivery grade, evidence source and mechanism |
 | `/personas` | persona id, default mode, harness scope and size |
+| `/audit` | event counts from the operation log, stored snapshots and the retention limits in force |
 | `/api/state` | the whole state object as JSON, for anything that wants to parse it |
 
 ## One instance per state directory
