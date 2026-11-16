@@ -97,7 +97,7 @@ DSH 是原生且能力最完整的目标宿主；同一套分层提示词与事�
 | :--- | :--- | :--- | :--- |
 | **DSH (macOS / Linux / Windows)** | `dsh` | 8 条 JS 补丁（`@deepseek-ai/*`）+ `~/.dsh/prompt-inject.md` | `verified` |
 | **Claude Code** | `claude-code` | `CLAUDE.md`（受管区块）+ `.claude/settings.json` | `verified` |
-| **Codex CLI** | `codex` | `AGENTS.md`（受管区块）+ `~/.codex/config.toml` | `verified` |
+| **Codex CLI** | `codex` | `AGENTS.md`（受管区块，仅当前项目） | `verified` |
 | **Gemini CLI** | `gemini` | `GEMINI.md`（受管区块）+ `.gemini/settings.json` | `experimental` |
 | **OpenCode** | `opencode` | `AGENTS.md`（受管区块）+ `opencode.json` | `experimental` |
 | **通用 API / 本地权重** | `generic` | 仅输出合成后的 system prompt（`prompt-only`） | `experimental` |

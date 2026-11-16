@@ -37,8 +37,8 @@ test("prompt render is deterministic and changes with model", () => {
 test("compile resolves project and user targets without writing", () => {
   const home = tmp(); const project = tmp();
   const plan = compile(loadProfile("codex"), loadModel("gpt"), { home, projectRoot: project });
-  assert.equal(plan.actions.find((a) => a.kind === "toml-merge").path, path.join(home, ".codex/config.toml"));
   assert.equal(plan.actions.find((a) => a.kind === "markdown-block").path, path.join(project, "AGENTS.md"));
+  assert.equal(plan.actions.some((a) => a.kind === "toml-merge"), false);
   assert.equal(fs.existsSync(path.join(project, "AGENTS.md")), false);
 });
 

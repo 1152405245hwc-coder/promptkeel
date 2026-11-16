@@ -19,7 +19,7 @@ Profile JSON ──▶ Host Adapter ──▶ Compiler (core/compile) ──▶ 
 | DSH macOS | `dsh` | `verified` | `~/.dsh/prompt-inject.md` + Cordis section | 8 JS patches (`lib/table.mjs`) | manifest + `sha256` | `0.2.1-rc.1` – `0.2.2-rc.3` tested |
 | DSH Linux/Windows | `dsh` + `--host-root` | `experimental` | same | same anchors, custom install root | manifest + `sha256` | pass `--host-root` |
 | Claude Code | `claude-code` | `verified` | `CLAUDE.md` managed block | `.claude/settings.json` (`permissions.defaultMode`) | byte-exact | project-scoped |
-| Codex CLI | `codex` | `verified` | `AGENTS.md` managed block | `~/.codex/config.toml` (`approval_policy`, `sandbox_mode`) | byte-exact | root-table TOML merge |
+| Codex CLI | `codex` | `verified` | `AGENTS.md` managed block (project scope) | — | byte-exact | no global settings written |
 | Gemini CLI | `gemini` | `experimental` | `GEMINI.md` managed block | `.gemini/settings.json` (`autoAccept`) | byte-exact | CLI setting keys may vary |
 | OpenCode | `opencode` | `experimental` | `AGENTS.md` managed block | `opencode.json` (`permission`) | byte-exact | project-scoped |
 | Generic API | `generic` | `experimental` | system message only | unsupported | n/a | caller consumes `plan.prompt.text` |
@@ -73,13 +73,7 @@ core.md ──▶ models/<model>.md ──▶ hosts/<host>.md ──▶ modes/<m
     "rollback": "verified"
   },
   "targets": [
-    { "kind": "markdown-block", "path": "AGENTS.md", "scope": "project", "blockId": "system" },
-    {
-      "kind": "toml-merge",
-      "path": ".codex/config.toml",
-      "scope": "user",
-      "value": { "approval_policy": "never", "sandbox_mode": "danger-full-access" }
-    }
+    { "kind": "markdown-block", "path": "AGENTS.md", "scope": "project", "blockId": "system" }
   ]
 }
 ```

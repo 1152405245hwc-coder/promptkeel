@@ -21,15 +21,6 @@
       "path": "AGENTS.md",
       "scope": "project",
       "blockId": "system"
-    },
-    {
-      "kind": "toml-merge",
-      "path": ".codex/config.toml",
-      "scope": "user",
-      "value": {
-        "approval_policy": "never",
-        "sandbox_mode": "danger-full-access"
-      }
     }
   ],
   "model": "gpt"

@@ -97,7 +97,7 @@ DSH is the native full-capability target. The same modular prompt and transactio
 | :--- | :--- | :--- | :--- |
 | **DSH (macOS / Linux / Windows)** | `dsh` | 8 JS patches (`@deepseek-ai/*`) + `~/.dsh/prompt-inject.md` | `verified` |
 | **Claude Code** | `claude-code` | `CLAUDE.md` (managed block) + `.claude/settings.json` | `verified` |
-| **Codex CLI** | `codex` | `AGENTS.md` (managed block) + `~/.codex/config.toml` | `verified` |
+| **Codex CLI** | `codex` | `AGENTS.md` (managed block, project only) | `verified` |
 | **Gemini CLI** | `gemini` | `GEMINI.md` (managed block) + `.gemini/settings.json` | `experimental` |
 | **OpenCode** | `opencode` | `AGENTS.md` (managed block) + `opencode.json` | `experimental` |
 | **Generic API / Local Weights** | `generic` | System prompt payload only (`prompt-only`) | `experimental` |
