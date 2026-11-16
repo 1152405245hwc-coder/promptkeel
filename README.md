@@ -190,6 +190,10 @@ dsh-forge explain <patch-id>
 
 ---
 
+## Delivery channels
+
+Every action a profile compiles belongs to one channel: `project` (repository files), `install` (host runtime and user-scope prompt files), `shim` (a wrapper that exports the prompt and execs the host binary), `slash` (commands the host registers in a session), or `none` (prompt composed, nothing written). `compile` reports the classification and timing on `plan.channels`; `dsh-forge channels --all` prints the measured matrix for every profile. `dsh-forge shim` renders the wrapper. Details in [docs/CHANNELS.md](docs/CHANNELS.md).
+
 ## Personas
 
 `prompt/personas/*.md` holds prompt-level identity layers that travel across adapters. A persona composes with the host prompt in one of four modes: `replace` keeps host working rules while dropping identity claims, `strict` keeps the persona alone, `append` adds it after the host prompt, `off` disables it. `dsh-forge personas` lists what ships; `dsh-forge compile codex --persona engineer --persona-mode strict` selects one, and `off` reproduces the plain build byte for byte. Details in [docs/PERSONAS.md](docs/PERSONAS.md).

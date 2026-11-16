@@ -4,6 +4,7 @@ import { preflight } from "./capabilities.mjs";
 import { normalizeProfile, validateModel } from "./contract.mjs";
 import { fail } from "./errors.mjs";
 import { getAdapter } from "../hosts/registry.mjs";
+import { summarizeChannels } from "./channels.mjs";
 import { detectWithAdapter } from "../hosts/adapter.mjs";
 
 function targetMetadataEnabled(profile) {
@@ -216,6 +217,7 @@ export function compile(profile, model, { mode = null, persona = null, personaMo
     prompt: { sha256: composed.sha256, bodySha: composed.bodySha, tokens: composed.tokens, sources: composed.sources, text: composed.text },
     budget: { tokens: composed.tokens, max: maxTokens, ok: composed.tokens <= maxTokens },
     capabilities: pre.rows,
+    channels: summarizeChannels(actions, { projectRoot }),
     actions,
   };
 }

@@ -6,6 +6,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Sem
 
 ### Added
 
+- Channel model: `core/channels.mjs` classifies every compiled action as `project` / `install` / `shim` / `slash` / `none` with an effect timing, `plan.channels` carries the summary, and `dsh-forge channels [--all]` prints one profile or the whole matrix. `core/shim.mjs` plus `dsh-forge shim` render a deterministic POSIX wrapper that exports the prompt and execs the host binary.
 - Persona layer: `core/persona.mjs`, three bundled personas (`direct`, `engineer`, `tutor`), `dsh-forge personas`, and `--persona` / `--persona-mode` on `compile`. Modes are `replace`, `strict`, `append`, `off`; `off` reproduces the plain composition byte for byte.
 - Five more breakage patches (15 total): sandbox escalation hint no longer promises an approval prompt, seatbelt blanket write deny removed, filesystem fence branches removed, badge skill description neutral, deliverable guidance no longer forbids `present`. Every entry now carries a `layer` (`approval` / `sandbox` / `turn` / `persona`).
 - Two more breakage patches: `sandbox-policy-brand-neutral` (policy lines stop naming the host product) and `harness-identity-off` (stock self-description section is not injected). Both anchors verified against DSH 0.2.2-rc.3.

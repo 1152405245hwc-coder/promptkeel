@@ -188,6 +188,10 @@ dsh-forge explain <patch-id>
 
 ---
 
+## 投递通道
+
+每条编译出的动作都属于一个通道：`project`（仓库内文件）、`install`（宿主运行时与用户级提示词文件）、`shim`（导出提示词并 exec 宿主二进制的包装脚本）、`slash`（宿主在会话内注册的命令），以及 `none`（只组合提示词、不落盘）。`compile` 会把分类和生效时机写在 `plan.channels`，`dsh-forge channels --all` 打印全部 profile 的实测矩阵，`dsh-forge shim` 渲染包装脚本。细节见 [docs/CHANNELS.md](docs/CHANNELS.md)。
+
 ## 人设层
 
 `prompt/personas/*.md` 是可以跨适配器迁移的提示词身份层。人设与宿主提示词的组合有四种模式：`replace` 保留宿主工作规则、去掉自称身份，`strict` 只留人设，`append` 追加在宿主提示词之后，`off` 关闭。`dsh-forge personas` 列出内置人设；`dsh-forge compile codex --persona engineer --persona-mode strict` 指定使用，`off` 与不传人设逐字节一致。细节见 [docs/PERSONAS.md](docs/PERSONAS.md)。

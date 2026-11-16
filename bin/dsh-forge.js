@@ -20,6 +20,7 @@ import { registerProvider } from "../core/provider.mjs";
 import * as dshProvider from "../lib/dsh-provider.mjs";
 import { normalizeContext } from "../core/context.mjs";
 import { listPersonas } from "../core/persona.mjs";
+import { renderShim } from "../core/shim.mjs";
 
 registerProvider(dshProvider);
 
@@ -39,6 +40,9 @@ const { values: opts, positionals } = parseArgs({
     adapter: { type: "string" },
     mode: { type: "string" },
     persona: { type: "string" },
+    binary: { type: "string" },
+    prompt: { type: "string" },
+    env: { type: "string", multiple: true },
     "persona-mode": { type: "string" },
     out: { type: "string" },
     budget: { type: "string" },
@@ -102,6 +106,8 @@ Usage:
   dsh-forge log [--limit 50|--clear]
   dsh-forge audit [--limit 50]                  read the structured operation log
   dsh-forge personas [--json]                   list bundled personas
+  dsh-forge channels [--all] [--json]           show delivery channel per action
+  dsh-forge shim --binary <path> [--prompt <file>] [--env K=V] [--out <file>]
   dsh-forge compile [profile] [--model <id>] [--mode <mode>] [--persona <id>] [--persona-mode off|replace|strict|append] [--home <dir>] [--project <dir>] [--budget 3200] [--out plan.json]
   dsh-forge apply --profile <profile> [--model <model>] [--home <dir>] [--project <dir>] [--state <dir>] [--preview file] [--dry-run|--yes]
   dsh-forge plans [--json]
@@ -346,6 +352,50 @@ function cmdPersonas() {
   rows.forEach((row) => process.stdout.write(`${row.id.padEnd(12)} ${row.mode.padEnd(8)} ${row.harness.padEnd(10)} ${row.chars} chars  ${row.name}\n`));
 }
 
+function cmdChannels() {
+  if (flags.has("--all")) {
+    const rows = listProfiles().map((profile) => {
+      const model = loadModel(profile.model || "deepseek");
+      const plan = compile(profile, model, { projectRoot: process.cwd() });
+      return { id: profile.id, host: profile.host, support: profile.support, ...plan.channels.counts, timings: plan.channels.timings };
+    });
+    if (flags.has("--json")) return out({ ok: true, profiles: rows }, true);
+    banner(`channel coverage ${rows.length} profiles`);
+    process.stdout.write(`${"profile".padEnd(12)} ${"track".padEnd(12)} project install shim slash none\n`);
+    rows.forEach((row) => process.stdout.write(`${row.id.padEnd(12)} ${String(row.support).padEnd(12)} ${String(row.project).padEnd(7)} ${String(row.install).padEnd(7)} ${String(row.shim).padEnd(4)} ${String(row.slash).padEnd(5)} ${row.none}\n`));
+    return;
+  }
+  const { plan } = forgeContext();
+  if (flags.has("--json")) return out({ ok: true, channels: plan.channels }, true);
+  banner(`channels ${plan.profile.id} → ${plan.profile.host}`);
+  process.stdout.write(`track ${plan.profile.support} · ${plan.channels.channels.join(" ") || "none"}\n`);
+  plan.channels.rows.forEach((row) => {
+    process.stdout.write(`${row.channel.padEnd(9)} ${row.timing.padEnd(13)} ${String(row.kind).padEnd(15)} ${row.path || "(none)"}\n`);
+  });
+}
+
+function cmdShim() {
+  const binary = optionValue("binary", null);
+  const promptPath = optionValue("prompt", null);
+  const env = {};
+  for (const pair of opts.env || []) {
+    const at = String(pair).indexOf("=");
+    if (at <= 0) {
+      process.exitCode = 1;
+      out({ ok: false, code: "shim-env", error: `--env expects KEY=VALUE, got ${pair}` }, true);
+      return;
+    }
+    env[String(pair).slice(0, at)] = String(pair).slice(at + 1);
+  }
+  const text = renderShim({ binary, promptPath, env, note: optionValue("note", null) });
+  const outFile = optionValue("out", null);
+  if (!outFile) return process.stdout.write(text);
+  const abs = path.resolve(outFile);
+  ensureDir(path.dirname(abs));
+  fs.writeFileSync(abs, text, { mode: 0o755 });
+  out({ ok: true, shim: abs, bytes: text.length }, flags.has("--json"));
+}
+
 function cmdCompile() {
   const { plan } = forgeContext();
   process.exitCode = plan.budget.ok ? 0 : 1;
@@ -460,6 +510,8 @@ try {
     case "hosts": cmdHosts(); break;
     case "models": cmdModels(); break;
     case "personas": cmdPersonas(); break;
+    case "channels": cmdChannels(); break;
+    case "shim": cmdShim(); break;
     case "version": process.stdout.write(`${VERSION}\n`); break;
     default: usage();
   }
