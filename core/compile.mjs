@@ -40,7 +40,7 @@ export function resolveTargetPath(target, { home = process.env.HOME || process.e
  * Compile a profile into a pure data plan. This function performs no writes.
  * Identical inputs must produce an identical planId on every machine.
  */
-export function compile(profile, model, { mode = null, home, projectRoot, promptRoot, budget = 3200, env } = {}) {
+export function compile(profile, model, { mode = null, persona = null, personaMode = null, home, projectRoot, promptRoot, budget = 3200, env } = {}) {
   const normalizedProfile = normalizeProfile(profile);
   validateModel(model);
   const maxTokens = Number(budget);
@@ -70,13 +70,14 @@ export function compile(profile, model, { mode = null, home, projectRoot, prompt
   }
   const pre = preflight(normalizedProfile, { host: normalizedProfile.host, model });
   if (!pre.ok) fail("preflight", "profile preflight failed", { problems: pre.problems });
-  const composed = renderPrompt({ profile: normalizedProfile, model, mode, root: promptRoot });
+  const composed = renderPrompt({ profile: normalizedProfile, model, mode, persona, personaMode, root: promptRoot });
   const actions = [];
   const compileContext = {
     profile: normalizedProfile,
     model,
     mode,
     composed,
+    persona: composed.persona,
     home,
     projectRoot,
     promptRoot,
@@ -211,6 +212,7 @@ export function compile(profile, model, { mode = null, home, projectRoot, prompt
     },
     model: { id: model.id, version: model.version || null },
     mode,
+    persona: composed.persona,
     prompt: { sha256: composed.sha256, bodySha: composed.bodySha, tokens: composed.tokens, sources: composed.sources, text: composed.text },
     budget: { tokens: composed.tokens, max: maxTokens, ok: composed.tokens <= maxTokens },
     capabilities: pre.rows,

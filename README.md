@@ -190,6 +190,10 @@ dsh-forge explain <patch-id>
 
 ---
 
+## Personas
+
+`prompt/personas/*.md` holds prompt-level identity layers that travel across adapters. A persona composes with the host prompt in one of four modes: `replace` keeps host working rules while dropping identity claims, `strict` keeps the persona alone, `append` adds it after the host prompt, `off` disables it. `dsh-forge personas` lists what ships; `dsh-forge compile codex --persona engineer --persona-mode strict` selects one, and `off` reproduces the plain build byte for byte. Details in [docs/PERSONAS.md](docs/PERSONAS.md).
+
 ## CLI Reference
 
 ### DeepSeek Harness (`dsh`) Native Commands

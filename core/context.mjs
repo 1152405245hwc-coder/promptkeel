@@ -12,6 +12,8 @@ export function normalizeContext(input = {}) {
     hostRoot: pick("hostRoot") ?? process.env.DSH_FORGE_HOST_ROOT ?? undefined,
     dshHome: pick("dshHome") ?? (home ? `${home.replace(/[\\/]$/, "")}/.dsh` : undefined),
     mode: input.mode ?? null,
+    persona: input.persona ?? pick("persona") ?? null,
+    personaMode: input.personaMode ?? pick("personaMode") ?? null,
     budget: input.budget ?? 3200,
     env: { ...nested, stateRoot: pick("stateRoot"), hostRoot: pick("hostRoot"), dshHome: pick("dshHome") },
   };

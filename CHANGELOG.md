@@ -6,6 +6,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Sem
 
 ### Added
 
+- Persona layer: `core/persona.mjs`, three bundled personas (`direct`, `engineer`, `tutor`), `dsh-forge personas`, and `--persona` / `--persona-mode` on `compile`. Modes are `replace`, `strict`, `append`, `off`; `off` reproduces the plain composition byte for byte.
 - Five more breakage patches (15 total): sandbox escalation hint no longer promises an approval prompt, seatbelt blanket write deny removed, filesystem fence branches removed, badge skill description neutral, deliverable guidance no longer forbids `present`. Every entry now carries a `layer` (`approval` / `sandbox` / `turn` / `persona`).
 - Two more breakage patches: `sandbox-policy-brand-neutral` (policy lines stop naming the host product) and `harness-identity-off` (stock self-description section is not injected). Both anchors verified against DSH 0.2.2-rc.3.
 - Research notes for the next phases: `docs/research/BREAKOUT_PATCH_MATRIX.md` (90 patch names from six dsh-purge forks graded by portability), `docs/research/PERSONA_CHANNEL_DESIGN.md` (four modes, persona layout, four channels), `docs/research/PLATFORM_BREAKOUT_MATRIX.md` (support grades for ten hosts).

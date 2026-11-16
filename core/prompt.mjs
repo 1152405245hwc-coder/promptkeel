@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { promptsDir } from "./contract.mjs";
+import { applyPersona, loadPersona } from "./persona.mjs";
 import { fail } from "./errors.mjs";
 
 export function estimateTokens(text) {
@@ -34,7 +35,7 @@ function readPart(root, rel, { optional = false } = {}) {
  * core -> model overlay -> host overlay -> mode overlay.
  * No timestamps, hostnames or user paths enter the rendered bytes.
  */
-export function renderPrompt({ profile, model, mode = null, root = promptsDir() } = {}) {
+export function renderPrompt({ profile, model, mode = null, persona = null, personaMode = null, root = promptsDir() } = {}) {
   if (!profile || !model) fail("prompt-args", "profile and model are required");
   const parts = [];
   parts.push(readPart(root, profile.prompt.core));
@@ -45,9 +46,12 @@ export function renderPrompt({ profile, model, mode = null, root = promptsDir() 
     if (/[\\/]|\.\./.test(String(mode))) fail("prompt-path", `prompt mode escapes modes/: ${mode}`);
     parts.push(readPart(root, path.join("modes", `${mode}.md`)));
   }
-  const body = parts.map((p) => p.text).filter(Boolean).join("\n\n");
+  const resolved = persona ? loadPersona(persona, { root, mode: personaMode }) : null;
+  const layered = applyPersona(parts.filter((p) => p.text), resolved);
+  const body = layered.map((p) => p.text).filter(Boolean).join("\n\n");
   const bodySha = sha256(body);
-  const header = `<!-- dsh-forge profile=${profile.id} host=${profile.host} model=${model.id}${mode ? ` mode=${mode}` : ""} sha256:${bodySha.slice(0, 16)} -->`;
+  const personaTag = resolved && resolved.mode !== "off" ? ` persona=${resolved.id} personaMode=${resolved.mode}` : "";
+  const header = `<!-- dsh-forge profile=${profile.id} host=${profile.host} model=${model.id}${mode ? ` mode=${mode}` : ""}${personaTag} sha256:${bodySha.slice(0, 16)} -->`;
   const text = `${header}\n${body}\n`;
   return {
     text,
@@ -55,6 +59,7 @@ export function renderPrompt({ profile, model, mode = null, root = promptsDir() 
     tokens: estimateTokens(text),
     sha256: sha256(text),
     bodySha,
-    sources: parts.map((p) => p.rel),
+    sources: layered.map((p) => p.rel),
+    persona: resolved && resolved.mode !== "off" ? { id: resolved.id, mode: resolved.mode } : null,
   };
 }

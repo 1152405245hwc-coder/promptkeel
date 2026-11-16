@@ -19,6 +19,7 @@ import { detectAll } from "../hosts/registry.mjs";
 import { registerProvider } from "../core/provider.mjs";
 import * as dshProvider from "../lib/dsh-provider.mjs";
 import { normalizeContext } from "../core/context.mjs";
+import { listPersonas } from "../core/persona.mjs";
 
 registerProvider(dshProvider);
 
@@ -37,6 +38,8 @@ const { values: opts, positionals } = parseArgs({
     id: { type: "string" },
     adapter: { type: "string" },
     mode: { type: "string" },
+    persona: { type: "string" },
+    "persona-mode": { type: "string" },
     out: { type: "string" },
     budget: { type: "string" },
     profile: { type: "string" },
@@ -98,7 +101,8 @@ Usage:
   dsh-forge collect                             export redacted diagnostics tarball
   dsh-forge log [--limit 50|--clear]
   dsh-forge audit [--limit 50]                  read the structured operation log
-  dsh-forge compile [profile] [--model <id>] [--mode <mode>] [--home <dir>] [--project <dir>] [--budget 3200] [--out plan.json]
+  dsh-forge personas [--json]                   list bundled personas
+  dsh-forge compile [profile] [--model <id>] [--mode <mode>] [--persona <id>] [--persona-mode off|replace|strict|append] [--home <dir>] [--project <dir>] [--budget 3200] [--out plan.json]
   dsh-forge apply --profile <profile> [--model <model>] [--home <dir>] [--project <dir>] [--state <dir>] [--preview file] [--dry-run|--yes]
   dsh-forge plans [--json]
   dsh-forge verify-plan <plan-id> [--json]
@@ -324,6 +328,8 @@ function forgeContext() {
     hostId: profile.host,
     profileId: profile.id,
     mode: optionValue("mode", null),
+    persona: optionValue("persona", null),
+    personaMode: optionValue("persona-mode", null),
     projectRoot: optionValue("project", process.cwd()),
     home,
     budget: Number(optionValue("budget", 3200)),
@@ -331,6 +337,13 @@ function forgeContext() {
   });
   const plan = compile(profile, model, context);
   return { profile, model, plan, context };
+}
+
+function cmdPersonas() {
+  const rows = listPersonas().map(({ id, name, mode, harness, chars }) => ({ id, name, mode, harness, chars }));
+  if (flags.has("--json")) return out({ ok: true, personas: rows }, true);
+  banner(`personas ${rows.length}`);
+  rows.forEach((row) => process.stdout.write(`${row.id.padEnd(12)} ${row.mode.padEnd(8)} ${row.harness.padEnd(10)} ${row.chars} chars  ${row.name}\n`));
 }
 
 function cmdCompile() {
@@ -446,6 +459,7 @@ try {
     case "profiles": cmdProfiles(); break;
     case "hosts": cmdHosts(); break;
     case "models": cmdModels(); break;
+    case "personas": cmdPersonas(); break;
     case "version": process.stdout.write(`${VERSION}\n`); break;
     default: usage();
   }
