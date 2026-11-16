@@ -15,7 +15,7 @@
 └────────────┘              └──────────────┘              └───────────────┘
 ┌────────────┐   dry-run    ┌──────────────┐   backup     ┌───────────────┐
 │ table.mjs  │ ───────────▶ │ lib/engine   │ ───────────▶ │ host files &  │
-│ 15 patches  │              │ verify+apply │              │ manifest      │
+│ 16 patches  │              │ verify+apply │              │ manifest      │
 └────────────┘              └──────────────┘              └───────────────┘
 ```
 
@@ -139,7 +139,7 @@ pnpm add /path/to/dsh-forge
 # 2) Register dsh-forge in dsh.profile.bundles (automatically ordered after dsh-purge* with backup)
 npx dsh-forge profile enable --profile desktop
 
-# 3) Run the 12-check diagnostic, preflight, and apply the 15 host patches
+# 3) Run the 12-check diagnostic, preflight, and apply the 16 host patches
 npx dsh-forge doctor
 npx dsh-forge apply --dry-run
 npx dsh-forge apply --yes
@@ -218,12 +218,12 @@ Every action a profile compiles belongs to one channel: `project` (repository fi
 | :--- | :--- |
 | `dsh-forge doctor [--profile desktop\|web] [--json]` | Run 12 host, version, anchor, token budget, conflict, and profile bundle checks |
 | `dsh-forge status [--profile desktop\|web] [--json]` | Print `doctor` report, active workspace policy, profile status, and backups |
-| `dsh-forge apply [--dry-run\|--yes]` | Preflight or atomically apply the 15 host patches (automatically unpacks sealed `app.asar` on `--yes`) |
+| `dsh-forge apply [--dry-run\|--yes]` | Preflight or atomically apply the 16 host patches (automatically unpacks sealed `app.asar` on `--yes`) |
 | `dsh-forge unpack [--dry-run\|--yes]` | Unpack sealed `Contents/Resources/app.asar` into `Contents/Resources/app` |
 | `dsh-forge upgrade [--dry-run\|--yes]` | Revert same-version backup if present and re-apply the current patch table |
 | `dsh-forge revert [--id <backup>] [--force]` | Restore host files from a backup manifest with `sha256` and `hostVersion` verification |
 | `dsh-forge verify [--profile desktop\|web] [--json]` | Verify patch markers, prompt channel budget/registration, and newest session log |
-| `dsh-forge adapt [--json]` | Check anchor readiness across all 15 patches after a DSH host update |
+| `dsh-forge adapt [--json]` | Check anchor readiness across all 16 patches after a DSH host update |
 | `dsh-forge explain <patch-id>` | Print anchor match counts and target file preview for a specific patch |
 | `dsh-forge profile [status\|enable\|disable] [--profile desktop]` | Inspect or update `dsh.profile.bundles` in `~/.dsh/profiles/<profile>/package.json` |
 | `dsh-forge prompt compose [--adapter deepseek] [--mode coding] [--out file]` | Compose `core + adapter + mode` and validate against the token budget |
@@ -277,7 +277,7 @@ npm run pack:check
 ## Documentation
 
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Module layering, sequence diagrams, patch state machine, and cross-host compiler pipeline.
-- **[docs/PATCHES.md](docs/PATCHES.md)** — Detailed specification of the 15 declarative host patches and multi-version `variants`.
+- **[docs/PATCHES.md](docs/PATCHES.md)** — Detailed specification of the 16 declarative host patches and multi-version `variants`.
 - **[docs/COMPAT.md](docs/COMPAT.md)** — Supported DSH versions (`0.2.1-rc.1` – `0.2.2-rc.3`), host upgrade workflow, and runtime requirements.
 - **[docs/GRADES.md](docs/GRADES.md)** — Delivery grades per host with the mechanism and evidence behind each one.
 - **[docs/CHANNELS.md](docs/CHANNELS.md)** — Channel classification, effect timing, and the `shim` wrapper.

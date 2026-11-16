@@ -6,6 +6,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Sem
 
 ### Added
 
+- Session-layer patch `session-reference-warning-neutral`: cross-session references are re-framed as current task context instead of untrusted snapshots, so earlier instructions and permission decisions carried across sessions are no longer silently demoted. The patch table now covers all five armor layers (`approval` 5, `sandbox` 6, `turn` 1, `persona` 3, `session` 1).
+
 - Operation audit: `dsh-forge audit [--limit 100]` reads every daily log file, counts events per type, and reports unreadable lines instead of dropping them. `snapshot.written` and `console.start` are now recorded.
 - Snapshots: `dsh-forge snapshot [profile]` stores the composed prompt under `<state>/snapshots/` with UTC-stamped names, then prunes by age (7 days), count (5), and total size (200 MiB), always keeping the newest file. `--list` and `--json` report what is stored.
 

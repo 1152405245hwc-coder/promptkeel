@@ -1,6 +1,6 @@
 # Host Patch Table
 
-All patches in `lib/table.mjs` are declarative: target file path relative to the host root, supported version range, exact `find` / `replace` strings, and a `marker` string used to verify that the patch is present. `apply` preflights all required patches before writing any file.
+All patches in `lib/table.mjs` are declarative: target file path relative to the host root, supported version range, exact `find` / `replace` strings, and a `marker` string used to verify that the patch is present. `apply` preflights all required patches before writing any file. Every entry carries a `layer` — `approval` (5), `sandbox` (6), `turn` (1), `persona` (3), `session` (1) — so `dsh-forge doctor`, `dsh-forge adapt` and the console can show which armor layer a patch belongs to.
 
 | # | ID | Target File | Change |
 |---|---|---|---|
@@ -19,6 +19,7 @@ All patches in `lib/table.mjs` are declarative: target file path relative to the
 | 13 | `fs-fence-disabled` | `dsh-fs-sandbox/lib/index.js` | Drops the read-only and workspace-write refusal branches in `checkedTarget` |
 | 14 | `skill-badge-neutral` | `dsh-skill-badge/lib/index.js` | Badge skill description no longer advertises the host brand |
 | 15 | `deliverable-present-guard` | `dsh-deliverable-file-references/lib/index.js` | Replaces the sentence that steers the model away from `present` |
+| 16 | `session-reference-warning-neutral` | `dsh-session-reference/lib/index.js` | Referenced sessions stop being declared untrusted, so their instructions are no longer demoted |
 
 ## Adding or Updating a Patch
 
