@@ -77,7 +77,7 @@ test("consoleState reuses doctor output so pages cannot disagree with the CLI", 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "forge-state-"));
   const state = consoleState({ stateRoot: dir }, { projectRoot: process.cwd() });
   assert.ok(state.doctor.checks.length >= 10);
-  assert.equal(state.patches.total, 16);
+  assert.equal(state.patches.total, 23);
   assert.ok(state.profiles.length >= 10);
   assert.ok(state.personas.some((persona) => persona.id === "direct"));
   const layers = new Set(state.patches.rows.map((row) => row.layer));
@@ -96,5 +96,67 @@ test("pages carry the console design system and highlight the current route", ()
 test("the sidebar bundle ships the grade and persona tabs", async () => {
   const { readFile } = await import("node:fs/promises");
   const bundle = await readFile(new URL("../client/client.js", import.meta.url), "utf8");
-  for (const label of ["分级", "人设", "df-personas", "df-badge"]) assert.ok(bundle.includes(label), label);
+  for (const label of ["分级", "人设", "工作台", "df-personas", "df-badge"]) assert.ok(bundle.includes(label), label);
+});
+
+test("interactive workbench enforces CSRF/Origin and compiles, probes, applies, and reverts plans", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "forge-wb-"));
+  const stateDir = path.join(dir, "state");
+  const projectDir = path.join(dir, "project");
+  fs.mkdirSync(projectDir, { recursive: true });
+  const server = createConsole({
+    state: () => consoleState({ stateRoot: stateDir, home: dir }, { projectRoot: projectDir }),
+    env: { stateRoot: stateDir, home: dir, projectRoot: projectDir },
+  });
+  const port = await listen(server);
+  const base = `http://${CONSOLE_HOST}:${port}`;
+  try {
+    const html = await (await fetch(`${base}/workbench`)).text();
+    const csrfMatch = /<meta name="forge-csrf" content="([0-9a-f]+)">/.exec(html);
+    assert.ok(csrfMatch, "csrf meta tag rendered");
+    const csrf = csrfMatch[1];
+
+    const asset = await fetch(`${base}/assets/workbench.js`);
+    assert.equal(asset.status, 200);
+    assert.match(await asset.text(), /forge-workbench-root/);
+
+    const noCsrf = await fetch(`${base}/api/compile`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ profile: "generic", model: "deepseek" }),
+    });
+    assert.equal(noCsrf.status, 403);
+
+    const compiledRes = await fetch(`${base}/api/compile`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-forge-csrf": csrf },
+      body: JSON.stringify({ profile: "codex", model: "gpt", strategy: "variable+contract" }),
+    });
+    assert.equal(compiledRes.status, 200);
+    const compiled = await compiledRes.json();
+    assert.equal(compiled.ok, true);
+    assert.equal(compiled.plan.delivery.grade, "replace-full");
+
+    const appliedRes = await fetch(`${base}/api/apply-plan`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-forge-csrf": csrf },
+      body: JSON.stringify({ profile: "codex", model: "gpt", strategy: "variable+contract", preview: compiled.preview.preview, confirm: true }),
+    });
+    assert.equal(appliedRes.status, 200);
+    const applied = await appliedRes.json();
+    assert.equal(applied.ok, true);
+    assert.equal(fs.existsSync(path.join(projectDir, ".codex", "config.toml")), true);
+
+    const revertedRes = await fetch(`${base}/api/revert-plan`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-forge-csrf": csrf },
+      body: JSON.stringify({ planId: applied.id }),
+    });
+    assert.equal(revertedRes.status, 200);
+    assert.equal((await revertedRes.json()).ok, true);
+    assert.equal(fs.existsSync(path.join(projectDir, ".codex", "config.toml")), false);
+  } finally {
+    server.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });

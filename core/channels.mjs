@@ -19,6 +19,8 @@ const FILE_CHANNELS = {
   "markdown-block": { channel: "project", timing: "next-turn" },
   "json-merge": { channel: "project", timing: "next-turn" },
   "toml-merge": { channel: "project", timing: "next-turn" },
+  "yaml-merge": null,
+  "write-shim": { channel: "shim", timing: "shell-restart" },
   "prompt-only": { channel: "none", timing: "next-turn" },
 };
 

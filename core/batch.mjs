@@ -2,12 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { compile } from "./compile.mjs";
-import { verifyCompiled } from "./verify.mjs";
-import { previewPlan, applyPlan, revertPlan } from "./executor.mjs";
+import { verifyCompiled, previewPlan, applyPlan, revertPlan, stateRoot } from "./executor.mjs";
 import { sha256 } from "./prompt.mjs";
 import { DSH_PATCH_IDS } from "../lib/dsh-contract.mjs";
 
-const FILE_OPS = new Set(["write-file", "merge-block", "merge-json", "merge-toml"]);
+const FILE_OPS = new Set(["write-file", "write-shim", "merge-block", "merge-json", "merge-toml", "merge-yaml"]);
 const BATCH_SCHEMA = "forge.batch/v1";
 const PREVIEW_SCHEMA = "forge.preview/v1";
 
@@ -70,8 +69,8 @@ function actionSignature(action, target = {}) {
     blockId: target.blockId || action.blockId || null,
     provider: action.provider || (action.op === "dsh-patches" ? "dsh.patches" : "core.files"),
   };
-  if (action.op === "write-file" || action.op === "merge-block") base.content = action.content ?? null;
-  if (action.op === "merge-json" || action.op === "merge-toml") base.value = action.value ?? null;
+  if (action.op === "write-file" || action.op === "write-shim" || action.op === "merge-block") base.content = action.content ?? null;
+  if (action.op === "merge-json" || action.op === "merge-toml" || action.op === "merge-yaml") base.value = action.value ?? null;
   if (action.op === "dsh-patches") base.patches = action.patches === "all" ? "all" : [...(action.patches || [])].sort();
   return stableJson(base);
 }
@@ -398,7 +397,7 @@ export function applyBatch(batch, { dryRun = false, yes = false, allowExperiment
   const { byKey, conflicts } = resolveConflicts(entries);
   if (conflicts.length) return { ok: false, code: "batch-target-conflict", error: "batch contains conflicting targets", conflicts, rollbackErrors: [] };
   const plans = clonePlansForApply(batch.plans, byKey, serializedTargets);
-  const root = path.resolve(env.stateRoot || process.env.DSH_FORGE_STATE || path.join(process.env.HOME || process.env.USERPROFILE || ".", ".dsh-forge"));
+  const root = stateRoot(env);
   const storageKey = sha256(stableJson(plans.map((plan) => ({ planId: plan.planId, paths: plan.actions.map((action) => action.path || null) })))).slice(0, 12);
   let lock = null;
   if (!dryRun && yes) {

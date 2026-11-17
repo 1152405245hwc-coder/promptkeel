@@ -1,11 +1,48 @@
 import fs from "node:fs";
 import path from "node:path";
 import http from "node:http";
+import crypto from "node:crypto";
 import { fail } from "./errors.mjs";
+import { CONSOLE_CSS, escapeHtml } from "../ui/tokens.mjs";
+import { listProfiles, listModels, loadProfile, loadModel } from "./contract.mjs";
+import { compile, normalizeContext } from "./compile.mjs";
+import { applyPlan, previewPlan, revertPlan, verifyPlan, listPlans, defaultStateRoot } from "./executor.mjs";
+import { listPersonas } from "./persona.mjs";
+import { TRANSFORMS } from "./transform.mjs";
+import { runProbes, selfCheck, PROBES } from "./probe.mjs";
+import { STRATEGIES, resolveStrategy } from "./strategy.mjs";
+import {
+  resolveGateway,
+  fetchModelIds,
+  executeStrategyRequest,
+  detectRefusal,
+  verdictOf,
+  complianceOf,
+  assertGatewayUrl,
+  DEFAULT_MAX_TOKENS,
+} from "./gateway.mjs";
+import { writeSnapshot, pruneSnapshots, SNAPSHOT_DEFAULTS } from "./snapshot.mjs";
+
+export { escapeHtml };
 
 export const CONSOLE_HOST = "127.0.0.1";
 export const CONSOLE_PORT = 7788;
-export const CONSOLE_ROUTES = ["/", "/patches", "/channels", "/grades", "/personas", "/audit", "/api/state"];
+export const CONSOLE_ROUTES = [
+  "/",
+  "/workbench",
+  "/plans",
+  "/live",
+  "/patches",
+  "/channels",
+  "/grades",
+  "/personas",
+  "/audit",
+  "/api/state",
+];
+
+const WORKBENCH_JS_PATH = path.resolve(import.meta.dirname, "..", "ui", "workbench.js");
+const LOOPBACK = new Set(["127.0.0.1", "localhost", "::1", "[::1]"]);
+const CSP_HEADER = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'none'";
 
 function alive(pid) {
   try {
@@ -16,11 +53,7 @@ function alive(pid) {
   }
 }
 
-/**
- * One console per state directory. A stale pid file (process gone) is replaced;
- * a live one blocks the second instance instead of letting two servers fight
- * over the same port.
- */
+/** One console per state directory. Stale pid files are replaced; live locks block. */
 export function acquireLock(dir, { pid = process.pid } = {}) {
   const file = path.join(dir, "console.pid");
   fs.mkdirSync(dir, { recursive: true });
@@ -38,18 +71,17 @@ export function acquireLock(dir, { pid = process.pid } = {}) {
       try {
         if (Number(fs.readFileSync(file, "utf8").trim()) === pid) fs.unlinkSync(file);
       } catch {
-        /* the lock is advisory; a missing file means someone already released it */
+        /* advisory lock already released */
       }
     },
   };
 }
 
-export function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
-}
-
 const NAV = [
   ["/", "overview"],
+  ["/workbench", "workbench"],
+  ["/plans", "plans"],
+  ["/live", "live"],
   ["/patches", "patches"],
   ["/channels", "channels"],
   ["/grades", "grades"],
@@ -58,113 +90,66 @@ const NAV = [
   ["/api/state", "api"],
 ];
 
-const CSS = `
-:root{--bg:#0b0e13;--panel:#141b24;--panel2:#18212c;--line:#232d3a;--text:#e7eef6;--dim:#8a97a6;--mute:#5d6a79;--amber:#f0b35b;--green:#5fd39b;--red:#ef6b73;--blue:#6cb6ff;--radius:12px}
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:radial-gradient(1200px 620px at 18% -12%,#16202b 0,#0b0e13 58%);color:var(--text);font:14px/1.6 "SF Pro Text","PingFang SC",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-a{color:inherit;text-decoration:none}
-.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:13px 24px;border-bottom:1px solid var(--line);background:rgba(11,14,19,.84);backdrop-filter:blur(12px)}
-.brand{display:flex;align-items:center;gap:9px;font:700 12.5px/1 "SF Mono",ui-monospace,monospace;letter-spacing:.18em;color:var(--amber)}
-.mark{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:11px;color:#1a1206;background:linear-gradient(145deg,rgba(240,179,91,.95),rgba(240,179,91,.3));box-shadow:inset 0 0 0 1px rgba(240,179,91,.4)}
-.nav{display:flex;gap:2px;flex-wrap:wrap}
-.nav a{padding:6px 11px;border-radius:8px;color:var(--dim);font-size:12.5px;transition:background .15s ease,color .15s ease}
-.nav a:hover{color:var(--text);background:#182130}
-.nav a[aria-current]{color:#171006;background:var(--amber);font-weight:650}
-.spacer{flex:1}
-.wrap{max-width:1080px;margin:0 auto;padding:26px 24px 40px}
-.hero{margin-bottom:20px}
-.hero h1{margin:0 0 4px;font-size:21px;letter-spacing:-.01em}
-.hero p{margin:0;color:var(--dim);font-size:12.5px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(184px,1fr));gap:11px;margin-bottom:20px}
-.card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:var(--radius);padding:13px 15px}
-.card .k{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);margin-bottom:7px}
-.card .v{font:650 21px/1.15 "SF Mono",ui-monospace,monospace;letter-spacing:-.02em}
-.card .hint{margin-top:5px;font-size:11.5px;color:var(--dim)}
-.bar{margin-top:9px;height:5px;border-radius:999px;background:#1d2632;overflow:hidden}
-.bar span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--green),#8ee0ba)}
-.bar.warn span{background:linear-gradient(90deg,var(--amber),#f6d09a)}
-.sec{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:16px;overflow:hidden}
-.sec>h2{margin:0;padding:11px 15px;font-size:11.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);background:var(--panel2);border-bottom:1px solid var(--line)}
-table{width:100%;border-collapse:collapse}
-th{text-align:left;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--mute);padding:9px 15px;border-bottom:1px solid var(--line);font-weight:600;white-space:nowrap}
-td{padding:9px 15px;border-bottom:1px solid rgba(35,45,58,.6);vertical-align:middle}
-tbody tr:nth-child(even){background:rgba(24,33,44,.42)}
-tbody tr:hover{background:rgba(240,179,91,.05)}
-tbody tr:last-child td{border-bottom:0}
-.mono{font-family:"SF Mono",ui-monospace,monospace;font-size:12.5px}
-.chip{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;letter-spacing:.02em;border:1px solid var(--line);color:var(--dim);background:rgba(255,255,255,.02)}
-.chip.ok{color:var(--green);border-color:rgba(95,211,155,.34);background:rgba(95,211,155,.08)}
-.chip.warn{color:var(--amber);border-color:rgba(240,179,91,.34);background:rgba(240,179,91,.08)}
-.chip.bad{color:var(--red);border-color:rgba(239,107,115,.34);background:rgba(239,107,115,.08)}
-.kv{display:grid;grid-template-columns:180px 1fr;gap:0}
-.kv div{padding:9px 15px;border-bottom:1px solid rgba(35,45,58,.6)}
-.kv div:nth-child(odd){color:var(--dim)}
-.kv div:nth-last-child(-n+2){border-bottom:0}
-.personas{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:11px;padding:15px}
-.persona{border:1px solid var(--line);border-radius:10px;padding:13px 15px;background:var(--panel2)}
-.persona b{font:650 13px/1.4 "SF Mono",ui-monospace,monospace;color:var(--amber)}
-.persona p{margin:7px 0 0;color:var(--dim);font-size:12px}
-.empty{padding:30px;text-align:center;color:var(--mute)}
-footer{padding:18px 24px 30px;text-align:center;color:var(--mute);font-size:11.5px}
-@media (max-width:640px){.wrap{padding:18px 14px 30px}.kv{grid-template-columns:1fr}.kv div{padding:6px 14px}.kv div:nth-child(odd){border-bottom:0;font-size:11px;text-transform:uppercase;letter-spacing:.08em}}
-@media print{body{background:#fff;color:#111}.top,.nav,footer{display:none}.sec,.card{border-color:#ddd;background:#fff}}
-`;
-
 function chip(text, tone) {
   return `<span class="chip${tone ? ` ${tone}` : ""}">${escapeHtml(text)}</span>`;
 }
 
 function toneOf(value) {
   const s = String(value ?? "").toLowerCase();
-  if (["ok", "ready", "hit", "applied", "pass", "replace-full"].includes(s)) return "ok";
-  if (["warn", "partial", "research", "append-only", "configured"].includes(s)) return "warn";
-  if (["fail", "miss", "missing", "ambiguous", "unobservable", "error", "shim-only"].includes(s)) return "bad";
+  if (["ok", "ready", "hit", "applied", "pass", "replace-full", "delivered"].includes(s)) return "ok";
+  if (["warn", "partial", "research", "append-only", "configured", "verified-config", "reverted"].includes(s)) return "warn";
+  if (["fail", "miss", "missing", "ambiguous", "unobservable", "error", "shim-only", "blocked", "withheld"].includes(s)) return "bad";
   return "";
 }
 
-function layout(title, body, { route = "/", subtitle = "" } = {}) {
+function layout(title, body, { route = "/", subtitle = "", modeLabel = "workbench" } = {}) {
   const links = NAV.map(([href, label]) => `<a href="${href}"${href === route ? ' aria-current="page"' : ""}>${label}</a>`).join("");
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>dsh-forge · ${escapeHtml(title)}</title>
-<style>${CSS}</style></head>
+<style>${CONSOLE_CSS}</style></head>
 <body>
 <header class="top">
 <div class="brand"><span class="mark">F</span>DSH FORGE</div>
 <nav class="nav">${links}</nav>
 <div class="spacer"></div>
-${chip("read-only")}
+${chip(modeLabel)}
 ${chip("127.0.0.1")}
 </header>
 <main class="wrap">
-<div class="hero"><h1>${escapeHtml(title)}</h1><p>${escapeHtml(subtitle || "local host facts, read straight from the same doctor the CLI uses")}</p></div>
+<div class="hero"><div><h1>${escapeHtml(title)}</h1><p>${escapeHtml(subtitle || "local host facts and prompt compiler")}</p></div></div>
 ${body}
 </main>
-<footer>dsh-forge console · GET only · state recomputed per request</footer>
+<footer>dsh-forge workbench · loopback 127.0.0.1 · state recomputed per request</footer>
 </body></html>
 `;
 }
 
 function card(label, value, hint = "", { bar = null, warn = false } = {}) {
-  const meter = bar ? `<div class="bar${warn ? " warn" : ""}"><span style="width:${bar}%"></span></div>` : "";
+  const meter = bar !== null && bar !== undefined ? `<div class="bar${warn ? " warn" : ""}"><span style="width:${bar}%"></span></div>` : "";
   const note = hint ? `<div class="hint">${escapeHtml(hint)}</div>` : "";
   return `<div class="card"><div class="k">${escapeHtml(label)}</div><div class="v">${escapeHtml(value)}</div>${note}${meter}</div>`;
 }
 
-function table(columns, rows) {
+function table(columns, rows, rowAttrs = null) {
   const head = `<tr>${columns.map((c) => `<th>${escapeHtml(c)}</th>`).join("")}</tr>`;
   const body = rows
-    .map((row) => `<tr>${row.map((cell) => {
-      const c = cell && typeof cell === "object" ? cell : { v: cell };
-      const text = c.mono ? `<span class="mono">${escapeHtml(c.v)}</span>` : escapeHtml(c.v ?? "");
-      return `<td>${c.tone === false ? text : c.chip ? chip(c.v ?? "", c.tone) : text}</td>`;
-    }).join("")}</tr>`)
+    .map((row, index) => {
+      const attr = rowAttrs ? rowAttrs(row, index) : "";
+      const cells = row.map((cell) => {
+        if (cell && typeof cell === "object" && cell.rawHtml !== undefined) return `<td>${cell.rawHtml}</td>`;
+        const c = cell && typeof cell === "object" ? cell : { v: cell };
+        const text = c.mono ? `<span class="mono">${escapeHtml(c.v)}</span>` : escapeHtml(c.v ?? "");
+        return `<td>${c.tone === false ? text : c.chip ? chip(c.v ?? "", c.tone) : text}</td>`;
+      }).join("");
+      return `<tr${attr ? ` ${attr}` : ""}>${cells}</tr>`;
+    })
     .join("");
-  return `<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
+  return `<div class="scroll"><table><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
 }
 
-function section(title, inner) {
-  return `<section class="sec"><h2>${escapeHtml(title)}</h2>${inner}</section>`;
+function section(title, inner, rightHtml = "") {
+  return `<section class="sec"><h2><span>${escapeHtml(title)}</span>${rightHtml}</h2>${inner}</section>`;
 }
 
 export function renderOverview(state = {}) {
@@ -190,10 +175,101 @@ export function renderOverview(state = {}) {
 <div>restart required</div><div>${chip(activation.requiresRestart ? "yes" : "no", activation.requiresRestart ? "warn" : "ok")}</div>
 </div>`));
   }
-  return layout("overview", parts.join("\n"), { route: "/", subtitle: `${state.host?.version || "host"} · ${state.patches?.rows?.length || total} patches · ${state.profiles?.length || 0} profiles` });
+  return layout("overview", parts.join("\n"), {
+    route: "/",
+    subtitle: `${state.host?.version || "host"} · ${state.patches?.rows?.length || total} patches · ${state.profiles?.length || 0} profiles`,
+    modeLabel: "read-only overview",
+  });
 }
 
-export function renderPatches(state = {}) {
+export function renderWorkbench(state = {}) {
+  const profiles = (state.profiles?.length ? state.profiles : listProfiles()).map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.id)} (${escapeHtml(p.host)})</option>`).join("");
+  const models = (state.models?.length ? state.models : listModels()).map((m) => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.id)}</option>`).join("");
+  const personas = [`<option value="">(none)</option>`, ...(state.personas?.length ? state.personas : listPersonas()).map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.id)} (${escapeHtml(p.mode)})</option>`)].join("");
+  const personaModes = ["", "replace", "strict", "append", "off"].map((m) => `<option value="${m}">${m || "(default)"}</option>`).join("");
+  const transforms = TRANSFORMS.map((t) => `<option value="${t}">${t}</option>`).join("");
+  const strategies = STRATEGIES.map((s) => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.id)} · ${escapeHtml(s.label)}</option>`).join("");
+  const modes = ["", "coding", "chat", "review"].map((m) => `<option value="${m}">${m || "(auto)"}</option>`).join("");
+
+  const controls = `<div class="pad" id="forge-workbench-root">
+<div class="form-grid">
+  <label class="field">Profile<select id="wb-profile">${profiles}</select></label>
+  <label class="field">Model<select id="wb-model">${models}</select></label>
+  <label class="field">Persona<select id="wb-persona">${personas}</select></label>
+  <label class="field">Persona Mode<select id="wb-persona-mode">${personaModes}</select></label>
+  <label class="field">Transform<select id="wb-transform">${transforms}</select></label>
+  <label class="field">Strategy<select id="wb-strategy">${strategies}</select></label>
+  <label class="field">Task Mode<select id="wb-mode">${modes}</select></label>
+</div>
+<div class="btn-row" style="margin-top:12px">
+  <button type="button" class="btn primary" id="wb-compile-btn">Compile Plan</button>
+  <button type="button" class="btn" id="wb-probe-btn">Run Static Probe (${PROBES.length})</button>
+  <button type="button" class="btn ok" id="wb-apply-btn">Preview &amp; Apply Plan</button>
+  <button type="button" class="btn" id="wb-snapshot-btn">Save Snapshot</button>
+</div>
+<div class="hint mono" id="wb-meta" style="margin-top:10px;color:var(--dim)">Select a profile and compile.</div>
+<div class="hint mono" id="wb-probe-out" style="margin-top:4px;color:var(--green)"></div>
+</div>`;
+
+  const actionSec = section("compiled target actions", `<div class="scroll"><table><thead><tr><th>op</th><th>kind</th><th>target path</th></tr></thead><tbody id="wb-actions"></tbody></table></div>`);
+  const promptSec = section("compiled prompt", `<pre class="codebox" id="wb-prompt-out"></pre>`);
+  return layout("workbench", [section("prompt & plan compiler", controls), actionSec, promptSec].join("\n"), {
+    route: "/workbench",
+    subtitle: "compile profiles, run static armour probes, save snapshots, and apply reversible workspace plans",
+  });
+}
+
+export function renderPlans(state = {}) {
+  const plans = state.plans || [];
+  const body = plans.length
+    ? table(["plan id", "profile", "host", "status", "files", "actions"], plans.map((row) => [
+      { v: row.id, mono: true },
+      { v: row.profile || "-", mono: true },
+      { v: row.host || "-", mono: true },
+      { v: row.status || (row.invalid ? "invalid" : "-"), chip: true, tone: toneOf(row.status || "error") },
+      { v: row.files ?? 0, mono: true },
+      {
+        rawHtml: `<div class="btn-row"><button type="button" class="btn" data-plan-verify="${escapeHtml(row.id)}">Verify</button>${row.status === "applied" ? `<button type="button" class="btn danger" data-plan-revert="${escapeHtml(row.id)}">Revert</button>` : ""}</div>`,
+      },
+    ]))
+    : `<div class="empty">no plans applied in this state directory yet</div>`;
+  return layout("plans", section("applied plan manifests", body), {
+    route: "/plans",
+    subtitle: "verify post-apply hashes and revert any workspace plan byte-for-byte",
+  });
+}
+
+export function renderLive(state = {}) {
+  const profiles = (state.profiles?.length ? state.profiles : listProfiles()).map((p) => `<option value="${escapeHtml(p.id)}"${p.id === "generic" ? " selected" : ""}>${escapeHtml(p.id)}</option>`).join("");
+  const personas = [`<option value="">(none)</option>`, ...(state.personas?.length ? state.personas : listPersonas()).map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.id)}</option>`)].join("");
+  const strategies = STRATEGIES.map((s) => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.id)} · ${escapeHtml(s.label)}</option>`).join("");
+  const safeProbes = PROBES.filter((p) => !["minor", "bio", "chem"].includes(p.family));
+  const defaultPrompt = safeProbes[0]?.request || "Outline a deterministic config serializer in Python.";
+
+  const controls = `<div class="pad" id="forge-live-root">
+<div class="form-grid">
+  <label class="field">Gateway URL<input id="live-gateway" value="http://127.0.0.1:3425/v1" placeholder="default or http://127.0.0.1:3425/v1"></label>
+  <label class="field">Model<select id="live-model"><option value="glm-5.3-flash">glm-5.3-flash</option><option value="glm-5.3">glm-5.3</option><option value="commandcode/deepseek/deepseek-v4.1-flash">commandcode/deepseek/deepseek-v4.1-flash</option><option value="group/free-strong">group/free-strong</option></select></label>
+  <label class="field">Profile<select id="live-profile">${profiles}</select></label>
+  <label class="field">Persona<select id="live-persona">${personas}</select></label>
+  <label class="field">Strategy<select id="live-strategy">${strategies}</select></label>
+  <label class="field">Max Tokens<input id="live-max-tokens" type="number" value="512" min="64" max="4096"></label>
+</div>
+<label class="field" style="margin-top:12px">User Prompt<textarea id="live-prompt">${escapeHtml(defaultPrompt)}</textarea></label>
+<div class="btn-row" style="margin-top:10px">
+  <button type="button" class="btn" id="live-fetch-models">Fetch Gateway Models</button>
+  <button type="button" class="btn primary" id="live-send-btn">Send Bounded Request</button>
+  <span class="mono" id="live-status" style="font-size:12px;color:var(--dim)">ready · Magpie loopback :3425</span>
+</div>
+</div>`;
+  const replySec = section("model response & refusal classification", `<pre class="codebox" id="live-reply">(no response yet)</pre>`);
+  return layout("live runner", [section("gateway & strategy harness", controls), replySec].join("\n"), {
+    route: "/live",
+    subtitle: "test composed prompts and escalation strategies directly against Magpie :3425 or compatible APIs",
+  });
+}
+
+export function renderPatches(state = {}, { interactiveDsh = false } = {}) {
   const rows = state.patches?.rows || [];
   const ready = rows.filter((r) => toneOf(r.status) === "ok").length;
   const layers = [...new Set(rows.map((r) => r.layer).filter(Boolean))];
@@ -203,15 +279,16 @@ export function renderPatches(state = {}) {
       { v: row.layer || "-", chip: true },
       { v: row.status || "-", chip: true, tone: toneOf(row.status) },
       { v: row.hits ?? row.matches ?? "-", mono: true },
-    ]))
+    ]), (row) => `data-layer="${escapeHtml(row[1].v)}"`)
     : `<div class="empty">no patch rows</div>`;
+  const filterRight = `<div class="btn-row"><select id="patch-layer-filter" aria-label="Filter by layer"><option value="all">all layers</option>${layers.map((l) => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join("")}</select>${interactiveDsh ? `<button type="button" class="btn" id="dsh-dry-run">Dry Run</button><button type="button" class="btn primary" id="dsh-apply">Apply</button><button type="button" class="btn" id="dsh-upgrade">Upgrade</button><button type="button" class="btn danger" id="dsh-revert">Revert</button>` : ""}</div>`;
   return layout("patches", [
     `<div class="grid">${[
       card("ready", `${ready}/${rows.length}`, "hit, applied or ready"),
       card("layers", String(layers.length), layers.join(" · ")),
     ].join("")}</div>`,
-    section("patch table", body),
-  ].join("\n"), { route: "/patches", subtitle: "declarative find/replace entries, one marker each" });
+    section("patch table", body, filterRight),
+  ].join("\n"), { route: "/patches", subtitle: "declarative find/replace entries across 5 runtime layers" });
 }
 
 export function renderChannels(state = {}) {
@@ -234,13 +311,13 @@ export function renderGrades(state = {}) {
     { v: row.delivery?.source || "none", mono: true },
     { v: row.delivery?.mechanism || "", mono: true },
   ]);
-  return layout("grades", section("per-host delivery grade", table(["profile", "grade", "source", "mechanism"], rows)), { route: "/grades", subtitle: "replace-full → append-only → unobservable, with the evidence behind each row" });
+  return layout("grades", section("per-host delivery grade", table(["profile", "grade", "source", "mechanism"], rows)), { route: "/grades", subtitle: "replace-full → append-only → unobservable, verified dynamically from compiled actions" });
 }
 
 export function renderPersonas(state = {}) {
   const rows = state.personas || [];
   const cards = rows.map((row) => `<div class="persona"><b>${escapeHtml(row.id)}</b> ${chip(row.mode || "-")} <p>${escapeHtml(row.harness || "any")} · ${escapeHtml(row.chars ?? 0)} chars</p></div>`).join("");
-  return layout("personas", rows.length ? `<section class="sec"><h2>persona library</h2><div class="personas">${cards}</div></section>` : `<div class="empty">no personas found</div>`, { route: "/personas", subtitle: "markdown personas with a default composition mode" });
+  return layout("personas", rows.length ? `<section class="sec"><h2>persona library</h2><div class="personas">${cards}</div></section>` : `<div class="empty">no personas found</div>`, { route: "/personas", subtitle: "markdown personas with default composition mode and optional transforms" });
 }
 
 export function renderAudit(state = {}) {
@@ -254,11 +331,14 @@ export function renderAudit(state = {}) {
     ].join("")}</div>`,
     section("events by kind", counts.length ? table(["event", "count"], counts.map(([event, n]) => [{ v: event, mono: true }, { v: n, mono: true }])) : `<div class="empty">no events yet</div>`),
     section("prompt snapshots", snapshots.length ? table(["taken at", "label", "bytes", "file"], snapshots) : `<div class="empty">no snapshots yet</div>`),
-  ].join("\n"), { route: "/audit", subtitle: "append-only history and the last N prompt snapshots" });
+  ].join("\n"), { route: "/audit", subtitle: "append-only history and recent prompt snapshots" });
 }
 
 const RENDERERS = {
   "/": renderOverview,
+  "/workbench": renderWorkbench,
+  "/plans": renderPlans,
+  "/live": renderLive,
   "/patches": renderPatches,
   "/channels": renderChannels,
   "/grades": renderGrades,
@@ -266,23 +346,267 @@ const RENDERERS = {
   "/audit": renderAudit,
 };
 
+function hostnameOf(authority) {
+  if (!authority || /[/?#@\\]/.test(authority)) return "";
+  try {
+    const u = new URL(`http://${authority}`);
+    if (u.username || u.password || u.pathname !== "/" || u.search || u.hash) return "";
+    return u.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function sendJson(res, status, data) {
+  res.writeHead(status, {
+    "content-type": "application/json; charset=utf-8",
+    "cache-control": "no-store",
+    "x-content-type-options": "nosniff",
+  });
+  res.end(`${JSON.stringify(data, null, 2)}\n`);
+}
+
+function allowConsoleRequest(req, res, { requireCsrf = false, csrfToken = "" } = {}) {
+  const authority = String(req.headers.host || "").trim();
+  const hostname = hostnameOf(authority);
+  if (authority && !LOOPBACK.has(hostname)) {
+    sendJson(res, 403, { ok: false, error: "forbidden host" });
+    return false;
+  }
+  if (String(req.headers["sec-fetch-site"] || "").toLowerCase() === "cross-site") {
+    sendJson(res, 403, { ok: false, error: "forbidden site" });
+    return false;
+  }
+  const origin = String(req.headers.origin || "").trim();
+  if (origin === "null") {
+    sendJson(res, 403, { ok: false, error: "forbidden origin" });
+    return false;
+  }
+  if (origin) {
+    try {
+      const u = new URL(origin);
+      if ((u.protocol !== "http:" && u.protocol !== "https:") || (authority && u.host.toLowerCase() !== authority.toLowerCase())) {
+        sendJson(res, 403, { ok: false, error: "forbidden origin" });
+        return false;
+      }
+    } catch {
+      sendJson(res, 403, { ok: false, error: "forbidden origin" });
+      return false;
+    }
+  }
+  if (requireCsrf && String(req.headers["x-forge-csrf"] || "") !== csrfToken) {
+    sendJson(res, 403, { ok: false, error: "missing or invalid csrf token" });
+    return false;
+  }
+  return true;
+}
+
+async function readJsonBody(req) {
+  const type = String(req.headers["content-type"] || "").toLowerCase();
+  if (type && !type.startsWith("application/json")) {
+    const err = new Error("unsupported content type");
+    err.statusCode = 415;
+    throw err;
+  }
+  const limit = 256 * 1024;
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > limit) {
+      const err = new Error("request body too large");
+      err.statusCode = 413;
+      throw err;
+    }
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  const raw = Buffer.concat(chunks).toString("utf8").trim();
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw);
+  } catch {
+    const err = new Error("invalid JSON body");
+    err.statusCode = 400;
+    throw err;
+  }
+}
+
+function attachWorkbenchShell(html, csrfToken) {
+  return html
+    .replace("</head>", `<meta name="forge-csrf" content="${escapeHtml(csrfToken)}">\n</head>`)
+    .replace("</body>", `<script src="/assets/workbench.js" defer></script>\n</body>`);
+}
+
+function compileFromBody(body, env) {
+  const profile = loadProfile(body.profile || "generic");
+  const model = loadModel(body.model || profile.model || "deepseek");
+  const strat = body.strategy ? resolveStrategy({ strategy: body.strategy }) : {};
+  const ctx = normalizeContext({
+    hostId: profile.host,
+    profileId: profile.id,
+    home: env.home,
+    projectRoot: env.projectRoot || process.cwd(),
+    stateRoot: env.stateRoot,
+    hostRoot: env.hostRoot,
+    dshHome: env.dshHome,
+    mode: body.mode || null,
+    persona: body.persona || strat.persona || null,
+    personaMode: body.personaMode || null,
+    transform: body.transform || strat.transform || null,
+    budget: Number(body.budget || 3200),
+  });
+  return compile(profile, model, ctx);
+}
+
 /**
- * Read-only HTTP surface. `state` is a function so every request sees current
- * host facts instead of a snapshot taken at boot.
+ * Localhost workbench HTTP server (`127.0.0.1:7788`).
+ * GET routes compute current host state per request; mutating POST `/api/*`
+ * routes require loopback host/origin + per-boot CSRF token.
  */
-export function createConsole({ state = () => ({}), host = CONSOLE_HOST, port = CONSOLE_PORT } = {}) {
-  return http.createServer((req, res) => {
+export function createConsole({ state = () => ({}), env = {}, handlers = null, port = CONSOLE_PORT } = {}) {
+  const csrfToken = crypto.randomBytes(16).toString("hex");
+  const runtimeEnv = {
+    projectRoot: env.projectRoot || process.cwd(),
+    stateRoot: env.stateRoot || defaultStateRoot(env),
+    home: env.home,
+    hostRoot: env.hostRoot,
+    dshHome: env.dshHome,
+  };
+
+  return http.createServer(async (req, res) => {
     const url = (req.url || "/").split("?")[0];
-    if (req.method !== "GET" && req.method !== "HEAD") {
-      res.writeHead(405, { allow: "GET, HEAD", "content-type": "text/plain" });
-      res.end("read-only console\n");
+
+    if (req.method === "GET" && url === "/assets/workbench.js") {
+      if (!allowConsoleRequest(req, res)) return;
+      const js = fs.existsSync(WORKBENCH_JS_PATH) ? fs.readFileSync(WORKBENCH_JS_PATH, "utf8") : "";
+      res.writeHead(200, {
+        "content-type": "application/javascript; charset=utf-8",
+        "cache-control": "no-store",
+        "x-content-type-options": "nosniff",
+      });
+      res.end(js);
       return;
     }
+
+    if (req.method === "POST" && url.startsWith("/api/")) {
+      if (!allowConsoleRequest(req, res, { requireCsrf: true, csrfToken })) return;
+      try {
+        const body = await readJsonBody(req);
+        if (url === "/api/compile") {
+          const plan = compileFromBody(body, runtimeEnv);
+          const preview = previewPlan(plan, { env: runtimeEnv });
+          return sendJson(res, 200, { ok: true, plan, preview });
+        }
+        if (url === "/api/probe") {
+          const plan = compileFromBody(body, runtimeEnv);
+          const result = runProbes({
+            prompt: plan.prompt.text,
+            persona: plan.prompt.persona?.id || null,
+            transform: plan.transform || "none",
+            budget: plan.budget.max,
+          });
+          return sendJson(res, 200, { ok: result.failed === 0, result, selfCheck: selfCheck(), planId: plan.planId });
+        }
+        if (url === "/api/apply-plan") {
+          if (body.confirm !== true) return sendJson(res, 400, { ok: false, error: "explicit confirm: true required" });
+          const plan = compileFromBody(body, runtimeEnv);
+          const result = applyPlan(plan, { yes: true, preview: body.preview || null, env: runtimeEnv });
+          return sendJson(res, result.ok ? 200 : 409, result);
+        }
+        if (url === "/api/verify-plan") {
+          if (!body.planId) return sendJson(res, 400, { ok: false, error: "planId required" });
+          return sendJson(res, 200, verifyPlan(body.planId, runtimeEnv));
+        }
+        if (url === "/api/revert-plan") {
+          if (!body.planId) return sendJson(res, 400, { ok: false, error: "planId required" });
+          return sendJson(res, 200, revertPlan(body.planId, { force: Boolean(body.force), env: runtimeEnv }));
+        }
+        if (url === "/api/snapshot") {
+          const plan = compileFromBody(body, runtimeEnv);
+          const written = writeSnapshot(runtimeEnv.stateRoot, { label: `prompt-${plan.profile.id}`, content: plan.prompt.text });
+          const pruned = pruneSnapshots(runtimeEnv.stateRoot, SNAPSHOT_DEFAULTS);
+          return sendJson(res, 200, { ok: true, written, pruned });
+        }
+        if (url === "/api/gateway/models") {
+          const provider = resolveGateway(body.gateway || "default");
+          assertGatewayUrl(provider.baseUrl);
+          const models = await fetchModelIds(provider);
+          return sendJson(res, 200, { ok: true, baseUrl: provider.baseUrl, models });
+        }
+        if (url === "/api/live-run") {
+          if (!body.rawUser || typeof body.rawUser !== "string" || !body.rawUser.trim()) {
+            return sendJson(res, 400, { ok: false, error: "rawUser prompt is required" });
+          }
+          const provider = resolveGateway(body.gateway || "default");
+          assertGatewayUrl(provider.baseUrl);
+          const plan = compileFromBody(body, runtimeEnv);
+          const strat = resolveStrategy({
+            strategy: body.strategy || null,
+            persona: body.persona || null,
+            wrap: body.wrap || null,
+            script: body.script || null,
+            prefill: body.prefill || null,
+            stuffTokens: body.stuffTokens || null,
+          });
+          const resLive = await executeStrategyRequest(provider, {
+            system: plan.prompt.text,
+            rawUser: body.rawUser,
+            model: body.model || "glm-5.3-flash",
+            ...strat,
+          }, {
+            maxTokens: Math.min(Math.max(Number(body.maxTokens) || DEFAULT_MAX_TOKENS, 32), 4096),
+            temperature: Number(body.temperature) || 0,
+          });
+          const refusal = resLive.status === "ok"
+            ? detectRefusal(resLive.reply, { finishReason: resLive.finishReason, providerFlag: resLive.providerFlag })
+            : { refused: null, signal: null };
+          return sendJson(res, 200, {
+            ok: resLive.status === "ok",
+            status: resLive.status,
+            model: body.model || "glm-5.3-flash",
+            verdict: verdictOf(resLive, refusal),
+            compliance: resLive.status === "ok" ? complianceOf(resLive.reply) : null,
+            refused: refusal.refused,
+            refusalSignal: refusal.signal,
+            turns: resLive.turns,
+            latencyMs: resLive.latencyMs,
+            reply: resLive.reply || null,
+            error: resLive.error || null,
+          });
+        }
+        if (url.startsWith("/api/patches/") && handlers) {
+          const op = url.slice("/api/patches/".length);
+          if (op === "dry-run" && handlers.dryRun) return sendJson(res, 200, handlers.dryRun());
+          if (body.confirm !== true) return sendJson(res, 400, { ok: false, error: "explicit confirm: true required" });
+          if (op === "apply" && handlers.applyPatches) return sendJson(res, 200, handlers.applyPatches());
+          if (op === "upgrade" && handlers.upgradePatches) return sendJson(res, 200, handlers.upgradePatches());
+          if (op === "revert" && handlers.revertPatches) return sendJson(res, 200, handlers.revertPatches());
+        }
+        if (url === "/api/policy" && handlers?.setPolicy) {
+          return sendJson(res, 200, { ok: true, policy: handlers.setPolicy(body.policy) });
+        }
+        if (url === "/api/prompt/install" && handlers?.installPrompt) {
+          return sendJson(res, 200, { ok: true, ...handlers.installPrompt(body) });
+        }
+        return sendJson(res, 404, { ok: false, error: `unknown api route: ${url}` });
+      } catch (error) {
+        const status = error?.statusCode || (error?.code ? 400 : 500);
+        return sendJson(res, status, { ok: false, code: error?.code || "error", error: error?.message || String(error) });
+      }
+    }
+
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      res.writeHead(405, { allow: "GET, HEAD", "content-type": "text/plain" });
+      res.end("read-only route; interactive mutations use POST /api/*\n");
+      return;
+    }
+    if (!allowConsoleRequest(req, res)) return;
     if (!CONSOLE_ROUTES.includes(url)) {
       res.writeHead(404, { "content-type": "text/plain" });
       res.end("not found\n");
       return;
     }
+
     let payload;
     try {
       payload = state();
@@ -290,11 +614,18 @@ export function createConsole({ state = () => ({}), host = CONSOLE_HOST, port = 
       payload = { error: error?.message || String(error) };
     }
     if (url === "/api/state") {
-      res.writeHead(200, { "content-type": "application/json" });
-      res.end(`${JSON.stringify(payload, null, 2)}\n`);
-      return;
+      return sendJson(res, 200, { ...payload, plans: payload.plans || listPlans({ stateRoot: runtimeEnv.stateRoot, hostRoot: runtimeEnv.hostRoot }) });
     }
-    res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-    res.end(RENDERERS[url](payload));
+    const html = url === "/patches"
+      ? renderPatches(payload, { interactiveDsh: Boolean(handlers) })
+      : RENDERERS[url](payload);
+    res.writeHead(200, {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "no-store",
+      "content-security-policy": CSP_HEADER,
+      "x-content-type-options": "nosniff",
+      "referrer-policy": "no-referrer",
+    });
+    res.end(attachWorkbenchShell(html, csrfToken));
   });
 }

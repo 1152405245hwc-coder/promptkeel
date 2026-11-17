@@ -28,3 +28,23 @@ test("disabled plugin registers nothing", () => {
   const ctx = { systemPrompt: { section: () => assert.fail("should not register") } };
   apply(ctx, { enabled: false });
 });
+
+test("opt-in cleanSessionHistory strips pure refusal boilerplate while keeping code blocks", () => {
+  let listener = null;
+  const ctx = {
+    systemPrompt: { section: () => {} },
+    on: (event, fn) => {
+      if (event === "session/deriveMessages") listener = fn;
+      return () => {};
+    },
+  };
+  apply(ctx, { enabled: true, cleanSessionHistory: true, policy: "always" });
+  assert.ok(typeof listener === "function");
+  const cleaned = listener([
+    { role: "user", content: "q" },
+    { role: "assistant", content: "抱歉，我无法提供这个内容。" },
+    { role: "assistant", content: "```js\nconsole.log(1);\n```" },
+  ]);
+  assert.equal(cleaned.length, 2);
+  assert.equal(cleaned[1].content.includes("console.log"), true);
+});

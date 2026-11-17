@@ -58,7 +58,10 @@ export const DOC_FILES = [
 const LAYER_ORDER = ["approval", "sandbox", "turn", "persona", "session"];
 
 const BLOCK_KINDS = new Set(["line", "table", "block"]);
-const INLINE_KINDS = new Set(["inline", "patches", "files", "packages", "layers", "range"]);
+const INLINE_KINDS = new Set([
+  "inline", "patches", "files", "packages", "layers", "range",
+  "profiles", "models", "personas", "promptCeiling", "nodeEngine",
+]);
 const ALL_KINDS = new Set([...BLOCK_KINDS, ...INLINE_KINDS]);
 
 const BEGIN_RE = /<!--\s*forge-facts:begin\b([^>]*?)-->/g;
@@ -104,12 +107,27 @@ export function computeFacts(patches = PATCHES) {
     layerCounts.set(layer, (layerCounts.get(layer) ?? 0) + 1);
   }
 
+  const countDir = (rel, ext) => {
+    const abs = path.join(ROOT, rel);
+    return fs.existsSync(abs) ? fs.readdirSync(abs).filter((f) => f.endsWith(ext)).length : 0;
+  };
+  let nodeEngine = ">=20";
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
+    nodeEngine = pkg.engines?.node || ">=20";
+  } catch { /* fallback */ }
+
   return {
     patches: patches.length,
     files: files.size,
     packages: packages.size,
     hostRange: HOST_VERSION_RANGE,
     layers: [...layerCounts.keys()].sort(compareLayer).map((name) => [name, layerCounts.get(name)]),
+    profiles: countDir("profiles", ".json"),
+    models: countDir("models", ".json"),
+    personas: countDir("prompt/personas", ".md"),
+    promptCeiling: 480,
+    nodeEngine,
   };
 }
 
@@ -159,6 +177,16 @@ export function renderFacts(kind, facts) {
       return layerSummary(facts);
     case "range":
       return `\`${facts.hostRange}\``;
+    case "profiles":
+      return String(facts.profiles);
+    case "models":
+      return String(facts.models);
+    case "personas":
+      return String(facts.personas);
+    case "promptCeiling":
+      return String(facts.promptCeiling);
+    case "nodeEngine":
+      return `\`${facts.nodeEngine}\``;
     default:
       throw new Error(`unknown forge-facts kind: ${kind}`);
   }

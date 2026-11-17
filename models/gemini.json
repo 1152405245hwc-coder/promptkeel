@@ -4,6 +4,6 @@
   "name": "Gemini",
   "version": "0.1.0",
   "prompt": "models/gemini.md",
-  "hosts": ["gemini","generic"],
+  "hosts": ["gemini", "opencode", "continue", "codex", "claude-code", "cursor", "windsurf", "aider", "hermes", "openclaw", "generic"],
   "effects": ["P", "T", "S", "W", "M"]
 }

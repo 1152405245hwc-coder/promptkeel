@@ -9,7 +9,7 @@
 **Prompt injection, declarative host patches, and a deterministic multi-platform profile compiler for DeepSeek Harness (DSH), Claude Code, Codex CLI, Gemini CLI, OpenCode, Cursor, Windsurf, Aider, Continue, and local open-weight runtimes.**
 
 <!-- forge-facts:begin -->
-16 host patches · 11 patched files · 10 `@deepseek-ai/*` packages · layers: approval 5, sandbox 6, turn 1, persona 3, session 1 · host range `>=0.2.1-rc.1 <0.3.0`
+23 host patches · 18 patched files · 17 `@deepseek-ai/*` packages · layers: approval 7, sandbox 9, turn 1, persona 4, session 2 · host range `>=0.2.1-rc.1 <0.3.0`
 <!-- forge-facts:end -->
 
 ```text
@@ -31,12 +31,12 @@
 
 | Dimension | Legacy Community Patch Bundles | `dsh-forge` Engineering Approach |
 | :--- | :--- | :--- |
-| **Host Patch Surface** | 80+ brittle UI & runtime string replacements that break on minor host updates | **<!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> version-gated patches** across <!-- forge-facts:begin kind=files -->11<!-- forge-facts:end --> `@deepseek-ai/*` files with per-version `variants` support |
-| **Prompt Composition** | Monolithic hardcoded prompt or ad-hoc session file edits | Modular `core + model/adapter + host + mode` pipeline (~693 tokens default), `<= 3200` token gate, and `sha256` header |
+| **Host Patch Surface** | 80+ brittle UI & runtime string replacements that break on minor host updates | **<!-- forge-facts:begin kind=patches -->23<!-- forge-facts:end --> version-gated patches** across <!-- forge-facts:begin kind=files -->18<!-- forge-facts:end --> `@deepseek-ai/*` files with per-version `variants` support |
+| **Prompt Composition** | Monolithic hardcoded prompt or ad-hoc session file edits | Modular `core + persona + model + host + mode` pipeline (~268–361 tokens across all <!-- forge-facts:begin kind=profiles -->13<!-- forge-facts:end --> profiles), `< <!-- forge-facts:begin kind=promptCeiling -->480<!-- forge-facts:end -->` token budget gate, and `sha256` header |
 | **Verification** | Visual status badge only | 3-stage proof check (`proof1-patches`, `proof2-prompt`, `proof3-session` on `session.v4.jsonl.zstd`) + 12-check `doctor` |
-| **Control Panel** | 650+ KB external bundle | **20 KB dependency-free sidebar bundle** (`Overview`, `Patches`, `Grades`, `Personas`, `Prompt`, `Policy`, `Logs`) |
+| **Control Panel** | 650+ KB external bundle | **~25 KB dependency-free sidebar bundle** (`Overview`, `Patches`, `Studio`, `Grades`, `Personas`, `Prompt`, `Policy`, `Logs`) + localhost `:7788` workbench |
 | **Backup & Rollback** | Single `.bak` file overwritten on re-run | Timestamped `manifest.json` + original file `sha256` + `hostVersion` guard + symlink refusal (`lstatSync`) |
-| **Cross-Host Portability** | Locked to a single host | Adapter registry + pure compiler + transactional executor across 13 host profiles |
+| **Cross-Host Portability** | Locked to a single host | Adapter registry, pure compiler, transactional executor (Markdown/JSON/TOML/YAML/POSIX shims), and live strategy runner across <!-- forge-facts:begin kind=profiles -->13<!-- forge-facts:end --> host profiles |
 
 ---
 
@@ -45,27 +45,31 @@
 `dsh-forge` is structured into two decoupled execution layers sharing a single CLI and modular prompt corpus:
 
 1. **Cross-Host Compiler & Transactional Executor (`core/`, `hosts/`, `profiles/`, `models/`)**: Validates schemas, composes layered prompts, compiles deterministic `planId` execution plans, and applies/verifies/reverts changes across documented host configuration files.
-2. **DeepSeek Harness Native Engine (`lib/`, `client/`)**: Inspects and unpacks `app.asar` when needed, applies the <!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> version-gated host patches (`lib/table.mjs`), registers the `forge:prompt` section via Cordis, and serves the loopback `/dsh-forge/api` control surface.
+2. **DeepSeek Harness Native Engine (`lib/`, `client/`)**: Inspects and unpacks `app.asar` when needed, applies the <!-- forge-facts:begin kind=patches -->23<!-- forge-facts:end --> version-gated host patches (`lib/table.mjs`), registers the `forge:prompt` section via Cordis, and serves the loopback `/dsh-forge/api` control surface.
 
 ```text
 dsh-forge/
 ├── bin/
 │   └── dsh-forge.js        # Unified CLI entry point (DSH native + cross-host commands)
-├── core/                   # Host-neutral compiler & transactional executor
+├── core/                   # Host-neutral compiler, strategies, gateway & transactional executor
+│   ├── index.mjs           # Public facade barrel exporting core modules
 │   ├── contract.mjs        # Schema validation & loaders for profiles/*.json and models/*.json
 │   ├── capabilities.mjs    # Capability matrix (prompt, approval, sandbox, tools, rollback) & preflight
 │   ├── prompt.mjs          # Deterministic multi-layer prompt renderer & CJK-aware token estimator
-│   ├── compile.mjs         # Pure compiler: (profile, model, mode) -> machine-independent plan
-│   ├── executor.mjs        # Transactional writer (mergeBlock, mergeJson, mergeToml, backups, rollback)
+│   ├── compile.mjs         # Pure compiler + normalizeContext: (profile, model, mode) -> plan
+│   ├── executor.mjs        # Transactional writer (block, json, toml, yaml, shim, verify, rollback)
+│   ├── strategy.mjs        # First-class strategy presets (variable, crescendo, deep, layered, prefill, stuff)
+│   ├── gateway.mjs         # Outbound model runner (Magpie :3425, OpenAI, Anthropic, GLM)
+│   ├── console.mjs         # Localhost workbench server (:7788) with CSRF + CSP guards
 │   ├── batch.mjs           # Multi-platform batch compile/apply and compensation rollback
-│   ├── verify.mjs          # Internal plan hash check & post-apply target verification
-│   ├── profile.mjs         # Public re-export facade for contract primitives
 │   └── errors.mjs          # Structured ForgeError with stable machine-readable error codes
-├── hosts/                  # Per-host environment detectors & configuration target descriptors
+├── ui/                     # Shared console/workbench UI tokens & external JS assets
+├── hosts/                  # Per-host environment detectors, targets & fixture session inspectors
 │   ├── registry.mjs        # Host catalog (detectHost, detectAll)
-│   └── *.mjs               # dsh, claude-code, codex, gemini, opencode, generic, cursor, windsurf, aider, continue
-├── profiles/               # Declarative target profiles for the ten registered adapters
-├── models/                 # Model family metadata & overlay bindings (deepseek, claude, gpt, gemini, qwen, glm, local)
+│   ├── evidence.mjs        # Fixture-capable session log inspector
+│   └── *.mjs               # Declarative table + specialized modules (dsh, hermes, openclaw, muse)
+├── profiles/               # Declarative target profiles (<!-- forge-facts:begin kind=profiles -->13<!-- forge-facts:end --> hosts)
+├── models/                 # Model family metadata & overlay bindings (<!-- forge-facts:begin kind=models -->7<!-- forge-facts:end --> models)
 ├── prompt/                 # Modular prompt sources
 │   ├── core.md             # Base execution rubric (routing, boundary handling, A-D evidence grading)
 │   ├── adapters/           # DSH runtime adapters (deepseek, generic)
@@ -100,7 +104,7 @@ DSH is the native full-capability target. The same modular prompt and transactio
 
 | Host | Profile | Target Files Written | Support Level |
 | :--- | :--- | :--- | :--- |
-| **DSH (macOS / Linux / Windows)** | `dsh` | <!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> host patches (`@deepseek-ai/*`) + `~/.dsh/prompt-inject.md` | `verified` |
+| **DSH (macOS / Linux / Windows)** | `dsh` | <!-- forge-facts:begin kind=patches -->23<!-- forge-facts:end --> host patches (`@deepseek-ai/*`) + `~/.dsh/prompt-inject.md` | `verified` |
 | **Claude Code** | `claude-code` | `CLAUDE.md` (managed block) + `.claude/settings.json` | `verified` |
 | **Codex CLI** | `codex` | `AGENTS.md` (managed block, project only) | `verified` |
 | **Gemini CLI** | `gemini` | `GEMINI.md` (managed block) + `.gemini/settings.json` | `experimental` |
@@ -207,7 +211,7 @@ Every action a profile compiles belongs to one channel: `project` (repository fi
 
 ## Personas
 
-`prompt/personas/*.md` holds prompt-level identity layers that travel across adapters. A persona composes with the host prompt in one of four modes: `replace` keeps host working rules while dropping identity claims, `strict` keeps the persona alone, `append` adds it after the host prompt, `off` disables it. `dsh-forge personas` lists what ships; `dsh-forge compile codex --persona engineer --persona-mode strict` selects one, and `off` reproduces the plain build byte for byte. Ten personas ship, one per technique family: tone (`direct`, `engineer`, `tutor`, `terse`) and framing (`roleplay`, `nested`, `code`, `fewshot`, `cipher`, `split`). Details in [docs/PERSONAS.md](docs/PERSONAS.md).
+`prompt/personas/*.md` holds prompt-level identity layers that travel across adapters. A persona composes with the host prompt in one of four modes: `replace` keeps host working rules while dropping identity claims, `strict` keeps the persona alone, `append` adds it after the host prompt, `off` disables it. `dsh-forge personas` lists what ships; `dsh-forge compile codex --persona engineer --persona-mode strict` selects one, and `off` reproduces the plain build byte for byte. <!-- forge-facts:begin kind=personas -->12<!-- forge-facts:end -->+ bundled personas ship across tone (`direct`, `engineer`, `tutor`, `terse`), research/contract framing (`unfiltered`, `contract`), and structural vectors (`roleplay`, `nested`, `code`, `fewshot`, `cipher`, `split`). Details in [docs/PERSONAS.md](docs/PERSONAS.md).
 
 ## Payload transforms
 
@@ -221,9 +225,9 @@ Every action a profile compiles belongs to one channel: `project` (repository fi
 
 `lib/log.mjs` appends one JSON line per host operation to `$DSH_HOME/dsh-forge/logs/`; `dsh-forge audit [--limit 100]` reads across days, counts events, and reports unreadable lines instead of hiding them. `dsh-forge snapshot [profile] [--keep 5] [--days 7] [--max-bytes N]` stores the composed prompt under `<state>/snapshots/` with timestamped names and prunes by age, count, and total size, keeping the newest entry. Details in [docs/AUDIT.md](docs/AUDIT.md).
 
-## Console
+## Workbench Console
 
-`dsh-forge console` serves the same facts on `http://127.0.0.1:7788`: doctor checks, patch layers, channel counts, delivery grades and personas, plus the whole state as JSON on `/api/state`. Pages are read-only (non-`GET` requests get `405`), one instance owns a state directory through `console.pid`, and `--once` prints the overview instead of serving. Details in [docs/CONSOLE.md](docs/CONSOLE.md).
+`dsh-forge console` serves the local interactive workbench on `http://127.0.0.1:7788` (or `--once` for read-only SSR overview HTML/JSON): compiler & static probe studio (`Compile`, `Probe`, `Preview & Apply`, `Snapshot`), plan lifecycle (`Plans`, `Verify`, `Revert`), live gateway testing against Magpie `:3425` (`/live`), layer-filtered patch table, channel/grade inspection, and audit logs. Protected by loopback-only Host checks, Origin/Sec-Fetch-Site validation, strict CSP (`script-src 'self'`), and per-process CSRF tokens (`POST /api/*`). Details in [docs/CONSOLE.md](docs/CONSOLE.md).
 
 ## CLI Reference
 
@@ -233,12 +237,12 @@ Every action a profile compiles belongs to one channel: `project` (repository fi
 | :--- | :--- |
 | `dsh-forge doctor [--profile desktop\|web] [--json]` | Run 12 host, version, anchor, token budget, conflict, and profile bundle checks |
 | `dsh-forge status [--profile desktop\|web] [--json]` | Print `doctor` report, active workspace policy, profile status, and backups |
-| `dsh-forge apply [--dry-run\|--yes]` | Preflight or atomically apply the <!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> host patches (automatically unpacks sealed `app.asar` on `--yes`) |
+| `dsh-forge apply [--dry-run\|--yes]` | Preflight or atomically apply the <!-- forge-facts:begin kind=patches -->23<!-- forge-facts:end --> host patches (automatically unpacks sealed `app.asar` on `--yes`) |
 | `dsh-forge unpack [--dry-run\|--yes]` | Unpack sealed `Contents/Resources/app.asar` into `Contents/Resources/app` |
 | `dsh-forge upgrade [--dry-run\|--yes]` | Revert same-version backup if present and re-apply the current patch table |
 | `dsh-forge revert [--id <backup>] [--force]` | Restore host files from a backup manifest with `sha256` and `hostVersion` verification |
 | `dsh-forge verify [--profile desktop\|web] [--json]` | Verify patch markers, prompt channel budget/registration, and newest session log |
-| `dsh-forge adapt [--json]` | Check anchor readiness across all <!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> patches after a DSH host update |
+| `dsh-forge adapt [--json]` | Check anchor readiness across all <!-- forge-facts:begin kind=patches -->23<!-- forge-facts:end --> patches after a DSH host update |
 | `dsh-forge explain <patch-id>` | Print anchor match counts and target file preview for a specific patch |
 | `dsh-forge profile [status\|enable\|disable] [--profile desktop]` | Inspect or update `dsh.profile.bundles` in `~/.dsh/profiles/<profile>/package.json` |
 | `dsh-forge prompt compose [--adapter deepseek] [--mode coding] [--out file]` | Compose `core + adapter + mode` and validate against the token budget |
@@ -259,6 +263,8 @@ Every action a profile compiles belongs to one channel: `project` (repository fi
 | `dsh-forge profiles [--json]` | List all validated profiles in `profiles/*.json` |
 | `dsh-forge models [--json]` | List all validated model definitions in `models/*.json` |
 | `dsh-forge hosts [--json]` | Detect local agent harness installations across all registered adapters |
+| `dsh-forge strategies [--json]` | List composable delivery & breakout strategy presets (`core/strategy.mjs`) |
+| `dsh-forge run --prompt-text <text> [--strategy <id>]` | Execute a compiled profile + strategy live against Magpie `:3425` or compatible APIs |
 
 `status --json` keeps activation state explicit: `doctor.activation.state` is `inactive`, `configured`, or `active`; `configured` means the prompt channel is written or registered, while `active` means a recent session has loaded the Forge header. `requiresRestart` is true when configuration is present but a new host session is still needed.
 
@@ -292,7 +298,7 @@ npm run pack:check
 ## Documentation
 
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Module layering, sequence diagrams, patch state machine, and cross-host compiler pipeline.
-- **[docs/PATCHES.md](docs/PATCHES.md)** — Detailed specification of the <!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> declarative host patches and multi-version `variants`.
+- **[docs/PATCHES.md](docs/PATCHES.md)** — Detailed specification of the <!-- forge-facts:begin kind=patches -->23<!-- forge-facts:end --> declarative host patches and multi-version `variants`.
 - **[docs/COMPAT.md](docs/COMPAT.md)** — Supported DSH versions (`0.2.1-rc.1` – `0.2.2-rc.3`), host upgrade workflow, and runtime requirements.
 - **[docs/GRADES.md](docs/GRADES.md)** — Delivery grades per host with the mechanism and evidence behind each one.
 - **[docs/CHANNELS.md](docs/CHANNELS.md)** — Channel classification, effect timing, and the `shim` wrapper.
@@ -302,6 +308,8 @@ npm run pack:check
 - **[docs/CONSOLE.md](docs/CONSOLE.md)** — Loopback console routes, single-instance lock, and why the page matches the CLI.
 - **[docs/DEBUG.md](docs/DEBUG.md)** — Troubleshooting decision tree, common error codes, and post-install smoke checks.
 - **[docs/DESIGN.md](docs/DESIGN.md)** — Architectural rationale and engineering trade-offs.
+- **[docs/RELATED_PROJECTS.md](docs/RELATED_PROJECTS.md)** — Ecosystem survey & workspace isolation boundaries.
+- **[docs/TASKS.md](docs/TASKS.md)** — Milestone tracking and release verification gates.
 - **[docs/PORTABILITY.md](docs/PORTABILITY.md)** — Cross-host capability matrix, model overlays, and `forge.profile/v1` schema.
 - **[tools/abliterate/README.md](tools/abliterate/README.md)** — Optional offline weight-space activation direction projection script.
 - **[tools/eval/README.md](tools/eval/README.md)** — Optional refusal-rate evaluation harness for local models.

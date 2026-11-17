@@ -5,9 +5,8 @@ import os from "node:os";
 import path from "node:path";
 import { loadProfile, loadModel, validateProfile, PROFILE_SCHEMA } from "../core/contract.mjs";
 import { compile } from "../core/compile.mjs";
-import { applyPlan, previewPlan, checkPreview, revertPlan, verifyPlan, mergeBlock, mergeJson, mergeToml } from "../core/executor.mjs";
+import { applyPlan, previewPlan, checkPreview, revertPlan, verifyPlan, verifyCompiled, mergeBlock, mergeJson, mergeToml, mergeYaml } from "../core/executor.mjs";
 import { renderPrompt } from "../core/prompt.mjs";
-import { verifyCompiled } from "../core/verify.mjs";
 import { PATCHES } from "../lib/table.mjs";
 import { normalizeFiles, replacementsOf } from "../lib/engine.mjs";
 import { registerProvider } from "../core/provider.mjs";
@@ -52,8 +51,40 @@ test("compile resolves project and user targets without writing", () => {
   const home = tmp(); const project = tmp();
   const plan = compile(loadProfile("codex"), loadModel("gpt"), { home, projectRoot: project });
   assert.equal(plan.actions.find((a) => a.kind === "markdown-block").path, path.join(project, "AGENTS.md"));
-  assert.equal(plan.actions.some((a) => a.kind === "toml-merge"), false);
+  assert.equal(plan.actions.find((a) => a.kind === "file").path, path.join(project, ".codex", "forge-instructions.md"));
+  const tomlAction = plan.actions.find((a) => a.kind === "toml-merge");
+  assert.equal(tomlAction.path, path.join(project, ".codex", "config.toml"));
+  assert.equal(tomlAction.value.model_instructions_file, ".codex/forge-instructions.md");
+  assert.equal(plan.delivery.grade, "replace-full");
   assert.equal(fs.existsSync(path.join(project, "AGENTS.md")), false);
+});
+
+test("mergeYaml preserves unrelated keys and nested mappings idempotently", () => {
+  const initial = "name: Local Agent\nchatOptions:\n  temperature: 0.2\n";
+  const first = mergeYaml(initial, { chatOptions: { baseAgentSystemMessage: "line1\nline2" } });
+  const second = mergeYaml(first, { chatOptions: { baseAgentSystemMessage: "line1\nline2" } });
+  assert.equal(first, second);
+  assert.match(first, /name: Local Agent/);
+  assert.match(first, /temperature: 0\.2/);
+  assert.match(first, /baseAgentSystemMessage: \|-/);
+  assert.equal(first.split(/^chatOptions:/m).length - 1, 1);
+  assert.throws(() => mergeYaml("# dsh-forge:begin config\n", { a: 1 }), /dsh-forge YAML block/);
+});
+
+test("write-shim creates executable 0755 shims for gemini and claude-code", () => {
+  const home = tmp(); const project = tmp(); const state = tmp();
+  const plan = compile(loadProfile("gemini"), loadModel("gemini"), { home, projectRoot: project });
+  assert.equal(plan.delivery.grade, "replace-full");
+  const applied = applyPlan(plan, { yes: true, env: { stateRoot: state } });
+  assert.equal(applied.ok, true);
+  const shimPath = path.join(project, ".gemini", "dsh-forge-shim.sh");
+  const stat = fs.statSync(shimPath);
+  assert.equal((stat.mode & 0o111) !== 0, true);
+  assert.match(fs.readFileSync(shimPath, "utf8"), /DSH_FORGE_PROMPT='[^']*\.gemini\/system\.md'/);
+  assert.match(fs.readFileSync(shimPath, "utf8"), /export GEMINI_SYSTEM_MD="\$DSH_FORGE_PROMPT"/);
+  const reverted = revertPlan(applied.id, { env: { stateRoot: state } });
+  assert.equal(reverted.ok, true);
+  assert.equal(fs.existsSync(shimPath), false);
 });
 
 test("mergeBlock preserves user text and is idempotent", () => {

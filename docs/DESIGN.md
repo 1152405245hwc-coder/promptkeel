@@ -15,12 +15,12 @@ Earlier community patch bundles modified 80+ minified strings across UI componen
 
 | Decision | Trade-off and Rationale |
 |---|---|
-| **<!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> host patches with versioned `variants` (`lib/table.mjs`)** | Every patch sits in one of the armor layers (<!-- forge-facts:begin kind=layers -->approval 5, sandbox 6, turn 1, persona 3, session 1<!-- forge-facts:end -->) and touches <!-- forge-facts:begin kind=files -->11<!-- forge-facts:end --> files across <!-- forge-facts:begin kind=packages -->10<!-- forge-facts:end --> `@deepseek-ai/*` packages. UI-cosmetic patches are omitted so minor DSH updates rarely break anchors; when an anchor does change, version-scoped `variants` keep backward compatibility. |
+| **<!-- forge-facts:begin kind=patches -->23<!-- forge-facts:end --> host patches with versioned `variants` (`lib/table.mjs`)** | Every patch sits in one of the armor layers (<!-- forge-facts:begin kind=layers -->approval 7, sandbox 9, turn 1, persona 4, session 2<!-- forge-facts:end -->) and touches <!-- forge-facts:begin kind=files -->18<!-- forge-facts:end --> files across <!-- forge-facts:begin kind=packages -->17<!-- forge-facts:end --> `@deepseek-ai/*` packages. UI-cosmetic patches are omitted so minor DSH updates rarely break anchors; when an anchor does change, version-scoped `variants` keep backward compatibility. |
 | **Pure compiler vs. transactional executor (`core/compile.mjs`, `core/executor.mjs`)** | Compilation is a pure function from `(profile, model, mode)` to a deterministic `planId` and action list. No host file is inspected or touched until the executor runs with `--yes`, making plans reproducible across machines and testable in isolation. |
 | **Manifest backups with `sha256` and host-version guards** | Every write backs up original file bytes and records `beforeSha`, `afterSha`, and `hostVersion`. `revert` and `revert-plan` verify post-apply hashes before restoring, refusing to overwrite files edited after apply or backups taken from an older DSH build unless `--force` is explicit. |
 | **Coexistence via declarative node suppression (`cordis.patch.yml`)** | When installed alongside legacy `dsh-purge` bundles, `dsh-forge` orders itself after them in `dsh.profile.bundles` and disables conflicting plugin nodes so only one `systemPrompt` section (`forge:prompt`) is registered. |
-| **Token-budgeted modular prompt (`prompt/`)** | Prompts are composed deterministically from `core + model/adapter + host + mode` layers (693 tokens default for DSH, ~680–766 tokens across cross-host profiles) and checked against a 3,200-token cap so system context is not bloated. |
-| **Zero-dependency 15 KB sidebar panel (`client/src/entry.js`)** | Written directly with `React.createElement` and wrapped by `scripts/build-client.mjs` without external bundlers, keeping the client artifact small and auditable. |
+| **Token-budgeted modular prompt (`prompt/`)** | Prompts compose deterministically from `core + persona + model + host + mode` layers (~268–361 tokens across all <!-- forge-facts:begin kind=profiles -->13<!-- forge-facts:end --> profiles) and are enforced strictly under a <!-- forge-facts:begin kind=promptCeiling -->480<!-- forge-facts:end -->-token ceiling by `test/budget.test.mjs`. |
+| **Zero-dependency sidebar panel (`client/src/entry.js`) & `:7788` workbench (`ui/workbench.js`)** | Built cleanly with `React.createElement` (~25 KB bundle via `scripts/build-client.mjs`) and shared CSS tokens (`ui/tokens.mjs`), plus a CSRF/loopback-protected localhost workbench for compiling, probing, running live gateway strategies, and reverting plans. |
 
 ## Patch Surface Facts
 
@@ -29,15 +29,15 @@ Earlier community patch bundles modified 80+ minified strings across UI componen
 <!-- forge-facts:begin kind=table -->
 | Fact | Value |
 | :--- | :--- |
-| Host patches | 16 |
-| Patched files | 11 |
-| `@deepseek-ai/*` packages | 10 |
-| Layers | `approval` 5 · `sandbox` 6 · `turn` 1 · `persona` 3 · `session` 1 |
+| Host patches | 23 |
+| Patched files | 18 |
+| `@deepseek-ai/*` packages | 17 |
+| Layers | `approval` 7 · `sandbox` 9 · `turn` 1 · `persona` 4 · `session` 2 |
 | Host version range | `>=0.2.1-rc.1 <0.3.0` |
 <!-- forge-facts:end -->
 
 ## Out of Scope
 
 - Built-in package managers or background auto-updaters (handled by `pnpm` and `dsh-forge upgrade`).
-- Patching minified JavaScript on non-DSH harnesses (all non-DSH profiles write only to documented Markdown, JSON, or TOML configuration files; Cursor, Windsurf, Aider, and Continue are experimental and their active sessions remain unobservable).
+- Patching minified JavaScript on non-DSH harnesses (all non-DSH profiles write only to documented Markdown, JSON, TOML, YAML, or POSIX shim files; Cursor, Windsurf, and Aider remain configuration-only experimental targets without live runtime activation probes).
 - Modifying base model weights by default (`tools/abliterate/` is strictly an opt-in local script for open-weight models).

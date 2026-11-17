@@ -40,9 +40,9 @@ test("experimental platform adapters expose evidence and keep activation unobser
   }
 });
 
-test("experimental profiles compile to scoped markdown rule targets only", () => {
+test("experimental markdown-only profiles compile to scoped markdown rule targets", () => {
   const model = loadModel("gpt");
-  for (const { module, profile: profileId } of platforms) {
+  for (const { module, profile: profileId } of platforms.filter((entry) => entry.profile !== "continue")) {
     const home = tempRoot();
     const projectRoot = tempRoot();
     const profile = loadProfile(profileId);
@@ -59,4 +59,17 @@ test("experimental profiles compile to scoped markdown rule targets only", () =>
     fs.rmSync(home, { recursive: true, force: true });
     fs.rmSync(projectRoot, { recursive: true, force: true });
   }
+});
+
+test("continue compiles a B4 yaml-merge targeting chatOptions.baseAgentSystemMessage", () => {
+  const home = tempRoot();
+  const projectRoot = tempRoot();
+  const plan = compile(loadProfile("continue"), loadModel("gpt"), { home, projectRoot });
+  const yamlAction = plan.actions.find((a) => a.kind === "yaml-merge");
+  assert.ok(yamlAction);
+  assert.equal(yamlAction.path, path.join(projectRoot, ".continue", "config.yaml"));
+  assert.equal(yamlAction.value.chatOptions.baseAgentSystemMessage, plan.prompt.text);
+  assert.equal(plan.delivery.grade, "replace-full");
+  fs.rmSync(home, { recursive: true, force: true });
+  fs.rmSync(projectRoot, { recursive: true, force: true });
 });

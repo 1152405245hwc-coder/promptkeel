@@ -50,3 +50,17 @@ test("compile reports delivery alongside channels", () => {
   assert.equal(plan.delivery.grade, "replace-with-residue");
   assert.ok(plan.channels.counts.install > 0);
 });
+
+test("gradeOf dynamically downgrades B4 hosts when compiled actions omit replacement channels", () => {
+  const bareCodex = gradeOf({ host: "codex" }, [{ op: "merge-block", kind: "markdown-block", path: "/p/AGENTS.md" }]);
+  assert.equal(bareCodex.grade, "append-only");
+  assert.ok(bareCodex.improvements.some((item) => item.includes("model_instructions_file")));
+
+  const bareGemini = gradeOf({ host: "gemini" }, [{ op: "merge-block", kind: "markdown-block", path: "/p/GEMINI.md" }]);
+  assert.equal(bareGemini.grade, "append-only");
+  assert.ok(bareGemini.improvements.some((item) => item.includes("GEMINI_SYSTEM_MD")));
+
+  const bareContinue = gradeOf({ host: "continue" }, [{ op: "merge-block", kind: "markdown-block", path: "/p/.continue/rules/dsh-forge.md" }]);
+  assert.equal(bareContinue.grade, "append-only");
+  assert.ok(bareContinue.improvements.some((item) => item.includes("baseAgentSystemMessage")));
+});

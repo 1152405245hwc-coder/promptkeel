@@ -6,8 +6,16 @@ import { fail } from "./errors.mjs";
 import { sha256 } from "./prompt.mjs";
 import { getProvider } from "./provider.mjs";
 
+export function defaultStateRoot(env = {}) {
+  if (env.stateRoot) return path.resolve(env.stateRoot);
+  if (process.env.DSH_FORGE_STATE) return path.resolve(process.env.DSH_FORGE_STATE);
+  if (env.home) return path.resolve(env.home, ".dsh-forge");
+  if (process.env.XDG_STATE_HOME) return path.resolve(process.env.XDG_STATE_HOME, "dsh-forge");
+  return path.resolve(os.homedir(), ".dsh-forge");
+}
+
 export function stateRoot(env = {}) {
-  return path.resolve(env.stateRoot || process.env.DSH_FORGE_STATE || path.join(os.homedir(), ".dsh-forge"));
+  return defaultStateRoot(env);
 }
 
 function randomId() {
@@ -148,11 +156,155 @@ export function mergeToml(existing, patch) {
   return combined.endsWith("\n") ? combined : `${combined}\n`;
 }
 
+const YAML_KEY = /^[A-Za-z0-9_.-]+$/;
+
+function yamlScalar(value, indent = 0) {
+  if (value === null || value === undefined) return "null";
+  if (typeof value === "boolean" || (typeof value === "number" && Number.isFinite(value))) return String(value);
+  if (typeof value === "string") {
+    if (value.includes("\n")) {
+      const pad = " ".repeat(indent + 2);
+      const body = value.replace(/\r\n/g, "\n").split("\n").map((line) => (line ? `${pad}${line}` : "")).join("\n");
+      return `|-\n${body}`;
+    }
+    return JSON.stringify(value);
+  }
+  fail("yaml-value", `unsupported YAML scalar ${JSON.stringify(value)}`);
+}
+
+function renderYamlEntries(obj, indent = 0) {
+  const pad = " ".repeat(indent);
+  const lines = [];
+  for (const [key, value] of Object.entries(obj)) {
+    if (!YAML_KEY.test(key)) fail("yaml-key", `unsupported YAML key ${JSON.stringify(key)}`);
+    if (Array.isArray(value)) {
+      if (value.length === 0) {
+        lines.push(`${pad}${key}: []`);
+        continue;
+      }
+      lines.push(`${pad}${key}:`);
+      for (const item of value) {
+        if (item && typeof item === "object" && !Array.isArray(item)) {
+          const nested = renderYamlEntries(item, indent + 4);
+          if (nested.length === 0) lines.push(`${pad}  - {}`);
+          else {
+            lines.push(`${pad}  - ${nested[0].trimStart()}`);
+            lines.push(...nested.slice(1));
+          }
+        } else {
+          lines.push(`${pad}  - ${yamlScalar(item, indent + 2)}`);
+        }
+      }
+    } else if (value && typeof value === "object") {
+      const keys = Object.keys(value);
+      if (keys.length === 0) lines.push(`${pad}${key}: {}`);
+      else {
+        lines.push(`${pad}${key}:`);
+        lines.push(...renderYamlEntries(value, indent + 2));
+      }
+    } else {
+      lines.push(`${pad}${key}: ${yamlScalar(value, indent)}`);
+    }
+  }
+  return lines;
+}
+
+function findTopLevelYamlSection(lines, key) {
+  const headerRe = new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:(?:\\s*(?:#.*)?)?$`);
+  const start = lines.findIndex((line) => headerRe.test(line));
+  if (start === -1) return null;
+  let end = start + 1;
+  while (end < lines.length) {
+    const line = lines[end];
+    if (line.trim() === "" || /^[ \t]/.test(line) || /^\s*#/.test(line)) end += 1;
+    else break;
+  }
+  return { start, end };
+}
+
+export function mergeYaml(existing, patch) {
+  if (!patch || typeof patch !== "object" || Array.isArray(patch)) {
+    fail("yaml-patch", "YAML patch must be a plain object");
+  }
+  const beginMarker = "# dsh-forge:begin config";
+  const endMarker = "# dsh-forge:end config";
+  const source = String(existing ?? "").replace(/\r\n/g, "\n");
+  const countMarker = (text, marker) => {
+    let count = 0;
+    let offset = 0;
+    while (true) {
+      const index = text.indexOf(marker, offset);
+      if (index === -1) return count;
+      count += 1;
+      offset = index + marker.length;
+    }
+  };
+  const beginCount = countMarker(source, beginMarker);
+  const endCount = countMarker(source, endMarker);
+  if (beginCount !== endCount || beginCount > 1) {
+    fail("yaml-block-malformed", "dsh-forge YAML block must have exactly one begin/end pair");
+  }
+  let baseText = source;
+  if (beginCount === 1) {
+    const blockRe = /^[ \t]*# dsh-forge:begin config[\s\S]*?^[ \t]*# dsh-forge:end config\n?/m;
+    const match = blockRe.exec(source);
+    if (!match) fail("yaml-block-malformed", "dsh-forge YAML block markers are out of order");
+    baseText = `${source.slice(0, match.index)}${source.slice(match.index + match[0].length)}`.replace(/\n{3,}/g, "\n\n").trimEnd();
+    if (baseText) baseText += "\n";
+  }
+
+  let baseLines = baseText ? baseText.split("\n") : [];
+  if (baseLines.length && baseLines[baseLines.length - 1] === "") baseLines.pop();
+
+  const blockEntries = {};
+  for (const [key, value] of Object.entries(patch)) {
+    if (!YAML_KEY.test(key)) fail("yaml-key", `unsupported YAML key ${JSON.stringify(key)}`);
+    const section = findTopLevelYamlSection(baseLines, key);
+    if (section && value && typeof value === "object" && !Array.isArray(value) && Object.keys(patch).length === 1) {
+      // Single top-level mapping already exists outside the managed block: strip colliding child keys
+      // inside that section and splice an indented managed block at the end of that mapping.
+      const before = baseLines.slice(0, section.start + 1);
+      const children = baseLines.slice(section.start + 1, section.end);
+      const after = baseLines.slice(section.end);
+      const patchChildKeys = new Set(Object.keys(value));
+      const keptChildren = [];
+      let skipping = false;
+      for (const line of children) {
+        const m = /^  ([A-Za-z0-9_.-]+):/.exec(line);
+        if (m) {
+          skipping = patchChildKeys.has(m[1]);
+          if (!skipping) keptChildren.push(line);
+        } else if (!skipping) {
+          keptChildren.push(line);
+        }
+      }
+      const renderedChildren = renderYamlEntries(value, 2);
+      const indentedBlock = [
+        `  ${beginMarker}`,
+        ...renderedChildren,
+        `  ${endMarker}`,
+      ];
+      const nextLines = [...before, ...keptChildren, ...indentedBlock, ...after];
+      return `${nextLines.join("\n").trimEnd()}\n`;
+    }
+    if (section) {
+      baseLines.splice(section.start, section.end - section.start);
+    }
+    blockEntries[key] = value;
+  }
+
+  const blockBody = renderYamlEntries(blockEntries, 0);
+  const head = baseLines.join("\n").trimEnd();
+  const block = `${beginMarker}\n${blockBody.join("\n")}\n${endMarker}\n`;
+  return head.length === 0 ? block : `${head}\n\n${block}`;
+}
+
 function mergeFile(existing, action) {
-  if (action.op === "write-file") return action.content;
+  if (action.op === "write-file" || action.op === "write-shim") return action.content;
   if (action.op === "merge-block") return mergeBlock(existing, action.blockId, action.content);
   if (action.op === "merge-json") return mergeJson(existing, action.value);
   if (action.op === "merge-toml") return mergeToml(existing, action.value);
+  if (action.op === "merge-yaml") return mergeYaml(existing, action.value);
   fail("action-op", `unsupported file action ${action.op}`);
 }
 
@@ -222,8 +374,10 @@ export function checkPreview(plan, preview) {
     : { ok: true, conflicts: [] };
 }
 
+const FILE_ACTION_OPS = ["write-file", "write-shim", "merge-block", "merge-json", "merge-toml", "merge-yaml"];
+
 export function previewPlan(plan, { env = {} } = {}) {
-  const fileActions = plan.actions.filter((a) => ["write-file", "merge-block", "merge-json", "merge-toml"].includes(a.op));
+  const fileActions = plan.actions.filter((a) => FILE_ACTION_OPS.includes(a.op));
   const patches = actionPatches(plan.actions);
   const provider = dshProvider(patches);
   const changes = fileActions.map(previewFile);
@@ -248,7 +402,7 @@ export function previewPlan(plan, { env = {} } = {}) {
  * the first write; any failure restores every touched file.
  */
 export function applyPlan(plan, { dryRun = false, env = {}, yes = false, preview = null } = {}) {
-  const fileActions = plan.actions.filter((a) => ["write-file", "merge-block", "merge-json", "merge-toml"].includes(a.op));
+  const fileActions = plan.actions.filter((a) => FILE_ACTION_OPS.includes(a.op));
   const patches = actionPatches(plan.actions);
   const provider = dshProvider(patches);
   const previews = fileActions.map(previewFile);
@@ -329,7 +483,10 @@ export function applyPlan(plan, { dryRun = false, env = {}, yes = false, preview
       const before = record.existed ? fs.readFileSync(path.join(dir, record.backup)) : Buffer.alloc(0);
       const next = mergeFile(before.toString("utf8"), action);
       if (!record.existed && next.trim() === "") continue;
-      const mode = record.existed ? fs.statSync(action.path).mode & 0o777 : 0o644;
+      const defaultMode = action.mode ?? (action.op === "write-shim" ? 0o755 : 0o644);
+      const mode = record.existed
+        ? ((fs.statSync(action.path).mode & 0o777) | (action.op === "write-shim" ? 0o755 : 0))
+        : defaultMode;
       writeAtomic(action.path, Buffer.from(next), mode);
       record.afterSha = sha256Bytes(Buffer.from(next));
     }
@@ -437,4 +594,19 @@ export function verifyPlan(id, env = {}) {
     rows.push({ dsh: true, ok: result.ok, patches: result.patches });
   }
   return { ok: rows.every((row) => row.ok), id, status: manifest.status, rows };
+}
+
+/** Verify a compiled plan's internal hashes without touching the host. */
+export function verifyCompiled(plan) {
+  const rows = [];
+  if (!plan?.prompt?.text) rows.push({ ok: false, check: "prompt", reason: "missing prompt text" });
+  else rows.push({ ok: sha256(plan.prompt.text) === plan.prompt.sha256, check: "prompt-sha256" });
+  if (!plan?.planId) rows.push({ ok: false, check: "plan-id", reason: "missing" });
+  if (!Array.isArray(plan?.actions) || plan.actions.length === 0) rows.push({ ok: false, check: "actions", reason: "empty plan" });
+  return { ok: rows.every((row) => row.ok), planId: plan?.planId || null, rows };
+}
+
+/** Verify an applied plan by reading current target bytes. */
+export function verifyApplied(planId, env = {}) {
+  return verifyPlan(planId, env);
 }

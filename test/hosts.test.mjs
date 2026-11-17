@@ -43,3 +43,26 @@ test("model overlays produce distinct prompt hashes", () => {
   }));
   assert.equal(hashes.size, 6);
 });
+
+test("fixture-backed session evidence detectors distinguish config-only from active sessions", async () => {
+  const os = await import("node:os");
+  const fs = await import("node:fs");
+  const path = await import("node:path");
+  const { detectHost } = await import("../hosts/registry.mjs");
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "forge-session-"));
+  try {
+    const claudeDir = path.join(root, ".claude", "projects", "p1");
+    fs.mkdirSync(claudeDir, { recursive: true });
+    fs.writeFileSync(path.join(root, "CLAUDE.md"), "<!-- dsh-forge:begin system -->\n");
+    assert.equal(detectHost("claude-code", { home: root, projectRoot: root }).status, "configured");
+    fs.writeFileSync(
+      path.join(claudeDir, "session.jsonl"),
+      JSON.stringify({ role: "system", content: "You are Claude Code, Anthropic's official CLI for Claude.\n<!-- dsh-forge -->" }) + "\n",
+    );
+    const active = detectHost("claude-code", { home: root, projectRoot: root });
+    assert.equal(active.status, "active");
+    assert.equal(active.identityPrefixPresent, true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

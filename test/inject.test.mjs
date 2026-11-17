@@ -21,6 +21,10 @@ test("core prompt composes within the default budget", () => {
   assert.equal(budget.ok, true, `tokens=${composed.tokens}`);
   assert.ok(composed.text.includes("dsh-forge"));
   assert.ok(composed.tokens > 150 && composed.tokens < PROMPT_CEILING, `tokens=${composed.tokens}`);
+
+  const withPersona = composePrompt({ persona: "contract", transform: "rot13" });
+  assert.equal(withPersona.persona?.id, "contract");
+  assert.equal(withPersona.transform, "rot13");
 });
 
 test("estimateTokens counts CJK denser than latin", () => {

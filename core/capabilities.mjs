@@ -33,7 +33,7 @@ export function preflight(profile, { host, model }) {
   if (host && host !== profile.host) {
     problems.push({ code: "host-mismatch", message: `profile targets ${profile.host}, selected ${host}` });
   }
-  if (model && Array.isArray(model.hosts) && !model.hosts.includes(profile.host)) {
+  if (model && Array.isArray(model.hosts) && !model.hosts.includes("*") && !model.hosts.includes(profile.host)) {
     problems.push({ code: "model-host-unsupported", message: `model ${model.id} does not list ${profile.host}` });
   }
   if (profile.capabilities.rollback === "unsupported" && mutatingTargets(profile).length > 0) {

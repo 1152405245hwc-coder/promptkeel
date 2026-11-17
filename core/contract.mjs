@@ -7,7 +7,17 @@ import { getAdapter } from "../hosts/registry.mjs";
 export const PROFILE_SCHEMA = "forge.profile/v1";
 export const MODEL_SCHEMA = "forge.model/v1";
 export const HOSTS = ["dsh", "claude-code", "codex", "gemini", "opencode", "generic"];
-export const TARGET_KINDS = ["markdown-block", "json-merge", "toml-merge", "file", "command", "dsh-patches", "prompt-only"];
+export const TARGET_KINDS = [
+  "markdown-block",
+  "json-merge",
+  "toml-merge",
+  "yaml-merge",
+  "write-shim",
+  "file",
+  "command",
+  "dsh-patches",
+  "prompt-only",
+];
 export const SCOPES = ["user", "project", "absolute"];
 export const SUPPORT_LEVELS = ["verified", "experimental", "unsupported"];
 export const RISK_LEVELS = ["low", "medium", "high"];
@@ -70,7 +80,7 @@ export function validateModel(model, { file = "<model>" } = {}) {
   assert(model.schema === MODEL_SCHEMA, "model-schema", `${file}: schema must be ${MODEL_SCHEMA}`);
   assert(isString(model.id) && SAFE_ID.test(model.id), "model-invalid", `${file}: id is required and must be alphanumeric`);
   assert(isString(model.prompt) && !model.prompt.includes(".."), "model-invalid", `${file}: prompt is required`);
-  assert(Array.isArray(model.hosts) && model.hosts.every((h) => isKnownHost(h)), "model-hosts", `${file}: hosts must name known hosts`);
+  assert(Array.isArray(model.hosts) && model.hosts.every((h) => h === "*" || isKnownHost(h)), "model-hosts", `${file}: hosts must name known hosts`);
   if (model.effects !== undefined) {
     assert(Array.isArray(model.effects) && model.effects.every((e) => EFFECTS.includes(e)), "model-effects", `${file}: unknown effect code`);
   }
@@ -151,8 +161,21 @@ export function validateProfile(profile, { file = "<profile>" } = {}) {
     if (target.kind !== "dsh-patches" && target.kind !== "prompt-only") {
       assert(isString(target.path), "target-path", `${where}.path is required`);
     }
-    if (target.kind === "json-merge" || target.kind === "toml-merge") {
-      assert(target.value && typeof target.value === "object", "target-value", `${where}.value is required`);
+    if (target.kind === "json-merge" || target.kind === "toml-merge" || target.kind === "yaml-merge") {
+      assert(target.value && typeof target.value === "object" && !Array.isArray(target.value), "target-value", `${where}.value is required`);
+    }
+    if (target.kind === "write-shim") {
+      assert(target.binary === undefined || isString(target.binary), "target-shim", `${where}.binary must be a non-empty string`);
+      assert(target.promptPath === undefined || isString(target.promptPath), "target-shim", `${where}.promptPath must be a non-empty string`);
+      if (target.env !== undefined) {
+        assert(target.env && typeof target.env === "object" && !Array.isArray(target.env), "target-shim", `${where}.env must be an object`);
+        for (const [k, v] of Object.entries(target.env)) {
+          assert(typeof v === "string", "target-shim", `${where}.env.${k} must be a string`);
+        }
+      }
+      if (target.args !== undefined) {
+        assert(Array.isArray(target.args) && target.args.every((item) => typeof item === "string"), "target-shim", `${where}.args must be an array of strings`);
+      }
     }
     if (target.kind === "dsh-patches") {
       assert(

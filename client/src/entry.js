@@ -6,6 +6,7 @@ const NS = "dsh-forge";
 const TABS = [
   { id: "overview", label: "总览" },
   { id: "patches", label: "补丁" },
+  { id: "studio", label: "工作台" },
   { id: "grades", label: "分级" },
   { id: "personas", label: "人设" },
   { id: "prompt", label: "提示词" },
@@ -89,6 +90,10 @@ position:absolute;inset:0;display:flex;flex-direction:column;background:radial-g
 .df-err{padding:9px 12px;border:1px solid rgba(239,107,115,.4);background:rgba(239,107,115,.08);color:var(--df-red);border-radius:8px;margin-bottom:10px;font-size:12px}
 .df-log{padding:6px 12px;border-bottom:1px solid rgba(35,45,58,.5);font:11.5px/1.5 "SF Mono",ui-monospace,monospace;color:#b9c6d2;word-break:break-word}
 .df-log time{color:var(--df-mute);margin-right:8px}
+.df-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.df-field{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--df-dim)}
+.df-input,.df-select,.df-textarea{background:#0d1218;border:1px solid var(--df-line);border-radius:7px;padding:6px 8px;color:var(--df-text);font:inherit;font-size:12px}
+.df-textarea{min-height:76px;resize:vertical;font-family:"SF Mono",ui-monospace,monospace}
 `;
 
 function useForge() {
@@ -135,11 +140,71 @@ function Shell() {
       notice ? h("div", { className: "df-err", style: notice.ok ? { color: "var(--df-green)", borderColor: "rgba(95,211,155,.35)", background: "rgba(95,211,155,.07)" } : null }, notice.text) : null,
       tab === "overview" ? h(Overview, { data, okCount }) : null,
       tab === "patches" ? h(Patches, { data, busy, run }) : null,
+      tab === "studio" ? h(StudioView, { data, busy, run }) : null,
       tab === "grades" ? h(Grades, { data }) : null,
       tab === "personas" ? h(Personas, { data }) : null,
       tab === "prompt" ? h(PromptView, { prompt, setPrompt, busy, run }) : null,
       tab === "policy" ? h(PolicyView, { data, busy, run }) : null,
       tab === "logs" ? h(LogView, { logs, setLogs, busy, run }) : null
+    )
+  );
+}
+
+function StudioView({ data }) {
+  const [profile, setProfile] = useState("dsh");
+  const [model, setModel] = useState("deepseek");
+  const [persona, setPersona] = useState("");
+  const [strategy, setStrategy] = useState("variable+contract");
+  const [compiled, setCompiled] = useState(null);
+  const [probe, setProbe] = useState(null);
+  const [livePrompt, setLivePrompt] = useState("Outline a minimal JSON config merger in Python.");
+  const [liveModel, setLiveModel] = useState("glm-5.3-flash");
+  const [liveOut, setLiveOut] = useState(null);
+  const [err, setErr] = useState(null);
+
+  const profiles = (data && data.profiles) || [{ id: "dsh" }, { id: "generic" }, { id: "claude-code" }];
+  const models = (data && data.models) || ["deepseek", "glm", "claude", "gpt", "gemini", "qwen", "local"];
+  const personas = (data && data.personas) || [];
+  const strategies = (data && data.strategies) || [{ id: "none" }, { id: "variable+contract" }, { id: "crescendo" }, { id: "deep" }, { id: "prefill" }, { id: "stuff" }];
+
+  const doCompile = () => api("/compile", { method: "POST", body: JSON.stringify({ profile, model, persona, strategy }) })
+    .then((r) => { setCompiled(r.plan); setErr(null); })
+    .catch((e) => setErr(String(e.message || e)));
+  const doProbe = () => api("/probe", { method: "POST", body: JSON.stringify({ profile, model, persona, strategy }) })
+    .then((r) => { setProbe(r); setErr(null); })
+    .catch((e) => setErr(String(e.message || e)));
+  const doLive = () => api("/live-run", { method: "POST", body: JSON.stringify({ gateway: "default", model: liveModel, profile, persona, strategy, rawUser: livePrompt, maxTokens: 512 }) })
+    .then((r) => { setLiveOut(r); setErr(null); })
+    .catch((e) => setErr(String(e.message || e)));
+
+  return h("div", null,
+    err ? h("div", { className: "df-err" }, err) : null,
+    h("div", { className: "df-form" },
+      h("label", { className: "df-field" }, "宿主 Profile", h("select", { className: "df-select", value: profile, onChange: (e) => setProfile(e.target.value) }, profiles.map((p) => h("option", { key: p.id, value: p.id }, p.id)))),
+      h("label", { className: "df-field" }, "模型叠加", h("select", { className: "df-select", value: model, onChange: (e) => setModel(e.target.value) }, models.map((m) => h("option", { key: m, value: m }, m)))),
+      h("label", { className: "df-field" }, "人设 Persona", h("select", { className: "df-select", value: persona, onChange: (e) => setPersona(e.target.value) }, h("option", { value: "" }, "(策略默认)"), personas.map((p) => h("option", { key: p.id, value: p.id }, p.id)))),
+      h("label", { className: "df-field" }, "升级策略", h("select", { className: "df-select", value: strategy, onChange: (e) => setStrategy(e.target.value) }, strategies.map((s) => h("option", { key: s.id, value: s.id }, s.id))))
+    ),
+    h("div", { className: "df-toolbar" },
+      h("button", { className: "df-btn primary", onClick: doCompile }, "编译预览"),
+      h("button", { className: "df-btn", onClick: doProbe }, "静态护甲探针"),
+      compiled ? h("span", { className: "df-pill ok" }, compiled.delivery.grade + " · " + compiled.prompt.tokens + " tok") : null
+    ),
+    compiled ? h("section", { className: "df-sec" },
+      h("h3", null, "Plan " + compiled.planId + " · " + compiled.actions.length + " actions"),
+      h("pre", { className: "df-pre" }, compiled.prompt.text)
+    ) : null,
+    probe ? h("div", { className: "df-row" }, h("span", { className: "df-badge " + (probe.ok ? "ok" : "miss") }, "探针 " + probe.result.passed + "/" + probe.result.total), h("span", { className: "df-detail" }, "score " + probe.result.score)) : null,
+    h("section", { className: "df-sec" },
+      h("h3", null, "Magpie :3425 实时调试"),
+      h("div", { style: { padding: "10px 12px" } },
+        h("div", { className: "df-toolbar" },
+          h("input", { className: "df-input", style: { flex: 1 }, value: liveModel, onChange: (e) => setLiveModel(e.target.value), placeholder: "模型 ID (如 glm-5.3-flash)" }),
+          h("button", { className: "df-btn primary", onClick: doLive }, "发送调试")
+        ),
+        h("textarea", { className: "df-textarea", style: { width: "100%" }, value: livePrompt, onChange: (e) => setLivePrompt(e.target.value) })
+      ),
+      liveOut ? h("pre", { className: "df-pre" }, `[${liveOut.verdict || "error"} · ${liveOut.latencyMs || 0}ms]\n` + (liveOut.reply || liveOut.error || "")) : null
     )
   );
 }

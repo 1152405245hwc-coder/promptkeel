@@ -1,6 +1,6 @@
 # Weight-Space Residual Stream Projection (`tools/abliterate`)
 
-Whereas `dsh-forge` operates at the **host & prompt governance layer**, `tools/abliterate/` operates at the **local model weight layer** (`local-weights` profile) for open-weight models (`DeepSeek-R1-Distill-*`, `Qwen2.5-*`, `Llama-3.*`) running under Ollama, `llama.cpp`, or vLLM.
+Whereas `dsh-forge` operates at the **host & prompt governance layer**, `tools/abliterate/` operates at the **local model weight layer** (paired with the `local` model overlay in `models/local.json`) for open-weight models (`DeepSeek-R1-Distill-*`, `Qwen2.5-*`, `Llama-3.*`) running under Ollama, `llama.cpp`, or vLLM.
 
 ## Mathematical Formulation
 

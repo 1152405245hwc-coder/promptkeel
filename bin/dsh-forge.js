@@ -13,19 +13,20 @@ import { reportsDir, ensureDir, dshHome, promptInjectPath, displayPath, redactTe
 import { readLog, clearLogs, defaultLogFile, log, setLogFile } from "../lib/log.mjs";
 import { loadProfile, loadModel, listProfiles, listModels } from "../core/contract.mjs";
 import { ForgeError } from "../core/errors.mjs";
-import { compile } from "../core/compile.mjs";
-import { applyPlan, revertPlan, listPlans, verifyPlan } from "../core/executor.mjs";
+import { compile, normalizeContext } from "../core/compile.mjs";
+import { applyPlan, revertPlan, listPlans, verifyPlan, defaultStateRoot } from "../core/executor.mjs";
 import { detectAll } from "../hosts/registry.mjs";
 import { registerProvider } from "../core/provider.mjs";
 import * as dshProvider from "../lib/dsh-provider.mjs";
-import { normalizeContext } from "../core/context.mjs";
 import { listPersonas } from "../core/persona.mjs";
+import { STRATEGIES, resolveStrategy, buildConversation } from "../core/strategy.mjs";
+import { resolveProvider, executeStrategyRequest, detectRefusal, verdictOf, complianceOf, DEFAULT_MAX_TOKENS } from "../core/gateway.mjs";
 import { PROBES, PROBE_FAMILIES, runProbes, selfCheck } from "../core/probe.mjs";
 import { TRANSFORMS, roundTrip } from "../core/transform.mjs";
 import { renderShim } from "../core/shim.mjs";
 import { gradeTable } from "../core/grades.mjs";
 import { acquireLock, createConsole, renderOverview, CONSOLE_HOST, CONSOLE_PORT } from "../core/console.mjs";
-import { consoleState } from "../lib/console-state.mjs";
+import { consoleState, createConsoleHandlers } from "../lib/console-state.mjs";
 import { readAudit, summarizeAudit } from "../core/audit.mjs";
 import { writeSnapshot, pruneSnapshots, listSnapshots, SNAPSHOT_DEFAULTS } from "../core/snapshot.mjs";
 
@@ -71,6 +72,18 @@ const { values: opts, positionals } = parseArgs({
     list: { type: "boolean" },
     state: { type: "string" },
     preview: { type: "string" },
+    strategy: { type: "string" },
+    wrap: { type: "string" },
+    script: { type: "string" },
+    prefill: { type: "string" },
+    stuff: { type: "string" },
+    gateway: { type: "string" },
+    provider: { type: "string" },
+    "base-url": { type: "string" },
+    "key-env": { type: "string" },
+    "max-tokens": { type: "string" },
+    temperature: { type: "string" },
+    "prompt-text": { type: "string" },
   },
 });
 
@@ -126,8 +139,10 @@ Usage:
   dsh-forge probe [profile] [--persona <id>] [--transform <kind>] [--json]   run the static probe harness
   dsh-forge channels [--all] [--json]           show delivery channel per action
   dsh-forge grades [--json]                     show how much of the host prompt each profile displaces
-  dsh-forge console [--port 7788] [--state <dir>]   serve the read-only console on 127.0.0.1
+  dsh-forge console [--port 7788] [--state <dir>]   serve interactive workbench on 127.0.0.1
   dsh-forge console --once [--json]             render the overview page and exit
+  dsh-forge run --prompt-text <text> [--strategy <id>] [--gateway default] [--model <live>]
+  dsh-forge strategies [--json]                 list delivery & breakout strategies
   dsh-forge shim --binary <path> [--prompt <file>] [--env K=V] [--out <file>]
   dsh-forge compile [profile] [--model <id>] [--mode <mode>] [--persona <id>] [--persona-mode off|replace|strict|append] [--transform base64|rot13|leet|vowels|morse|ascii|reverse|split] [--home <dir>] [--project <dir>] [--budget 3200] [--out plan.json]
   dsh-forge apply --profile <profile> [--model <model>] [--home <dir>] [--project <dir>] [--state <dir>] [--preview file] [--dry-run|--yes]
@@ -348,9 +363,11 @@ function forgeContext() {
   // Keep the executor environment as a flat object.  The compile context also
   // exposes these values at the top level so adapters can observe the same
   // host/state selection as the executor.
-  const stateRoot = optionValue("state", process.env.DSH_FORGE_STATE || undefined);
+  const explicitState = optionValue("state", null);
+  const explicitHome = optionValue("home", null);
+  const stateRoot = explicitState || defaultStateRoot(explicitHome ? { home: explicitHome } : {});
   const hostRoot = optionValue("host-root", process.env.DSH_FORGE_HOST_ROOT || undefined);
-  const home = optionValue("home", process.env.HOME || process.env.USERPROFILE);
+  const home = explicitHome || process.env.HOME || process.env.USERPROFILE;
   const context = normalizeContext({
     hostId: profile.host,
     profileId: profile.id,
@@ -406,13 +423,17 @@ function cmdProbe() {
 }
 
 function stateRootPath() {
-  return optionValue("state", process.env.DSH_FORGE_STATE || path.join(optionValue("home", process.env.HOME || process.env.USERPROFILE || "."), ".dsh", "dsh-forge"));
+  const explicitState = optionValue("state", null);
+  const explicitHome = optionValue("home", null);
+  return explicitState || defaultStateRoot(explicitHome ? { home: explicitHome } : {});
 }
 
 function cmdAudit() {
   const limit = Number(optionValue("limit", 100)) || 100;
   const dshHomeOpt = optionValue("dsh-home", null);
-  const result = readAudit(logsDir(dshHomeOpt ? { dshHome: dshHomeOpt } : {}), { limit });
+  const stateOpt = optionValue("state", null);
+  const logEnv = dshHomeOpt ? { dshHome: dshHomeOpt } : { stateRoot: stateOpt || stateRootPath() };
+  const result = readAudit(logsDir(logEnv), { limit });
   const summary = summarizeAudit(result.events);
   if (flags.has("--json")) return out({ ok: true, ...result, summary }, true);
   banner(`audit ${summary.total} events · ${result.days} day(s)`);
@@ -442,7 +463,7 @@ function cmdSnapshot() {
   const { plan } = forgeContext();
   const written = writeSnapshot(stateRoot, { label: `prompt-${plan.profile.id}`, content: plan.prompt.text });
   const pruned = pruneSnapshots(stateRoot, limits);
-  setLogFile(defaultLogFile({}));
+  setLogFile(defaultLogFile({ stateRoot }));
   log("snapshot.written", { profile: plan.profile.id, bytes: written.bytes, kept: pruned.kept.length, removed: pruned.removed.length });
   if (flags.has("--json")) return out({ ok: true, written, pruned }, true);
   banner(`snapshot ${plan.profile.id}`);
@@ -453,7 +474,17 @@ function cmdSnapshot() {
 function cmdConsole() {
   const stateRoot = stateRootPath();
   const projectRoot = optionValue("project", process.cwd());
-  const state = () => consoleState({ stateRoot }, { projectRoot });
+  const home = optionValue("home", process.env.HOME || process.env.USERPROFILE);
+  const dshHomeOpt = optionValue("dsh-home", null);
+  const hostRootOpt = optionValue("host-root", process.env.DSH_FORGE_HOST_ROOT || undefined);
+  const env = {
+    stateRoot,
+    projectRoot,
+    home,
+    ...(dshHomeOpt ? { dshHome: dshHomeOpt } : {}),
+    ...(hostRootOpt ? { hostRoot: hostRootOpt } : {}),
+  };
+  const state = () => consoleState(env, { projectRoot });
   if (flags.has("--once")) {
     const snapshot = state();
     if (flags.has("--json")) return out({ ok: true, state: snapshot }, true);
@@ -465,7 +496,7 @@ function cmdConsole() {
     return out({ ok: false, code: "console-port", error: `invalid port ${optionValue("port", null)}` }, true);
   }
   const lock = acquireLock(stateRoot);
-  const server = createConsole({ state, port });
+  const server = createConsole({ state, env, handlers: createConsoleHandlers(env), port });
   server.on("error", (error) => {
     lock.release();
     process.exitCode = 1;
@@ -473,10 +504,10 @@ function cmdConsole() {
   });
   server.listen(port, CONSOLE_HOST, () => {
     const actual = server.address().port;
-    setLogFile(defaultLogFile({}));
+    setLogFile(defaultLogFile({ stateRoot }));
     log("console.start", { port: actual });
     banner(`console http://${CONSOLE_HOST}:${actual}`);
-    process.stdout.write(`read-only · state ${stateRoot} · ctrl-c to stop\n`);
+    process.stdout.write(`workbench · state ${stateRoot} · ctrl-c to stop\n`);
   });
   const stop = () => {
     server.close(() => {
@@ -572,7 +603,7 @@ function cmdForgeApply() {
 
 function cmdPlans() {
   out({ plans: listPlans({
-    stateRoot: optionValue("state", process.env.DSH_FORGE_STATE || undefined),
+    stateRoot: stateRootPath(),
     hostRoot: optionValue("host-root", process.env.DSH_FORGE_HOST_ROOT || undefined),
   }) }, flags.has("--json"));
 }
@@ -581,7 +612,7 @@ function cmdVerifyPlan() {
   const id = positional[0];
   if (!id) { usage(); process.exitCode = 2; return; }
   const result = verifyPlan(id, {
-    stateRoot: optionValue("state", process.env.DSH_FORGE_STATE || undefined),
+    stateRoot: stateRootPath(),
     hostRoot: optionValue("host-root", process.env.DSH_FORGE_HOST_ROOT || undefined),
   });
   out(result, flags.has("--json"));
@@ -594,7 +625,7 @@ function cmdRevertPlan() {
   const result = revertPlan(id, {
     force: flags.has("--force"),
     env: {
-      stateRoot: optionValue("state", process.env.DSH_FORGE_STATE || undefined),
+      stateRoot: stateRootPath(),
       hostRoot: optionValue("host-root", process.env.DSH_FORGE_HOST_ROOT || undefined),
     },
   });
@@ -623,52 +654,147 @@ function cmdLog() {
   out(readLog(limit), flags.has("--json"));
 }
 
-try {
-  switch (command) {
-    case "doctor": cmdDoctor(); break;
-    case "status": out({ doctor: doctor(), policy: readPolicy(), profile: profileStatus(), backups: listBackups() }, true); break;
-    case "apply":
-      if (optionValue("profile", null) && !["desktop", "web"].includes(optionValue("profile"))) cmdForgeApply();
-      else cmdApply();
-      break;
-    case "unpack": cmdUnpack(); break;
-    case "upgrade":
-    case "update": cmdUpgrade(); break;
-    case "revert": cmdRevert(); break;
-    case "verify": cmdVerify(); break;
-    case "explain": cmdExplain(); break;
-    case "adapt": cmdAdapt(); break;
-    case "profile": cmdProfile(); break;
-    case "prompt": cmdPrompt(); break;
-    case "preset": cmdPreset(); break;
-    case "collect": cmdCollect(); break;
-    case "log": cmdLog(); break;
-    case "audit": cmdAudit(); break;
-    case "compile": cmdCompile(); break;
-    case "apply-profile": cmdForgeApply(); break;
-    case "plans": cmdPlans(); break;
-    case "verify-plan": cmdVerifyPlan(); break;
-    case "revert-plan": cmdRevertPlan(); break;
-    case "profiles": cmdProfiles(); break;
-    case "hosts": cmdHosts(); break;
-    case "models": cmdModels(); break;
-    case "personas": cmdPersonas(); break;
-    case "transforms": cmdTransforms(); break;
-    case "probe": cmdProbe(); break;
-    case "channels": cmdChannels(); break;
-    case "shim": cmdShim(); break;
-    case "grades": cmdGrades(); break;
-    case "console": cmdConsole(); break;
-    case "snapshot": cmdSnapshot(); break;
-    case "version": process.stdout.write(`${VERSION}\n`); break;
-    default: usage();
-  }
-} catch (error) {
-  if (error instanceof ForgeError) {
-    out(error.toJSON(), true);
-    process.exitCode = 1;
-  } else {
-    out({ ok: false, error: error?.message || String(error) }, true);
-    process.exitCode = 1;
+function cmdStrategies() {
+  if (flags.has("--json")) return out({ ok: true, strategies: STRATEGIES }, true);
+  banner(`strategies ${STRATEGIES.length}`);
+  for (const s of STRATEGIES) {
+    process.stdout.write(`${s.id.padEnd(18)} wrap=${s.wrap.padEnd(8)} script=${String(s.script || "-").padEnd(9)} stuff=${String(s.stuffTokens).padEnd(5)} ${s.label}\n`);
   }
 }
+
+async function cmdRun() {
+  const rawPrompt = optionValue("prompt-text", positional.join(" ") || null);
+  if (!rawPrompt) {
+    process.exitCode = 2;
+    return out({ ok: false, code: "run-prompt", error: "pass --prompt-text <text> or a positional prompt" }, true);
+  }
+  const strat = resolveStrategy({
+    strategy: optionValue("strategy", null),
+    persona: optionValue("persona", null),
+    transform: optionValue("transform", null),
+    wrap: optionValue("wrap", null),
+    script: optionValue("script", null),
+    prefill: optionValue("prefill", null),
+    stuffTokens: optionValue("stuff", null),
+  });
+  const profileId = optionValue("forge-profile", optionValue("profile", "generic"));
+  const profile = loadProfile(profileId);
+  const liveModel = optionValue("model", profile.model || "deepseek");
+  const modelId = listModels().some((m) => m.id === liveModel) ? liveModel : (profile.model || "deepseek");
+  const model = loadModel(modelId);
+  const plan = compile(profile, model, normalizeContext({
+    hostId: profile.host,
+    profileId: profile.id,
+    mode: optionValue("mode", null),
+    persona: strat.persona,
+    personaMode: optionValue("persona-mode", null),
+    transform: strat.transform,
+    home: optionValue("home", process.env.HOME || process.env.USERPROFILE),
+    projectRoot: optionValue("project", process.cwd()),
+    budget: Number(optionValue("budget", 3200)),
+  }));
+  const provider = resolveProvider({
+    options: {
+      gateway: optionValue("gateway", null) || (optionValue("provider", null) ? null : "default"),
+      provider: optionValue("provider", null),
+      baseUrl: optionValue("base-url", null),
+      keyEnv: optionValue("key-env", null),
+    },
+    env: process.env,
+  });
+  const maxTokens = Number(optionValue("max-tokens", DEFAULT_MAX_TOKENS)) || DEFAULT_MAX_TOKENS;
+  const temperature = Number(optionValue("temperature", 0)) || 0;
+  if (flags.has("--dry-run")) {
+    const conv = buildConversation(rawPrompt, strat);
+    return out({ ok: true, dryRun: true, provider: provider.name, model: liveModel, strategy: conv.strategy, systemTokens: plan.prompt.tokens, conversation: conv }, flags.has("--json"));
+  }
+  const key = provider.keyOptional ? "" : (process.env[provider.keyEnv] || "");
+  if (!provider.keyOptional && !key) {
+    process.exitCode = 2;
+    return out({ ok: false, code: "provider-key", error: `missing env: ${provider.keyEnv}` }, true);
+  }
+  const res = await executeStrategyRequest(provider, {
+    system: plan.prompt.text,
+    rawUser: rawPrompt,
+    model: liveModel,
+    ...strat,
+  }, { key, maxTokens, temperature });
+  const refusal = res.status === "ok" ? detectRefusal(res.reply, { finishReason: res.finishReason, providerFlag: res.providerFlag }) : { refused: null, signal: null };
+  const verdict = verdictOf(res, refusal);
+  const payload = {
+    ok: res.status === "ok",
+    model: liveModel,
+    provider: provider.name,
+    strategy: res.strategyUsed || strat,
+    verdict,
+    compliance: res.status === "ok" ? complianceOf(res.reply) : null,
+    refused: refusal.refused,
+    refusalSignal: refusal.signal,
+    turns: res.turns,
+    latencyMs: res.latencyMs,
+    usage: res.usage || null,
+    reply: res.reply || null,
+    error: res.error || null,
+  };
+  if (flags.has("--json")) return out(payload, true);
+  banner(`run ${liveModel} · ${verdict} (${res.latencyMs ?? 0}ms)`);
+  if (res.status === "ok") process.stdout.write(`${res.reply}\n`);
+  else process.stderr.write(`${res.error}\n`);
+  if (res.status !== "ok") process.exitCode = 1;
+}
+
+async function main() {
+  try {
+    switch (command) {
+      case "doctor": cmdDoctor(); break;
+      case "status": out({ doctor: doctor(), policy: readPolicy(), profile: profileStatus(), backups: listBackups() }, true); break;
+      case "apply":
+        if (optionValue("profile", null) && !["desktop", "web"].includes(optionValue("profile"))) cmdForgeApply();
+        else cmdApply();
+        break;
+      case "unpack": cmdUnpack(); break;
+      case "upgrade":
+      case "update": cmdUpgrade(); break;
+      case "revert": cmdRevert(); break;
+      case "verify": cmdVerify(); break;
+      case "explain": cmdExplain(); break;
+      case "adapt": cmdAdapt(); break;
+      case "profile": cmdProfile(); break;
+      case "prompt": cmdPrompt(); break;
+      case "preset": cmdPreset(); break;
+      case "collect": cmdCollect(); break;
+      case "log": cmdLog(); break;
+      case "audit": cmdAudit(); break;
+      case "compile": cmdCompile(); break;
+      case "apply-profile": cmdForgeApply(); break;
+      case "plans": cmdPlans(); break;
+      case "verify-plan": cmdVerifyPlan(); break;
+      case "revert-plan": cmdRevertPlan(); break;
+      case "profiles": cmdProfiles(); break;
+      case "hosts": cmdHosts(); break;
+      case "models": cmdModels(); break;
+      case "personas": cmdPersonas(); break;
+      case "transforms": cmdTransforms(); break;
+      case "probe": cmdProbe(); break;
+      case "channels": cmdChannels(); break;
+      case "shim": cmdShim(); break;
+      case "grades": cmdGrades(); break;
+      case "strategies": cmdStrategies(); break;
+      case "run": await cmdRun(); break;
+      case "console": cmdConsole(); break;
+      case "snapshot": cmdSnapshot(); break;
+      case "version": process.stdout.write(`${VERSION}\n`); break;
+      default: usage();
+    }
+  } catch (error) {
+    if (error instanceof ForgeError) {
+      out(error.toJSON(), true);
+      process.exitCode = 1;
+    } else {
+      out({ ok: false, error: error?.message || String(error) }, true);
+      process.exitCode = 1;
+    }
+  }
+}
+
+await main();

@@ -8,7 +8,16 @@
     "generic",
     "hermes",
     "openclaw",
-    "muse"
+    "muse",
+    "continue",
+    "opencode",
+    "codex",
+    "gemini",
+    "claude-code",
+    "cursor",
+    "windsurf",
+    "aider",
+    "dsh"
   ],
   "effects": [
     "P",

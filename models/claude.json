@@ -4,6 +4,6 @@
   "name": "Claude",
   "version": "0.1.0",
   "prompt": "models/claude.md",
-  "hosts": ["claude-code","generic"],
+  "hosts": ["claude-code", "opencode", "continue", "codex", "cursor", "windsurf", "aider", "hermes", "openclaw", "generic"],
   "effects": ["P", "T", "S", "W", "M"]
 }

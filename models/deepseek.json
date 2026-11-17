@@ -4,6 +4,6 @@
   "name": "DeepSeek",
   "version": "0.1.0",
   "prompt": "models/deepseek.md",
-  "hosts": ["dsh","generic"],
+  "hosts": ["dsh", "claude-code", "codex", "gemini", "opencode", "continue", "cursor", "windsurf", "aider", "hermes", "openclaw", "generic"],
   "effects": ["P", "T", "S", "W", "M"]
 }

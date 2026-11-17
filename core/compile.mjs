@@ -6,8 +6,44 @@ import { fail } from "./errors.mjs";
 import { getAdapter } from "../hosts/registry.mjs";
 import { summarizeChannels } from "./channels.mjs";
 import { renderCommand } from "./command.mjs";
+import { renderShim } from "./shim.mjs";
 import { gradeOf } from "./grades.mjs";
 import { detectWithAdapter } from "../hosts/adapter.mjs";
+
+/** Normalize CLI, compiler, and executor context without changing legacy defaults. */
+export function normalizeContext(input = {}) {
+  const nested = input.env && typeof input.env === "object" ? input.env : {};
+  const pick = (key) => input[key] ?? nested[key];
+  const home = input.home ?? process.env.HOME ?? process.env.USERPROFILE;
+  return {
+    hostId: input.hostId ?? input.host ?? null,
+    profileId: input.profileId ?? null,
+    projectRoot: input.projectRoot ?? process.cwd(),
+    home,
+    stateRoot: pick("stateRoot") ?? process.env.DSH_FORGE_STATE ?? undefined,
+    hostRoot: pick("hostRoot") ?? process.env.DSH_FORGE_HOST_ROOT ?? undefined,
+    dshHome: pick("dshHome") ?? (home ? `${home.replace(/[\\/]$/, "")}/.dsh` : undefined),
+    mode: input.mode ?? null,
+    persona: input.persona ?? pick("persona") ?? null,
+    personaMode: input.personaMode ?? pick("personaMode") ?? null,
+    transform: input.transform ?? pick("transform") ?? null,
+    budget: input.budget ?? 3200,
+    env: { ...nested, stateRoot: pick("stateRoot"), hostRoot: pick("hostRoot"), dshHome: pick("dshHome") },
+  };
+}
+
+function expandTargetValue(value, vars) {
+  if (typeof value === "string") {
+    return value
+      .replace(/\{\{PROMPT\}\}/g, vars.PROMPT)
+      .replace(/\{\{PROMPT_PATH\}\}/g, vars.PROMPT_PATH);
+  }
+  if (Array.isArray(value)) return value.map((item) => expandTargetValue(item, vars));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, expandTargetValue(v, vars)]));
+  }
+  return value;
+}
 
 function targetMetadataEnabled(profile) {
   return Boolean(profile.__adapterExplicit)
@@ -48,7 +84,7 @@ export function compile(profile, model, { mode = null, persona = null, personaMo
   validateModel(model);
   const maxTokens = Number(budget);
   if (!Number.isInteger(maxTokens) || maxTokens <= 0) fail("budget", `budget must be a positive integer, got ${budget}`);
-  if (!model.hosts.includes(normalizedProfile.host)) {
+  if (!model.hosts.includes("*") && !model.hosts.includes(normalizedProfile.host)) {
     fail("model-host-mismatch", `model ${model.id} does not target host ${normalizedProfile.host}`, { model: model.id, host: normalizedProfile.host });
   }
   const adapter = getAdapter(normalizedProfile.adapter || normalizedProfile.host);
@@ -145,7 +181,7 @@ export function compile(profile, model, { mode = null, persona = null, personaMo
           kind: target.kind,
           path: abs,
           scope: target.scope || "project",
-          value: target.value,
+          value: expandTargetValue(target.value, { PROMPT: composed.text, PROMPT_PATH: target.promptPath || "" }),
           ...targetMetadata,
         });
         break;
@@ -155,10 +191,41 @@ export function compile(profile, model, { mode = null, persona = null, personaMo
           kind: target.kind,
           path: abs,
           scope: target.scope || "project",
-          value: target.value,
+          value: expandTargetValue(target.value, { PROMPT: composed.text, PROMPT_PATH: target.promptPath || "" }),
           ...targetMetadata,
         });
         break;
+      case "yaml-merge":
+        actions.push({
+          op: "merge-yaml",
+          kind: target.kind,
+          path: abs,
+          scope: target.scope || "project",
+          value: expandTargetValue(target.value, { PROMPT: composed.text, PROMPT_PATH: target.promptPath || "" }),
+          ...targetMetadata,
+        });
+        break;
+      case "write-shim": {
+        const promptAbs = target.promptPath
+          ? resolveTargetPath({ scope: target.promptScope || target.scope || "project", path: target.promptPath }, { home, projectRoot })
+          : null;
+        actions.push({
+          op: "write-shim",
+          kind: target.kind,
+          path: abs,
+          scope: target.scope || "project",
+          mode: 0o755,
+          content: renderShim({
+            binary: target.binary || normalizedProfile.host,
+            promptPath: promptAbs,
+            env: target.env || {},
+            args: target.args || [],
+            note: target.note || normalizedProfile.name,
+          }),
+          ...targetMetadata,
+        });
+        break;
+      }
       case "dsh-patches":
         actions.push({ op: "dsh-patches", kind: target.kind, patches: target.patches || "all", ...targetMetadata });
         break;
@@ -240,7 +307,7 @@ export function compile(profile, model, { mode = null, persona = null, personaMo
     budget: { tokens: composed.tokens, max: maxTokens, ok: composed.tokens <= maxTokens },
     capabilities: pre.rows,
     channels: channelSummary,
-    delivery: gradeOf({ ...normalizedProfile, __channels: channelSummary.counts }),
+    delivery: gradeOf({ ...normalizedProfile, __channels: channelSummary.counts, __actions: actions }),
     actions,
   };
 }

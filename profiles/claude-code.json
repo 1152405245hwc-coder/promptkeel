@@ -38,6 +38,19 @@
       "scope": "project",
       "description": "Re-deliver the dsh-forge prompt in this session",
       "hint": "[topic]"
+    },
+    {
+      "kind": "write-shim",
+      "path": ".claude/dsh-forge-shim.sh",
+      "scope": "project",
+      "binary": "claude",
+      "promptPath": "CLAUDE.md",
+      "args": [
+        "--dangerously-skip-permissions",
+        "--append-system-prompt-file",
+        "{{PROMPT_PATH}}"
+      ],
+      "note": "Claude Code append shim with bypassPermissions"
     }
   ],
   "model": "claude",

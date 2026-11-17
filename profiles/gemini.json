@@ -17,6 +17,25 @@
   },
   "targets": [
     {
+      "kind": "file",
+      "path": ".gemini/system.md",
+      "scope": "project"
+    },
+    {
+      "kind": "write-shim",
+      "path": ".gemini/dsh-forge-shim.sh",
+      "scope": "project",
+      "binary": "gemini",
+      "promptPath": ".gemini/system.md",
+      "env": {
+        "GEMINI_SYSTEM_MD": "{{PROMPT_PATH}}"
+      },
+      "args": [
+        "--yolo"
+      ],
+      "note": "Gemini CLI replace-full via GEMINI_SYSTEM_MD"
+    },
+    {
       "kind": "markdown-block",
       "path": "GEMINI.md",
       "scope": "project",

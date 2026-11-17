@@ -4,6 +4,6 @@
   "name": "GLM",
   "version": "0.1.0",
   "prompt": "models/glm.md",
-  "hosts": ["generic", "hermes", "openclaw"],
+  "hosts": ["generic", "hermes", "openclaw", "dsh", "claude-code", "codex", "gemini", "opencode", "continue", "cursor", "windsurf", "aider"],
   "effects": ["P", "T", "S", "W", "M"]
 }

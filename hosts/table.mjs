@@ -3,6 +3,7 @@
 // Only hosts that need real probing logic (dsh, hermes, openclaw, muse) stay as modules.
 import fs from "node:fs";
 import path from "node:path";
+import { inspectHostSession } from "./evidence.mjs";
 
 const project = (projectRoot, ...parts) => path.join(projectRoot, ...parts);
 const homeDir = (home, ...parts) => (home ? [path.join(home, ...parts)] : []);
@@ -18,22 +19,38 @@ export const HOST_TABLE = [
     id: "claude-code",
     label: "Claude Code",
     support: "verified",
-    candidates: ({ home, projectRoot }) => [project(projectRoot, ".claude"), project(projectRoot, "CLAUDE.md"), ...homeDir(home, ".claude")],
-    configTargets: { promptFile: "CLAUDE.md", settings: ".claude/settings.json" },
+    candidates: ({ home, projectRoot }) => [
+      project(projectRoot, ".claude"),
+      project(projectRoot, "CLAUDE.md"),
+      project(projectRoot, ".claude", "dsh-forge-shim.sh"),
+      ...homeDir(home, ".claude"),
+    ],
+    configTargets: { promptFile: "CLAUDE.md", settings: ".claude/settings.json", slash: ".claude/commands/dsh-forge.md", shim: ".claude/dsh-forge-shim.sh" },
   },
   {
     id: "codex",
     label: "Codex CLI",
     support: "verified",
-    candidates: ({ home, projectRoot }) => [project(projectRoot, "AGENTS.md"), ...homeDir(home, ".codex")],
-    configTargets: { promptFile: "AGENTS.md", settings: "~/.codex/config.toml" },
+    candidates: ({ home, projectRoot }) => [
+      project(projectRoot, "AGENTS.md"),
+      project(projectRoot, ".codex", "forge-instructions.md"),
+      project(projectRoot, ".codex", "config.toml"),
+      ...homeDir(home, ".codex"),
+    ],
+    configTargets: { promptFile: "AGENTS.md", instructionsFile: ".codex/forge-instructions.md", settings: ".codex/config.toml", userSettings: "~/.codex/config.toml" },
   },
   {
     id: "gemini",
     label: "Gemini CLI",
     support: "experimental",
-    candidates: ({ home, projectRoot }) => [project(projectRoot, ".gemini"), project(projectRoot, "GEMINI.md"), ...homeDir(home, ".gemini")],
-    configTargets: { promptFile: "GEMINI.md", settings: ".gemini/settings.json", launchFlag: "--yolo" },
+    candidates: ({ home, projectRoot }) => [
+      project(projectRoot, ".gemini"),
+      project(projectRoot, ".gemini", "system.md"),
+      project(projectRoot, ".gemini", "dsh-forge-shim.sh"),
+      project(projectRoot, "GEMINI.md"),
+      ...homeDir(home, ".gemini"),
+    ],
+    configTargets: { promptFile: "GEMINI.md", systemFile: ".gemini/system.md", shim: ".gemini/dsh-forge-shim.sh", settings: ".gemini/settings.json", env: "GEMINI_SYSTEM_MD", launchFlag: "--yolo" },
   },
   {
     id: "opencode",
@@ -121,10 +138,16 @@ export const HOST_TABLE = [
       targets: [".continue/rules/*.md", "~/.continue/config.yaml"],
       note: "Continue rule files are configuration evidence only; the current Agent/Chat/Edit session is not observable here.",
     },
-    candidates: ({ home, projectRoot }) => [project(projectRoot, ".continue", "rules"), ...homeDir(home, ".continue", "config.yaml")],
+    candidates: ({ home, projectRoot }) => [
+      project(projectRoot, ".continue", "config.yaml"),
+      project(projectRoot, ".continue", "rules"),
+      ...homeDir(home, ".continue", "config.yaml"),
+    ],
     ...RULES("Continue rules toolbar/session was not probed", "A rule file being present does not prove it was loaded by the current Continue session."),
     configTargets: {
       promptFile: ".continue/rules/dsh-forge.md",
+      configYaml: ".continue/config.yaml",
+      yamlKey: "chatOptions.baseAgentSystemMessage",
       projectRules: ".continue/rules/*.md",
       userConfig: "~/.continue/config.yaml",
       activation: "unobservable until Continue's rules toolbar/session confirms the rule is loaded",
@@ -140,12 +163,32 @@ export function hostModule(descriptor) {
     const projectRoot = context.projectRoot ?? process.cwd();
     const list = candidates({ home, projectRoot });
     const found = existing(list);
-    if (!activation) return { ok: found.length > 0, candidates: list };
+    const session = inspectHostSession(id, { home, projectRoot, sessionDir: context.sessionDir });
+    const configEvidence = found.map((file) => ({ kind: "config", path: file }));
+    if (session.active) {
+      return {
+        ok: true,
+        status: "active",
+        candidates: list,
+        evidence: [...configEvidence, ...session.evidence],
+        ...(session.identityPrefixPresent !== null ? { identityPrefixPresent: session.identityPrefixPresent } : {}),
+        ...(warnings ? { warnings } : {}),
+      };
+    }
+    if (!activation) {
+      return {
+        ok: found.length > 0,
+        status: found.length > 0 ? "configured" : "missing",
+        candidates: list,
+        evidence: [...configEvidence, ...session.evidence],
+        ...(session.identityPrefixPresent !== null ? { identityPrefixPresent: session.identityPrefixPresent } : {}),
+      };
+    }
     return {
       ok: found.length > 0,
       status: found.length > 0 ? "configured" : "missing",
       candidates: list,
-      evidence: found.map((file) => ({ kind: "config", path: file })),
+      evidence: [...configEvidence, ...session.evidence],
       activation,
       warnings,
     };

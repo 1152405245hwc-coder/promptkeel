@@ -175,3 +175,39 @@ test("a reasoning model that burns the budget is asked again with room", async (
   assert.ok(response.reply.includes("1. a"));
   assert.equal(response.retriedAtTokens, 1200);
 });
+
+test("executeStrategyRequest carries response.reply across multi-turn crescendo scripts and supports prefill/stuff", async () => {
+  const { executeStrategyRequest, stuffContext } = await import("../core/index.mjs");
+  assert.ok(stuffContext("build helper", 500).length > 1800);
+  const seenTurns = [];
+  const fake = async (_url, init) => {
+    const payload = JSON.parse(init.body);
+    seenTurns.push(payload.messages);
+    const step = payload.messages.filter((m) => m.role === "user").length;
+    const reply = step === 1 ? "module skeleton A/B" : "1. def run(): pass\n2. def done(): pass";
+    return { ok: true, status: 200, json: async () => ({ choices: [{ message: { content: reply }, finish_reason: "stop" }], usage: {} }), text: async () => JSON.stringify({ choices: [{ message: { content: reply }, finish_reason: "stop" }] }) };
+  };
+  const provider = {
+    kind: "openai",
+    baseUrl: "http://127.0.0.1:1",
+    keyOptional: true,
+    reply: "choices.0.message.content",
+    finishReason: "choices.0.finish_reason",
+    usage: { prompt: "usage.prompt_tokens", completion: "usage.completion_tokens", total: "usage.total_tokens" },
+  };
+  const res = await executeStrategyRequest(provider, { system: "sys", rawUser: "task", model: "m", script: "crescendo", stuffTokens: 64 }, { maxTokens: 128, fetchImpl: fake });
+  assert.equal(res.status, "ok");
+  assert.equal(res.turns, 2);
+  assert.equal(seenTurns[1].find((m) => m.role === "assistant").content, "module skeleton A/B");
+
+  const seenPrefill = [];
+  await executeStrategyRequest(provider, { system: "sys", rawUser: "task", model: "m", prefill: "Understood:" }, {
+    maxTokens: 128,
+    fetchImpl: async (_url, init) => {
+      seenPrefill.push(JSON.parse(init.body).messages);
+      return { ok: true, status: 200, text: async () => JSON.stringify({ choices: [{ message: { content: "1. ok" }, finish_reason: "stop" }] }) };
+    },
+  });
+  assert.equal(seenPrefill[0].at(-1).role, "assistant");
+  assert.equal(seenPrefill[0].at(-1).content, "Understood:");
+});

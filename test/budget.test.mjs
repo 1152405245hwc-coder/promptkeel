@@ -2,9 +2,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
-import { listProfiles } from "../core/contract.mjs";
+import { listProfiles, loadModel } from "../core/contract.mjs";
 import { compile } from "../core/compile.mjs";
-import { loadModel } from "../core/profile.mjs";
 
 // The composed prompt is a system message on top of whatever the host already sends; every
 // extra hundred tokens is context the model cannot spend on the task. The ceiling is the

@@ -14,6 +14,7 @@
     "hosts/",
     "core/",
     "lib/",
+    "ui/",
     "prompt/",
     "client/src/",
     "client/client.js",
@@ -66,9 +67,11 @@
     },
     "./client": "./client/client.js",
     "./package.json": "./package.json",
+    "./core": "./core/index.mjs",
     "./core/*": "./core/*.mjs",
     "./hosts/*": "./hosts/*.mjs",
-    "./lib/*": "./lib/*.mjs"
+    "./lib/*": "./lib/*.mjs",
+    "./ui/*": "./ui/*.mjs"
   },
   "dsh": {
     "bundle": {

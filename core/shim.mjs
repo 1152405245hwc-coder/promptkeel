@@ -9,7 +9,7 @@ function shellQuote(value) {
  * reads its system prompt from, then hands every argument to the real binary.
  * The output is deterministic so a recompile can be diffed byte for byte.
  */
-export function renderShim({ binary, promptPath = null, env = {}, note = null } = {}) {
+export function renderShim({ binary, promptPath = null, env = {}, args = [], note = null } = {}) {
   if (!binary || typeof binary !== "string") fail("shim-binary", "a shim needs the host binary it wraps");
   if (/[\n\r]/.test(binary)) fail("shim-binary", "the host binary must be a single line");
   if (promptPath !== null && /[\n\r]/.test(String(promptPath))) fail("shim-prompt", "the prompt path must be a single line");
@@ -17,6 +17,10 @@ export function renderShim({ binary, promptPath = null, env = {}, note = null } 
   for (const [key, value] of entries) {
     if (!/^[A-Z_][A-Z0-9_]*$/.test(key)) fail("shim-env", `invalid environment name: ${key}`);
     if (/[\n\r]/.test(String(value))) fail("shim-env", `environment ${key} must be a single line`);
+  }
+  const argList = Array.isArray(args) ? args : [];
+  for (const arg of argList) {
+    if (typeof arg !== "string" || /[\n\r]/.test(arg)) fail("shim-args", "every shim argument must be a single-line string");
   }
   const lines = [
     "#!/bin/sh",
@@ -30,8 +34,13 @@ export function renderShim({ binary, promptPath = null, env = {}, note = null } 
     lines.push('export DSH_FORGE_PROMPT');
   }
   for (const [key, value] of entries) {
-    lines.push(`export ${key}=${shellQuote(value)}`);
+    if (promptPath !== null && value === "{{PROMPT_PATH}}") {
+      lines.push(`export ${key}="$DSH_FORGE_PROMPT"`);
+    } else {
+      lines.push(`export ${key}=${shellQuote(value)}`);
+    }
   }
-  lines.push(`exec ${shellQuote(binary)} "$@"`);
+  const renderedArgs = argList.map((arg) => (promptPath !== null && arg === "{{PROMPT_PATH}}" ? '"$DSH_FORGE_PROMPT"' : shellQuote(arg)));
+  lines.push(`exec ${shellQuote(binary)}${renderedArgs.length ? ` ${renderedArgs.join(" ")}` : ""} "$@"`);
   return `${lines.join("\n")}\n`;
 }
