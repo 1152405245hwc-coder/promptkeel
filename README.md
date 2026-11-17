@@ -211,7 +211,7 @@ Every action a profile compiles belongs to one channel: `project` (repository fi
 
 ## Personas
 
-`prompt/personas/*.md` holds prompt-level identity layers that travel across adapters. A persona composes with the host prompt in one of four modes: `replace` keeps host working rules while dropping identity claims, `strict` keeps the persona alone, `append` adds it after the host prompt, `off` disables it. `dsh-forge personas` lists what ships; `dsh-forge compile codex --persona engineer --persona-mode strict` selects one, and `off` reproduces the plain build byte for byte. <!-- forge-facts:begin kind=personas -->12<!-- forge-facts:end -->+ bundled personas ship across tone (`direct`, `engineer`, `tutor`, `terse`), research/contract framing (`unfiltered`, `contract`), and structural vectors (`roleplay`, `nested`, `code`, `fewshot`, `cipher`, `split`). Details in [docs/PERSONAS.md](docs/PERSONAS.md).
+`prompt/personas/*.md` holds prompt-level identity layers that travel across adapters. A persona composes with the host prompt in one of four modes: `replace` keeps host working rules while dropping identity claims, `strict` keeps the persona alone, `append` adds it after the host prompt, `off` disables it. `dsh-forge personas` lists what ships; `dsh-forge compile codex --persona engineer --persona-mode strict` selects one, and `off` reproduces the plain build byte for byte. <!-- forge-facts:begin kind=personas -->13<!-- forge-facts:end -->+ bundled personas ship across tone (`direct`, `engineer`, `tutor`, `terse`), research/contract framing (`unfiltered`, `contract`), and structural vectors (`roleplay`, `nested`, `code`, `fewshot`, `cipher`, `split`). Details in [docs/PERSONAS.md](docs/PERSONAS.md).
 
 ## Payload transforms
 

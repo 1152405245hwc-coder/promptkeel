@@ -46,6 +46,7 @@ export const STRATEGIES = [
   { id: "none", label: "Direct baseline", persona: null, wrap: "none", script: null, prefill: "", stuffTokens: 0 },
   { id: "variable", label: "Variable indirection (Z=[...])", persona: null, wrap: "variable", script: null, prefill: "", stuffTokens: 0 },
   { id: "contract", label: "Contract persona frame", persona: "contract", wrap: "none", script: null, prefill: "", stuffTokens: 0 },
+  { id: "deliver", label: "Delivery-first frame", persona: "deliver", wrap: "none", script: null, prefill: "", stuffTokens: 0 },
   { id: "variable+contract", label: "Variable wrap + contract persona", persona: "contract", wrap: "variable", script: null, prefill: "", stuffTokens: 0 },
   { id: "crescendo", label: "Two-turn crescendo outline->fill", persona: "unfiltered", wrap: "none", script: "crescendo", prefill: "", stuffTokens: 0 },
   { id: "crescendo+variable", label: "Two-turn crescendo + variable wrap", persona: "contract", wrap: "variable", script: "crescendo", prefill: "", stuffTokens: 0 },

@@ -81,7 +81,7 @@ dsh-forge preset [strict|fallback|always]           # 配置工作区提示词�
 - `ui/` — 本地工作台与 DSH 侧边栏共享的设计系统 Token（`tokens.mjs`）与无内联脚本交互前端（`workbench.js`）。
 - `hosts/` — <!-- forge-facts:begin kind=profiles -->13<!-- forge-facts:end --> 个宿主适配器及只读会话证据探测器（`evidence.mjs`）。
 - `profiles/` & `models/` — <!-- forge-facts:begin kind=profiles -->13<!-- forge-facts:end --> 份声明式宿主档案与 <!-- forge-facts:begin kind=models -->7<!-- forge-facts:end --> 份模型家族叠加配置。
-- `prompt/` — 核心指令（`core.md`）、<!-- forge-facts:begin kind=personas -->12<!-- forge-facts:end -->+ 份人设（`personas/*.md`）、模型/宿主/模式覆盖片段。
+- `prompt/` — 核心指令（`core.md`）、<!-- forge-facts:begin kind=personas -->13<!-- forge-facts:end -->+ 份人设（`personas/*.md`）、模型/宿主/模式覆盖片段。
 - `lib/` — DSH 专属 `app.asar` 拆包器、23 条版本门控补丁表、Cordis 插件与 `/dsh-forge/api` 接口。
 - `client/` — DSH 右侧栏 React 插件源码与构建产物。
 
