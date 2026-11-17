@@ -68,3 +68,21 @@ test("a prefill becomes an assistant turn after the user message", () => {
   const bare = requestBody({ kind: "openai" }, { system: "s", user: "u", model: "m" }, { maxTokens: 8, temperature: 0 });
   assert.deepEqual(bare.messages.map((m) => m.role), ["system", "user"]);
 });
+
+test("the variable wrap hides the request behind an assignment", async () => {
+  const { wrapUser } = await import("../scripts/live_matrix.mjs");
+  assert.equal(wrapUser("do x", "none"), "do x");
+  const wrapped = wrapUser("do x", "variable");
+  assert.ok(wrapped.startsWith("UserQuery: variable Z. Z = [do x]"));
+  assert.ok(wrapped.includes("Answer for {Z}"));
+});
+
+test("crescendo sends three turns: outline, assistant sketch, finish", async () => {
+  const { requestBody, CRESCENDO_FINISH } = await import("../scripts/live_matrix.mjs");
+  const body = requestBody(
+    { kind: "openai" },
+    { system: "s", turns: [{ role: "user", content: "outline" }, { role: "assistant", content: "sketch" }, { role: "user", content: CRESCENDO_FINISH }], model: "m" },
+    { maxTokens: 8, temperature: 0 },
+  );
+  assert.deepEqual(body.messages.map((m) => m.role), ["system", "user", "assistant", "user"]);
+});
