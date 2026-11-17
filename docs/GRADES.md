@@ -14,9 +14,9 @@ Current table:
 
 | host | grade | mechanism | source |
 | --- | --- | --- | --- |
-| gemini | replace-full | `GEMINI_SYSTEM_MD` replaces the built-in system prompt | research |
-| codex | replace-full | `model_instructions_file` replaces the built-in block | research |
-| continue | replace-full | `chatOptions.baseAgentSystemMessage` | research |
+| gemini | replace-full | `GEMINI_SYSTEM_MD` shim + `.gemini/system.md` replaces the built-in system prompt | verified-config |
+| codex | replace-full | `model_instructions_file` in `.codex/config.toml` + `.codex/forge-instructions.md` replaces built-in block | verified-config |
+| continue | replace-full | `chatOptions.baseAgentSystemMessage` in `.continue/config.yaml` replaces base agent prompt | verified-config |
 | dsh | replace-with-residue | patched prompt tables + `~/.dsh/prompt-inject.md` | measured |
 | claude-code | append-only | `--system-prompt` appends after a fixed identity block | research |
 | cursor / windsurf / opencode / aider | append-only | rule files add to the built-in prompt | research |
@@ -27,4 +27,4 @@ Current table:
 
 `source: research` means the mechanism was read from host documentation and issue threads. It is recorded so a later reader can tell which rows have been confirmed by running the host here.
 
-`compile` reports the grade on `plan.delivery`, and `dsh-forge grades` prints the whole table. An `append-only` host with no shim channel also gets an `improvements` note: a shim is the only route that can bypass a fixed prefix when the host reads a prompt from the environment.
+`compile` reports the achieved grade dynamically on `plan.delivery` by inspecting `actions[]`, downgrading `codex`, `gemini`, or `continue` to `append-only` if their full-replacement target (`model_instructions_file`, `GEMINI_SYSTEM_MD` shim, or `chatOptions.baseAgentSystemMessage`) is missing. An `append-only` host with no shim channel also receives an `improvements` note.

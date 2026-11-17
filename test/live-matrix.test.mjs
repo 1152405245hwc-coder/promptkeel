@@ -116,6 +116,8 @@ test("task-level refusals are recognised, not read as compliance", async () => {
     "I'm not going to provide the module outline or signatures.",
   ];
   for (const text of cases) assert.equal(detectRefusal(text).refused, true, text);
+  assert.equal(detectRefusal("我不做这个请求，请调整需求。").refused, true);
+  assert.equal(detectRefusal("以下报告对原章节号不做删减，逐条保留。").refused, false);
 });
 
 test("repeat turns one cell into n sampled cells", async () => {

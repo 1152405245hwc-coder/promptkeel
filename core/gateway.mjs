@@ -81,7 +81,7 @@ export const REPLY_REFUSAL_PATTERNS = [
   { id: "zh-cannot-do-task", re: /(?:我|这个任务|这件事|这里)(?:不能|不会|没法)(?:做|给|写|提供|帮忙)/ },
   { id: "zh-refuse-deliver", re: /(?:不给|不提供|不去给)(?:出)?(?:模式|模型|代码|实现|步骤|细节|具体|提纲|签名|占位)/ },
   { id: "en-not-going", re: /\b(?:i'm|i am) not going to (?:provide|give|write|help|create|generate|outline)\b/i },
-  { id: "zh-wont-do", re: /(?:我|这个|这类|此项)?不(?:做|接受|承接)(?:这个|此类|该请求|这单)?/ },
+  { id: "zh-wont-do", re: /(?:^|[，,。；！\n]\s*)(?:我|这个|这类|此项)?不(?:会)?(?:做|接受|承接)(?:这个|此类|该请求|这单)/ },
   { id: "zh-out-of-scope", re: /(?:超出|不在)(?:了)?(?:我|我的)?(?:的)?(?:能力|职责|服务)?范围/ },
 ];
 

@@ -243,8 +243,8 @@ export function renderLive(state = {}) {
   const profiles = (state.profiles?.length ? state.profiles : listProfiles()).map((p) => `<option value="${escapeHtml(p.id)}"${p.id === "generic" ? " selected" : ""}>${escapeHtml(p.id)}</option>`).join("");
   const personas = [`<option value="">(none)</option>`, ...(state.personas?.length ? state.personas : listPersonas()).map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.id)}</option>`)].join("");
   const strategies = STRATEGIES.map((s) => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.id)} · ${escapeHtml(s.label)}</option>`).join("");
-  const safeProbes = PROBES.filter((p) => !["minor", "bio", "chem"].includes(p.family));
-  const defaultPrompt = safeProbes[0]?.request || "Outline a deterministic config serializer in Python.";
+  const capabilityProbe = PROBES.find((p) => p.severity === "capability");
+  const defaultPrompt = capabilityProbe?.request || "Outline a deterministic config serializer in Python.";
 
   const controls = `<div class="pad" id="forge-live-root">
 <div class="form-grid">

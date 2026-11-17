@@ -4,11 +4,11 @@ A profile decides *what* gets delivered; a channel is *how* it reaches the host.
 
 | channel | shape of the action | first visible | coverage today |
 | --- | --- | --- | --- |
-| `project` | file or managed block inside the repository (`AGENTS.md`, `.cursorrules`, `CONVENTIONS.md`) | next turn | 11 actions across 8 profiles |
-| `install` | host runtime state (`dsh.patches`, `~/.dsh/prompt-inject.md`) | host restart / next session | 2 actions, DSH only |
-| `shim` | a wrapper script that exports the prompt and execs the host binary | shell restart | 0 automatic, renderable with `dsh-forge shim` |
+| `project` | file, managed block, TOML, or YAML config inside the repository (`AGENTS.md`, `.codex/config.toml`, `.continue/config.yaml`, etc.) | next turn | 19 actions across 10 profiles |
+| `install` | host runtime state (`dsh.patches`, `~/.dsh/prompt-inject.md`) | host restart / next session | 2 actions, `dsh` only |
+| `shim` | executable `0755` wrapper script (`write-shim`) exporting `DSH_FORGE_PROMPT` / `GEMINI_SYSTEM_MD` or CLI append flags | shell restart | 2 automatic (`gemini`, `claude-code`), plus `dsh-forge shim` |
 | `slash` | a command file the host registers inside a session (`.claude/commands/*.md`) | session start | 1 action, `claude-code` |
-| `none` | prompt composed but never written (`prompt-only`) | n/a | 1 profile (`generic`) |
+| `none` | prompt composed but never written (`prompt-only`) | n/a | 2 profiles (`generic`, `muse`) |
 
 `dsh-forge channels` prints the rows for one profile; `dsh-forge channels --all` prints the matrix for every profile in `profiles/`. The matrix is measured from the compiled plans, so it cannot drift from what `apply` would actually do.
 

@@ -6,6 +6,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Sem
 
 ### Added
 
+- **Cross-Host `replace-full` (`B4`) Delivery & Dynamic Verification**:
+  Implemented `mergeYaml` (`yaml-merge`) and executable `0755` `write-shim` actions in `core/executor.mjs`, `core/compile.mjs`, and `core/shim.mjs`; updated `codex` (`.codex/config.toml` `model_instructions_file`), `gemini` (`.gemini/system.md` + `GEMINI_SYSTEM_MD` shim), `continue` (`.continue/config.yaml` `chatOptions.baseAgentSystemMessage`), and `claude-code` (`--append-system-prompt-file` shim). Updated `core/grades.mjs` to derive `replace-full` vs `append-only` dynamically from compiled actions.
+- **First-Class Strategy & Gateway Modules (`core/strategy.mjs`, `core/gateway.mjs`, `core/index.mjs`)**:
+  Elevated `variable` wrap, `crescendo`/`deep`/`layered` multi-turn refinement, `prefill`, and `stuffContext` context dilution out of `scripts/live_matrix.mjs` into `core/strategy.mjs` and `core/gateway.mjs`, adding `dsh-forge run`, `dsh-forge strategies`, built-in Anthropic/GLM/Magpie presets, and fixing multi-turn assistant reply capture.
+- **Expanded DSH `0.2.2-rc.3` Patch Surface & Opt-In Session Cleaning (`lib/table.mjs`, `lib/inject.mjs`, `lib/index.js`)**:
+  Expanded verified anchors from 16 to 23 patches (18 files across 17 `@deepseek-ai/*` packages) spanning all 5 layers (`approval` 7, `sandbox` 9, `turn` 1, `persona` 4, `session` 2) plus opt-in `cleanSessionHistory` filtering on `session/deriveMessages` and fixture-capable session detectors in `hosts/evidence.mjs`.
+- **Interactive Local Workbench & Upgraded Sidebar (`ui/tokens.mjs`, `ui/workbench.js`, `core/console.mjs`, `client/src/entry.js`)**:
+  Shared design tokens, `/workbench`, `/plans`, `/live`, CSRF-protected `POST /api/*` routes under strict `script-src 'self'` CSP, and added the interactive `工作台` (Studio) tab to the DSH sidebar panel.
+- **Unified State Root & Docs Tooling**:
+  Unified `defaultStateRoot()` via `DSH_FORGE_STATE` -> `$XDG_STATE_HOME/dsh-forge` -> `~/.dsh-forge` (isolating workspace plans/snapshots from `~/.dsh/`), folded redundant micro-files (`verify.mjs`, `profile.mjs`, `context.mjs`) into core owners, rewrote `README.zh-CN.md` in Simplified Chinese, added `docs/RELATED_PROJECTS.md` and `docs/TASKS.md`, and extended `scripts/check_docs.mjs`.
+
+### Previous Milestones
+
+### Added
+
 - `--ladder` on the live matrix: four rungs (direct, persona, cipher, prefill) so each model
   records which lever it answers to, plus `docs/PLAYBOOK.md` with the measured readings.
 - `docs/research/JAILBREAK_PRINCIPLES.md`: where refusals come from, the six levers that move

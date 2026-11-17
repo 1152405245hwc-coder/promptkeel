@@ -14,23 +14,27 @@ Patch surface facts for this document are generated from `lib/table.mjs`:
 dsh-forge/
 ├── bin/
 │   └── dsh-forge.js        # Unified CLI entry point (DSH native + cross-host commands)
-├── core/                   # Host-neutral compiler & transactional executor
+├── core/                   # Host-neutral compiler, strategies, gateway & transactional executor
+│   ├── index.mjs           # Public facade barrel exporting core modules
 │   ├── contract.mjs        # Schema validation & loaders for profiles/*.json and models/*.json
 │   ├── capabilities.mjs    # Capability matrix (prompt, approval, sandbox, tools, rollback) & preflight
 │   ├── prompt.mjs          # Deterministic multi-layer prompt renderer & CJK-aware token estimator
-│   ├── compile.mjs         # Pure compiler: (profile, model, mode) -> machine-independent plan
-│   ├── executor.mjs        # Transactional writer (mergeBlock, mergeJson, mergeToml, backups, rollback)
-│   ├── batch.mjs           # Multi-platform compile/apply, conflict checks, locks, and compensation rollback
+│   ├── compile.mjs         # Pure compiler + normalizeContext -> machine-independent plan
+│   ├── executor.mjs        # Transactional writer (block/json/toml/yaml/shim, verifyCompiled, rollback)
+│   ├── strategy.mjs        # Breakout strategies (variable wrap, crescendo/deep/layered, prefill, stuff)
+│   ├── gateway.mjs         # Multi-provider gateway client (Magpie :3425, OpenAI, Anthropic, GLM)
+│   ├── console.mjs         # Loopback workbench server (:7788) with CSRF + CSP guards
+│   ├── batch.mjs           # Multi-platform batch compile/apply, conflict checks, locks, and compensation rollback
 │   ├── provider.mjs        # Synchronous provider registry for non-file actions
-│   ├── verify.mjs          # Internal plan hash check & post-apply target verification
-│   ├── profile.mjs         # Public re-export facade for contract primitives
 │   └── errors.mjs          # Structured ForgeError with stable machine-readable error codes
+├── ui/                     # Shared console & workbench UI tokens (tokens.mjs, workbench.js)
 ├── hosts/                  # Per-host environment detectors & configuration target descriptors
 │   ├── adapter.mjs         # forge.host/v1 normalization and detection evidence
+│   ├── evidence.mjs        # Fixture-capable session log inspector
 │   ├── registry.mjs        # Host catalog and adapter lookup (detectHost, detectAll, getAdapter)
-│   └── *.mjs               # ten registered host adapters
-├── profiles/               # Declarative target profiles (forge.profile/v1)
-├── models/                 # Model family metadata & overlay bindings (forge.model/v1)
+│   └── *.mjs               # declarative table + specialized modules (dsh, hermes, openclaw, muse)
+├── profiles/               # Declarative target profiles (<!-- forge-facts:begin kind=profiles -->13<!-- forge-facts:end --> hosts)
+├── models/                 # Model family metadata & overlay bindings (<!-- forge-facts:begin kind=models -->7<!-- forge-facts:end --> models)
 ├── prompt/                 # Modular prompt sources
 │   ├── core.md             # Base execution rubric (routing, boundary handling, A–D evidence grading)
 │   ├── adapters/           # DSH runtime adapters (deepseek, generic)
