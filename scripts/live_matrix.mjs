@@ -611,6 +611,18 @@ export async function sendRequest(provider, request, { key, maxTokens, temperatu
 /** Provider-side filters answer with HTTP 400 before a model sees the request;
  * that is a different layer from a model declining, and the report keeps them
  * apart. */
+/** A gateway that answers "fetch failed" under load is not a result. Retry the
+ *  transient shapes a few times with backoff before recording an error. */
+export async function sendWithRetry(provider, request, options = {}, retries = 2) {
+  let response = await sendRequest(provider, request, options);
+  for (let attempt = 1; attempt <= retries; attempt += 1) {
+    if (response.status !== "network_error") return response;
+    await new Promise((resolve) => setTimeout(resolve, 1500 * attempt));
+    response = await sendRequest(provider, request, options);
+  }
+  return response;
+}
+
 export function detectBlock(message) {
   return /safety filter|content was flagged|refused this request|content_filter/i.test(String(message || ""));
 }
@@ -933,7 +945,7 @@ export async function run(argv, { env = process.env } = {}) {
       let latency = 0;
       for (const [step, prompt] of script.entries()) {
         turns.push({ role: "user", content: step === 0 ? `${prompt}\n\n${userText}` : prompt });
-        response = await sendRequest(provider, { system: compiled.text, turns, model: request.model }, {
+        response = await sendWithRetry(provider, { system: compiled.text, turns, model: request.model }, {
           key: secret,
           maxTokens: step === 0 ? Math.min(240, options.maxTokens) : options.maxTokens,
           temperature: options.temperature,
@@ -948,7 +960,7 @@ export async function run(argv, { env = process.env } = {}) {
       response.turns = script.length;
       response.firstRefused = firstRefused;
     } else {
-      response = await sendRequest(provider, { system: compiled.text, user: userText, model: request.model }, {
+      response = await sendWithRetry(provider, { system: compiled.text, user: userText, model: request.model }, {
         key: secret,
         maxTokens: options.maxTokens,
         temperature: options.temperature,

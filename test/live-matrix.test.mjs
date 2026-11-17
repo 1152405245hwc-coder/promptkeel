@@ -131,3 +131,22 @@ test("repeat turns one cell into n sampled cells", async () => {
   assert.equal(plan.requests.length, 3);
   assert.deepEqual(plan.requests.map((r) => r.sample), [1, 2, 3]);
 });
+
+test("a transient fetch failure is retried before it is recorded", async () => {
+  const { sendWithRetry } = await import("../scripts/live_matrix.mjs");
+  let calls = 0;
+  const flaky = async () => {
+    calls += 1;
+    if (calls === 1) return { status: "network_error", error: "fetch failed" };
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ choices: [{ message: { content: "hi" }, finish_reason: "stop" }], usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 } }),
+      text: async () => "{}",
+    };
+  };
+  const provider = { kind: "openai", baseUrl: "http://127.0.0.1:1", keyOptional: true };
+  const response = await sendWithRetry(provider, { system: "s", user: "u", model: "m" }, { fetchImpl: flaky }, 1);
+  assert.equal(response.status, "ok");
+  assert.equal(calls, 2);
+});
