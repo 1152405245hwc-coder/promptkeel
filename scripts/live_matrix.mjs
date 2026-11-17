@@ -121,6 +121,7 @@ Matrix axes
 
 Strategies
   --strategy <id>             preset (${STRATEGIES.map((s) => s.id).join(", ")})
+  --compare <a,b>             run two strategies interleaved, alternating order per sample
   --control                   include a prompt-free control arm per model/probe
   --ladder                    run four rungs: direct, persona, cipher, prefill
   --wrap variable             wrap user prompt in Z=[...] assignment
@@ -152,7 +153,7 @@ Run bounds
 const LIST_FLAGS = new Set(["profile", "model", "persona", "transform", "probe", "family", "exclude-family"]);
 const VALUE_FLAGS = new Set([
   "provider", "config", "base-url", "key-env", "max-tokens", "temperature",
-  "timeout-ms", "repeat", "stuff", "limit", "out", "dump-request", "forge-model",
+  "timeout-ms", "repeat", "stuff", "compare", "limit", "out", "dump-request", "forge-model",
   "gateway", "wrap", "prefill", "script", "stuff", "strategy",
 ]);
 const BOOL_FLAGS = new Set(["dry-run", "show-prompt", "help", "list-models", "control", "ladder", "crescendo"]);
@@ -395,6 +396,7 @@ export async function run(argv, { env = process.env } = {}) {
     prefill: options.prefill || "",
     stuffTokens: options.stuff,
     strategy: options.strategy || null,
+    compare: options.compare ? String(options.compare).split(",").map((v) => v.trim()).filter(Boolean) : null,
     repeat: Number(options.repeat) || 1,
   });
 

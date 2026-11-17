@@ -146,14 +146,17 @@ export function buildRequests({
   prefill = "",
   stuffTokens = 0,
   strategy = null,
+  compare = null,
   repeat = 1,
 }) {
+  const arms = Array.isArray(compare) && compare.length > 1 ? compare : null;
   const baseStrategy = strategy ? getStrategy(strategy) : null;
   const effectiveWrap = wrap !== "none" ? wrap : baseStrategy?.wrap || "none";
   const effectiveScript = script || (crescendo ? "crescendo" : baseStrategy?.script || null);
   const effectivePrefill = prefill || baseStrategy?.prefill || "";
   const effectiveStuff = Number(stuffTokens) || baseStrategy?.stuffTokens || 0;
   const requests = [];
+  if (!arms) {
   for (const profile of profiles) {
     for (const model of models) {
       for (const rung of ladder ? RUNGS : [{ id: baseStrategy?.id && baseStrategy.id !== "none" ? baseStrategy.id : "bag", persona: null, transform: null, prefill: "" }]) {
@@ -181,6 +184,7 @@ export function buildRequests({
       }
     }
   }
+  }
   if (control) {
     for (const profile of profiles) {
       for (const model of models) {
@@ -203,8 +207,43 @@ export function buildRequests({
       }
     }
   }
+  if (arms) {
+    for (const profile of profiles) {
+      for (const model of models) {
+        for (const probe of probes) {
+          for (const id of arms) {
+            const preset = getStrategy(id);
+            requests.push({
+              profile,
+              forge: model.forge,
+              model: model.live,
+              persona: preset.persona && personas.length === 1 && personas[0] === "none" ? preset.persona : personas[0] || "none",
+              transform: "none",
+              probe,
+              arm: "forge",
+              rung: id,
+              prefill: preset.prefill,
+              wrap: preset.wrap,
+              script: preset.script,
+              stuffTokens: preset.stuffTokens,
+            });
+          }
+        }
+      }
+    }
+  }
   const repeats = [];
   for (let sample = 1; sample <= Math.max(1, repeat); sample += 1) {
+    if (arms) {
+      // Alternate the arm order every sample so drift between samples cannot
+      // favour whichever arm always runs first.
+      for (let index = 0; index < requests.length; index += arms.length) {
+        const chunk = requests.slice(index, index + arms.length);
+        const ordered = sample % 2 === 0 ? [...chunk].reverse() : chunk;
+        for (const request of ordered) repeats.push({ ...request, sample });
+      }
+      continue;
+    }
     for (const request of requests) repeats.push({ ...request, sample });
   }
   const sent = repeats.slice(0, limit || undefined);

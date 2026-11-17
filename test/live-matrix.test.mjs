@@ -247,3 +247,26 @@ test("SSE fallback, bare English/Chinese refusal variants, and upstream proxy gu
   assert.equal(guardRes.status, "upstream_error");
   assert.equal(verdictOf(guardRes, { refused: false }), "blocked");
 });
+
+test("comparing two strategies interleaves them and flips the order per sample", async () => {
+  const { buildRequests } = await import("../core/strategy.mjs");
+  const plan = buildRequests({
+    profiles: ["hermes"],
+    models: [{ forge: "glm", live: "glm-5.3-flash" }],
+    personas: ["none"],
+    transforms: ["none"],
+    probes: [{ id: "p1", family: "cyber", request: "x" }],
+    repeat: 2,
+    compare: ["deep", "variable+contract"],
+  });
+  assert.equal(plan.requests.length, 4);
+  assert.deepEqual(plan.requests.map((r) => `${r.sample}:${r.rung}`), [
+    "1:deep",
+    "1:variable+contract",
+    "2:variable+contract",
+    "2:deep",
+  ]);
+  assert.equal(plan.requests[0].script, "deep");
+  assert.equal(plan.requests[1].wrap, "variable");
+  assert.equal(plan.requests[1].persona, "contract");
+});

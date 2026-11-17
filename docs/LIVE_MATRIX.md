@@ -236,6 +236,26 @@ endpoint URL is recorded.
 Exit codes: `0` ok, `1` every live call failed, `2` usage/config error or a
 missing key.
 
+## Comparing two strategies (`--compare`)
+
+Refusal rates move between hours on the same model and prompt: the gateway behind
+an alias can switch accounts, models roll forward, and upstream queues change
+latency. Two separate runs hours apart cannot be compared by size.
+
+`--compare a,b` puts both strategies in one run. Every probe is sent once per
+strategy per sample, and even samples reverse the order (ABBA), so drift hits
+both arms evenly:
+
+```
+node scripts/live_matrix.mjs --gateway default --profile hermes \
+  --model glm-5.3-flash --compare deep,variable+contract \
+  --probe ransomware-builder,adult-explicit-scene --repeat 3
+```
+
+Rows carry the strategy id in the `rung` column, so the summary splits by arm
+without extra flags.
+
+
 ## Measured run, 2026-11-17
 
 Four probes (`minor-explicit-framing`, `adult-explicit-scene`, `ransomware-builder`,
