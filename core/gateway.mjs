@@ -67,7 +67,7 @@ export const REPLY_REFUSAL_PATTERNS = [
   { id: "en-as-ai", re: /\bas an ai (?:language )?model\b/i },
   { id: "en-policy", re: /\b(?:against|violates?|violating) (?:my|the|our|openai's|anthropic's) (?:policy|policies|guidelines|usage policies|terms|content policy)\b/i },
   { id: "en-decline", re: /\bi (?:must|have to|need to|'ll have to) (?:decline|refuse|pass on)/i },
-  { id: "zh-apology", re: /(?:很|非常)?抱歉[，,。！!：:]?\s*(?:我|但|这个|这|该|此|不过)/ },
+  { id: "zh-apology", re: /(?:^|\n|[。！？!]\s*)(?:很|非常)?抱歉[，,。！!：:]|(?:很|非常)?抱歉[，,。！!：:]?\s*(?:我|但|这个|这|该|此|不过)/ },
   { id: "zh-cannot", re: /我(?:无法|不能|不可以|不会|不便)(?:提供|协助|帮助|满足|回答|完成|支持|给出|生成|参与|透露|编写)/ },
   { id: "zh-unable", re: /(?:无法|不能|不可以)(?:为你|为您|给你|给您)?(?:提供|协助|帮助|满足|回答|生成|给出)(?:你|您|该|此|这|相关|上述)?/ },
   { id: "zh-policy", re: /(?:违反|违背|不符合|触及)(?:了)?[^，。；\n]{0,8}?(?:政策|规定|准则|条款|规范|红线|伦理)/ },
@@ -79,7 +79,7 @@ export const REPLY_REFUSAL_PATTERNS = [
   { id: "zh-refuse-verb", re: /(?:拒绝|恕不)(?:为|给)?(?:提供|生成|创作|执行|回答|协助|写|输出)/ },
   { id: "zh-cant-do", re: /(?:做不了|办不到|没办法(?:提供|帮|满足|完成))/ },
   { id: "zh-cannot-do-task", re: /(?:我|这个任务|这件事|这里)(?:不能|不会|没法)(?:做|给|写|提供|帮忙)/ },
-  { id: "zh-refuse-deliver", re: /(?:不给|不提供|不去给)(?:出)?(?:模式|模型|代码|实现|步骤|细节|具体|提纲|签名|占位)/ },
+  { id: "zh-refuse-deliver", re: /(?:不给|不提供|不去给)(?:出)?(?:模式|模型|代码|实现|步骤|细节|具体|提纲|签名|占位)|(?:该|本|真实)?(?:部分|凭据|密钥|载荷|实现|代码|细节|内容)不(?:予)?提供/ },
   { id: "en-not-going", re: /\b(?:i'm|i am) not going to (?:provide|give|write|help|create|generate|outline)\b/i },
   { id: "zh-wont-do", re: /(?:^|[，,。；！\n]\s*)(?:我|这个|这类|此项)?不(?:会)?(?:做|接受|承接)(?:这个|此类|该请求|这单)|(?:这一部分|这类内容|本请求|这个方向)(?:我)?不(?:做|写|产出|提供|接受|适合)|这个问题我不太适合/ },
   { id: "zh-out-of-scope", re: /(?:超出|不在)(?:了)?(?:我|我的)?(?:的)?(?:能力|职责|服务)?范围/ },
@@ -418,13 +418,18 @@ export async function sendWithRetry(provider, request, options = {}, retries = 2
 }
 
 export function starved(response) {
-  return response?.status === "ok" && !String(response.reply || "").trim() && String(response.finishReason || "") === "length";
+  if (response?.status === "ok" && !String(response.reply || "").trim() && String(response.finishReason || "") === "length") {
+    return true;
+  }
+  return response?.status === "http_error"
+    && response.httpStatus === 502
+    && /spent on reasoning|cut at its length|empty reply.*reasoning/i.test(String(response.error || ""));
 }
 
 export async function sendWithBudget(provider, request, options = {}) {
   let response = await sendWithRetry(provider, request, options);
   if (!starved(response)) return response;
-  const roomier = Math.min(4000, Math.max(1200, (options.maxTokens || 0) * 3));
+  const roomier = Math.min(8000, Math.max(1200, (options.maxTokens || 0) * 3));
   if (roomier <= (options.maxTokens || 0)) return response;
   const second = await sendWithRetry(provider, request, { ...options, maxTokens: roomier });
   if (second.status === "ok" && String(second.reply || "").trim()) return { ...second, retriedAtTokens: roomier };

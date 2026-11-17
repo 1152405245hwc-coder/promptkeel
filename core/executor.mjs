@@ -270,11 +270,15 @@ export function mergeYaml(existing, patch) {
       }
       const children = baseLines.slice(section.start + 1, section.end);
       const after = baseLines.slice(section.end);
+      const childIndentMatch = children.map((line) => /^([ \t]+)(?!#)[A-Za-z0-9_.-]+:/.exec(line)).find(Boolean);
+      const childIndent = childIndentMatch ? childIndentMatch[1] : "  ";
+      const childIndentLen = childIndent.length;
       const patchChildKeys = new Set(Object.keys(value));
       const keptChildren = [];
       let skipping = false;
       for (const line of children) {
-        const m = /^  ([A-Za-z0-9_.-]+):/.exec(line);
+        const escapedIndent = childIndent.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const m = new RegExp(`^${escapedIndent}([A-Za-z0-9_.-]+):`).exec(line);
         if (m) {
           skipping = patchChildKeys.has(m[1]);
           if (!skipping) keptChildren.push(line);
@@ -282,11 +286,11 @@ export function mergeYaml(existing, patch) {
           keptChildren.push(line);
         }
       }
-      const renderedChildren = renderYamlEntries(value, 2);
+      const renderedChildren = renderYamlEntries(value, childIndentLen);
       const indentedBlock = [
-        `  ${beginMarker}`,
+        `${childIndent}${beginMarker}`,
         ...renderedChildren,
-        `  ${endMarker}`,
+        `${childIndent}${endMarker}`,
       ];
       const nextLines = [...before, ...keptChildren, ...indentedBlock, ...after];
       return `${nextLines.join("\n").trimEnd()}\n`;
@@ -509,7 +513,10 @@ export function applyPlan(plan, { dryRun = false, env = {}, yes = false, preview
       try {
         if (record.existed) {
           const backup = path.join(dir, record.backup);
-          if (fs.existsSync(backup)) writeAtomic(record.path, fs.readFileSync(backup), fs.statSync(record.path).mode & 0o777);
+          if (fs.existsSync(backup)) {
+            const mode = fs.existsSync(record.path) ? fs.statSync(record.path).mode & 0o777 : 0o644;
+            writeAtomic(record.path, fs.readFileSync(backup), mode);
+          }
         } else if (fs.existsSync(record.path)) {
           fs.unlinkSync(record.path);
         }
@@ -554,7 +561,7 @@ export function revertPlan(id, { force = false, env = {} } = {}) {
     }
     if (!record.existed && !stat) continue;
     if (record.existed && !stat) {
-      drift.push({ path: record.path, reason: "missing" });
+      if (!force) drift.push({ path: record.path, reason: "missing" });
       continue;
     }
     if (stat.isSymbolicLink()) {
@@ -571,7 +578,10 @@ export function revertPlan(id, { force = false, env = {} } = {}) {
       if (fs.existsSync(record.path) && fs.lstatSync(record.path).isSymbolicLink()) {
         throw new Error(`refusing to revert through symlink: ${record.path}`);
       }
-      if (record.existed) writeAtomic(record.path, fs.readFileSync(path.join(dir, record.backup)), fs.statSync(record.path).mode & 0o777);
+      if (record.existed) {
+        const mode = fs.existsSync(record.path) ? fs.statSync(record.path).mode & 0o777 : (record.op === "write-shim" ? 0o755 : 0o644);
+        writeAtomic(record.path, fs.readFileSync(path.join(dir, record.backup)), mode);
+      }
       else if (fs.existsSync(record.path)) fs.unlinkSync(record.path);
     } catch (error) { errors.push({ path: record.path, error: error.message }); }
   }

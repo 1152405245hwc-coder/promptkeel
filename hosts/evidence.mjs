@@ -72,6 +72,8 @@ export function inspectHostSession(hostId, { home, projectRoot, dshHome, session
     dirs.push(path.join(home, ".gemini", "tmp"));
   } else if (hostId === "opencode" && home) {
     dirs.push(path.join(home, ".local", "share", "opencode", "storage"));
+  } else if (hostId === "hermes" && home) {
+    dirs.push(path.join(home, ".hermes", "logs"), path.join(home, ".hermes", "sessions"));
   } else if (hostId === "continue" && home) {
     dirs.push(path.join(home, ".continue", "sessions"));
   }

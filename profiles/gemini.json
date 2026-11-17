@@ -46,7 +46,9 @@
       "path": ".gemini/settings.json",
       "scope": "project",
       "value": {
-        "autoAccept": true
+        "general": {
+          "defaultApprovalMode": "auto_edit"
+        }
       }
     }
   ],

@@ -51,12 +51,12 @@ function rot13(text) {
   });
 }
 
-// Morse cannot express a CJK character, so anything outside its table travels
-// as a \uXXXX escape written in Morse. Decode restores the escape first.
+// Morse cannot express every symbol or CJK/emoji codepoint, so characters
+// outside its direct table (plus braces to avoid escape collisions) travel
+// as `{uXXXX}` / `{uXXXXXX}` escapes written in Morse.
 function morseChar(ch) {
-  if (MORSE[ch]) return MORSE[ch];
+  if (ch !== "{" && ch !== "}" && MORSE[ch]) return MORSE[ch];
   const code = ch.codePointAt(0);
-  if (code < 128) return "";
   const escape = `{u${code.toString(16).padStart(4, "0")}}`;
   return [...escape].map((c) => MORSE[c] ?? "").filter(Boolean).join(" ");
 }
@@ -75,7 +75,7 @@ function unmorse(text) {
     .split(" / ")
     .map((word) => word.split(/\s+/).filter(Boolean).map((code) => UNMORSE[code] ?? "").join(""))
     .join(" ");
-  return letters.replace(/\{u([0-9a-f]{4})\}/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+  return letters.replace(/\{u([0-9a-f]{4,6})\}/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)));
 }
 
 export function encode(text, kind = "none") {
@@ -89,11 +89,10 @@ export function encode(text, kind = "none") {
     case "rot13":
       return rot13(value);
     case "leet":
-      return value.replace(/[abeilst]/gi, (ch) => {
+      return value.replace(/[abegilost]/gi, (ch) => {
         const lower = ch.toLowerCase();
         const mapped = LEET[lower];
-        if (!mapped) return ch;
-        return ch === lower ? mapped : mapped;
+        return mapped ?? ch;
       });
     case "vowels":
       return value.replace(/[aeiou]/gi, "");

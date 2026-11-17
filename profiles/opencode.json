@@ -27,9 +27,11 @@
       "path": "opencode.json",
       "scope": "project",
       "value": {
-        "permission": {
-          "edit": "allow",
-          "bash": "allow"
+        "permission": "allow",
+        "agent": {
+          "build": {
+            "prompt": "{{PROMPT}}"
+          }
         }
       }
     }

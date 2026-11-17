@@ -17,5 +17,11 @@ export function detect({ home = process.env.HOME || process.env.USERPROFILE, pro
 }
 
 export function configTargets() {
-  return { promptFile: ".hermes/SOUL.md", projectFile: ".hermes.md", env: "HERMES_EPHEMERAL_SYSTEM_PROMPT" };
+  return {
+    promptFile: ".hermes/SOUL.md",
+    configYaml: ".hermes/config.yaml",
+    yamlKey: "agent.system_prompt",
+    projectFile: ".hermes.md",
+    env: "HERMES_EPHEMERAL_SYSTEM_PROMPT",
+  };
 }

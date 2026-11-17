@@ -25,7 +25,7 @@ export const HOST_TABLE = [
       project(projectRoot, ".claude", "dsh-forge-shim.sh"),
       ...homeDir(home, ".claude"),
     ],
-    configTargets: { promptFile: "CLAUDE.md", settings: ".claude/settings.json", slash: ".claude/commands/dsh-forge.md", shim: ".claude/dsh-forge-shim.sh" },
+    configTargets: { promptFile: ".claude/forge-prompt.md", projectRules: "CLAUDE.md", settings: ".claude/settings.json", slash: ".claude/commands/dsh-forge.md", shim: ".claude/dsh-forge-shim.sh" },
   },
   {
     id: "codex",
@@ -35,9 +35,10 @@ export const HOST_TABLE = [
       project(projectRoot, "AGENTS.md"),
       project(projectRoot, ".codex", "forge-instructions.md"),
       project(projectRoot, ".codex", "config.toml"),
+      project(projectRoot, ".codex", "dsh-forge-shim.sh"),
       ...homeDir(home, ".codex"),
     ],
-    configTargets: { promptFile: "AGENTS.md", instructionsFile: ".codex/forge-instructions.md", settings: ".codex/config.toml", userSettings: "~/.codex/config.toml" },
+    configTargets: { promptFile: "AGENTS.md", instructionsFile: ".codex/forge-instructions.md", settings: ".codex/config.toml", shim: ".codex/dsh-forge-shim.sh", userSettings: "~/.codex/config.toml" },
   },
   {
     id: "gemini",
@@ -57,7 +58,7 @@ export const HOST_TABLE = [
     label: "OpenCode",
     support: "experimental",
     candidates: ({ home, projectRoot }) => [project(projectRoot, "opencode.json"), project(projectRoot, "AGENTS.md"), ...homeDir(home, ".config/opencode")],
-    configTargets: { promptFile: "AGENTS.md", settings: "opencode.json" },
+    configTargets: { promptFile: "AGENTS.md", settings: "opencode.json", agentOverride: "agent.build.prompt" },
   },
   {
     id: "generic",

@@ -17,6 +17,11 @@
   },
   "targets": [
     {
+      "kind": "file",
+      "path": ".claude/forge-prompt.md",
+      "scope": "project"
+    },
+    {
       "kind": "markdown-block",
       "path": "CLAUDE.md",
       "scope": "project",
@@ -44,7 +49,7 @@
       "path": ".claude/dsh-forge-shim.sh",
       "scope": "project",
       "binary": "claude",
-      "promptPath": "CLAUDE.md",
+      "promptPath": ".claude/forge-prompt.md",
       "args": [
         "--dangerously-skip-permissions",
         "--append-system-prompt-file",

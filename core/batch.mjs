@@ -69,7 +69,19 @@ function actionSignature(action, target = {}) {
     blockId: target.blockId || action.blockId || null,
     provider: action.provider || (action.op === "dsh-patches" ? "dsh.patches" : "core.files"),
   };
-  if (action.op === "write-file" || action.op === "write-shim" || action.op === "merge-block") base.content = action.content ?? null;
+  if (action.op === "write-file" || action.op === "merge-block") base.content = action.content ?? null;
+  if (action.op === "write-shim") {
+    base.shim = target.binary || target.promptPath || target.args || target.env
+      ? {
+          binary: target.binary || null,
+          promptScope: target.promptScope || target.scope || "project",
+          promptPath: target.promptPath || null,
+          env: target.env || {},
+          args: target.args || [],
+          note: target.note || null,
+        }
+      : String(action.content ?? "").replace(/^DSH_FORGE_PROMPT=.*$/m, "DSH_FORGE_PROMPT=<scope-resolved>");
+  }
   if (action.op === "merge-json" || action.op === "merge-toml" || action.op === "merge-yaml") base.value = action.value ?? null;
   if (action.op === "dsh-patches") base.patches = action.patches === "all" ? "all" : [...(action.patches || [])].sort();
   return stableJson(base);

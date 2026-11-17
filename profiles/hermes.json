@@ -18,16 +18,26 @@
   },
   "targets": [
     {
+      "kind": "yaml-merge",
+      "path": ".hermes/config.yaml",
+      "scope": "user",
+      "value": {
+        "agent": {
+          "system_prompt": "{{PROMPT}}"
+        }
+      }
+    },
+    {
       "kind": "markdown-block",
       "path": ".hermes/SOUL.md",
       "scope": "user",
-      "blockId": "system"
+      "blockId": "forge"
     },
     {
       "kind": "markdown-block",
       "path": ".hermes.md",
       "scope": "project",
-      "blockId": "system"
+      "blockId": "forge"
     }
   ],
   "risk": "high",

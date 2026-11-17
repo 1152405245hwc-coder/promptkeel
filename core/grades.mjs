@@ -38,11 +38,15 @@ export const HOST_GRADES = {
   },
   cursor: { grade: "append-only", mechanism: "rule files add to the built-in prompt", source: "research" },
   windsurf: { grade: "append-only", mechanism: "rule files add to the built-in prompt", source: "research" },
-  opencode: { grade: "append-only", mechanism: "project instructions add to the built-in prompt", source: "research" },
+  opencode: {
+    grade: "replace-full",
+    mechanism: "agent.build.prompt in opencode.json overrides the built-in build agent system prompt (AGENTS.md appends project context)",
+    source: "measured",
+  },
   aider: { grade: "append-only", mechanism: "CONVENTIONS.md adds to the built-in prompt", source: "research" },
   hermes: {
     grade: "replace-with-residue",
-    mechanism: "SOUL.md replaces the persona file; config.yaml still appends its own bootstrap section",
+    mechanism: "SOUL.md + config.yaml agent.system_prompt replace persona/system slots with forge block markers that clear threat_patterns; framework guidance blocks remain",
     source: "measured",
   },
   openclaw: {
@@ -104,6 +108,19 @@ function verifyFullReplacementRequirement(host, items = []) {
         mechanism: "Continue rules append after the base agent message unless config.yaml sets chatOptions.baseAgentSystemMessage",
         source: "compiled",
         improvement: "emit a yaml-merge on .continue/config.yaml setting chatOptions.baseAgentSystemMessage",
+      };
+    }
+    return { source: "verified-config" };
+  }
+  if (host === "opencode") {
+    const json = items.find((item) => (item?.op === "merge-json" || item?.kind === "json-merge") && String(item?.path || "").endsWith("opencode.json"));
+    const setsBuildPrompt = Boolean(json?.value?.agent?.build?.prompt && String(json.value.agent.build.prompt).trim());
+    if (!setsBuildPrompt) {
+      return {
+        grade: "append-only",
+        mechanism: "AGENTS.md adds project context after the built-in OpenCode prompt unless opencode.json sets agent.build.prompt",
+        source: "compiled",
+        improvement: "emit a json-merge on opencode.json setting agent.build.prompt to {{PROMPT}}",
       };
     }
     return { source: "verified-config" };

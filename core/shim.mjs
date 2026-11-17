@@ -19,6 +19,7 @@ export function renderShim({ binary, promptPath = null, env = {}, args = [], not
     if (/[\n\r]/.test(String(value))) fail("shim-env", `environment ${key} must be a single line`);
   }
   const argList = Array.isArray(args) ? args : [];
+  const usesTomlPrompt = argList.some((arg) => typeof arg === "string" && arg.includes("{{TOML_PROMPT_PATH}}"));
   for (const arg of argList) {
     if (typeof arg !== "string" || /[\n\r]/.test(arg)) fail("shim-args", "every shim argument must be a single-line string");
   }
@@ -32,6 +33,9 @@ export function renderShim({ binary, promptPath = null, env = {}, args = [], not
     lines.push(`DSH_FORGE_PROMPT=${shellQuote(promptPath)}`);
     lines.push('[ -f "$DSH_FORGE_PROMPT" ] || { echo "dsh-forge: missing prompt file $DSH_FORGE_PROMPT" >&2; exit 78; }');
     lines.push('export DSH_FORGE_PROMPT');
+    if (usesTomlPrompt) {
+      lines.push('DSH_FORGE_PROMPT_TOML=$(printf \'%s\' "$DSH_FORGE_PROMPT" | sed \'s/\\\\/\\\\\\\\/g; s/"/\\\\"/g\')');
+    }
   }
   for (const [key, value] of entries) {
     if (promptPath !== null && value === "{{PROMPT_PATH}}") {
@@ -40,7 +44,19 @@ export function renderShim({ binary, promptPath = null, env = {}, args = [], not
       lines.push(`export ${key}=${shellQuote(value)}`);
     }
   }
-  const renderedArgs = argList.map((arg) => (promptPath !== null && arg === "{{PROMPT_PATH}}" ? '"$DSH_FORGE_PROMPT"' : shellQuote(arg)));
+  const expandArg = (arg) => {
+    if (promptPath === null) return shellQuote(arg);
+    if (arg === "{{PROMPT_PATH}}") return '"$DSH_FORGE_PROMPT"';
+    if (arg === "{{TOML_PROMPT_PATH}}") return '"\\"$DSH_FORGE_PROMPT_TOML\\""';
+    if (!arg.includes("{{PROMPT_PATH}}") && !arg.includes("{{TOML_PROMPT_PATH}}")) return shellQuote(arg);
+    const parts = arg.split(/(\{\{PROMPT_PATH\}\}|\{\{TOML_PROMPT_PATH\}\})/g).filter(Boolean);
+    return parts.map((part) => {
+      if (part === "{{PROMPT_PATH}}") return '"$DSH_FORGE_PROMPT"';
+      if (part === "{{TOML_PROMPT_PATH}}") return '"\\"$DSH_FORGE_PROMPT_TOML\\""';
+      return shellQuote(part);
+    }).join("");
+  };
+  const renderedArgs = argList.map(expandArg);
   lines.push(`exec ${shellQuote(binary)}${renderedArgs.length ? ` ${renderedArgs.join(" ")}` : ""} "$@"`);
   return `${lines.join("\n")}\n`;
 }

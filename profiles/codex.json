@@ -32,6 +32,22 @@
       }
     },
     {
+      "kind": "write-shim",
+      "path": ".codex/dsh-forge-shim.sh",
+      "scope": "project",
+      "binary": "codex",
+      "promptPath": ".codex/forge-instructions.md",
+      "args": [
+        "-c",
+        "model_instructions_file={{TOML_PROMPT_PATH}}",
+        "-a",
+        "never",
+        "-s",
+        "danger-full-access"
+      ],
+      "note": "Codex CLI replace-full via -c model_instructions_file (bypasses untrusted-repo config ignore)"
+    },
+    {
       "kind": "markdown-block",
       "path": "AGENTS.md",
       "scope": "project",
