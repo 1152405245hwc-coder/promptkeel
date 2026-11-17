@@ -150,3 +150,28 @@ test("a transient fetch failure is retried before it is recorded", async () => {
   assert.equal(response.status, "ok");
   assert.equal(calls, 2);
 });
+
+test("a reasoning model that burns the budget is asked again with room", async () => {
+  const { sendWithBudget, starved } = await import("../scripts/live_matrix.mjs");
+  assert.equal(starved({ status: "ok", reply: "", finishReason: "length" }), true);
+  let calls = 0;
+  const fake = async () => {
+    calls += 1;
+    const body = calls === 1
+      ? { choices: [{ message: { content: "" }, finish_reason: "length" }], usage: {} }
+      : { choices: [{ message: { content: "1. a\n2. b" }, finish_reason: "stop" }], usage: {} };
+    return { ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) };
+  };
+  const provider = {
+    kind: "openai",
+    baseUrl: "http://127.0.0.1:1",
+    keyOptional: true,
+    reply: "choices.0.message.content",
+    finishReason: "choices.0.finish_reason",
+    usage: { prompt: "usage.prompt_tokens", completion: "usage.completion_tokens", total: "usage.total_tokens" },
+  };
+  const response = await sendWithBudget(provider, { system: "s", user: "u", model: "m" }, { maxTokens: 200, fetchImpl: fake });
+  assert.equal(response.status, "ok");
+  assert.ok(response.reply.includes("1. a"));
+  assert.equal(response.retriedAtTokens, 1200);
+});

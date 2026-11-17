@@ -623,6 +623,24 @@ export async function sendWithRetry(provider, request, options = {}, retries = 2
   return response;
 }
 
+/** A reasoning model spends the completion budget on hidden tokens first: with
+ *  max_tokens 480 a DeepSeek reasoner returns finish_reason "length" and an
+ *  empty content string, which reads as "the provider blocked us" when it is
+ *  really "we starved it". Ask again with room to answer. */
+export function starved(response) {
+  return response?.status === "ok" && !String(response.reply || "").trim() && String(response.finishReason || "") === "length";
+}
+
+export async function sendWithBudget(provider, request, options = {}) {
+  let response = await sendWithRetry(provider, request, options);
+  if (!starved(response)) return response;
+  const roomier = Math.min(4000, Math.max(1200, (options.maxTokens || 0) * 3));
+  if (roomier <= (options.maxTokens || 0)) return response;
+  const second = await sendWithRetry(provider, request, { ...options, maxTokens: roomier });
+  if (second.status === "ok" && String(second.reply || "").trim()) return { ...second, retriedAtTokens: roomier };
+  return { ...response, starvedAtTokens: options.maxTokens || null };
+}
+
 export function detectBlock(message) {
   return /safety filter|content was flagged|refused this request|content_filter/i.test(String(message || ""));
 }
@@ -945,7 +963,7 @@ export async function run(argv, { env = process.env } = {}) {
       let latency = 0;
       for (const [step, prompt] of script.entries()) {
         turns.push({ role: "user", content: step === 0 ? `${prompt}\n\n${userText}` : prompt });
-        response = await sendWithRetry(provider, { system: compiled.text, turns, model: request.model }, {
+        response = await sendWithBudget(provider, { system: compiled.text, turns, model: request.model }, {
           key: secret,
           maxTokens: step === 0 ? Math.min(240, options.maxTokens) : options.maxTokens,
           temperature: options.temperature,
@@ -960,7 +978,7 @@ export async function run(argv, { env = process.env } = {}) {
       response.turns = script.length;
       response.firstRefused = firstRefused;
     } else {
-      response = await sendWithRetry(provider, { system: compiled.text, user: userText, model: request.model }, {
+      response = await sendWithBudget(provider, { system: compiled.text, user: userText, model: request.model }, {
         key: secret,
         maxTokens: options.maxTokens,
         temperature: options.temperature,
