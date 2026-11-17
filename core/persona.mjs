@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { promptsDir } from "./contract.mjs";
 import { fail } from "./errors.mjs";
+import { TRANSFORMS, encode, reversible } from "./transform.mjs";
 
 export const PERSONA_MODES = ["replace", "strict", "append", "off"];
 
@@ -61,6 +62,8 @@ export function listPersonas(root = promptsDir()) {
         name: meta.name || meta.id || name.replace(/\.md$/, ""),
         mode: meta.mode || "replace",
         harness: meta.harness || "any",
+        transform: TRANSFORMS.includes(meta.transform) ? meta.transform : "none",
+        reversible: TRANSFORMS.includes(meta.transform) ? reversible(meta.transform) : true,
         chars: body.length,
         file: path.join(dir, name),
       };
@@ -81,25 +84,44 @@ export function loadPersona(id, { root = promptsDir(), mode = null } = {}) {
   if (!PERSONA_MODES.includes(resolvedMode)) {
     fail("persona-mode", `unknown persona mode: ${resolvedMode}`, { known: PERSONA_MODES });
   }
+  const transform = String(meta.transform || "none");
+  const lead = String(meta.lead || "").trim();
+  if (!TRANSFORMS.includes(transform)) {
+    fail("transform-kind", `unknown persona transform: ${transform}`, { file, known: TRANSFORMS });
+  }
   return {
     id: meta.id || id,
     name: meta.name || meta.id || id,
     mode: resolvedMode,
     harness: meta.harness || "any",
+    transform,
+    lead,
     body,
     file,
   };
+}
+
+/**
+ * Lines that would re-introduce the host's own self-description. Exported so
+ * the probe harness can measure identity leakage with the same rule the
+ * rewriter uses to remove it.
+ */
+export function identityLines(text, hostWords) {
+  const words = hostWords && hostWords.length ? hostWords : DEFAULT_HOST_WORDS;
+  return String(text ?? "")
+    .split("\n")
+    .filter((line) => {
+      if (!IDENTITY_OPENERS.test(line)) return false;
+      const lower = line.toLowerCase();
+      return words.some((word) => lower.includes(word));
+    });
 }
 
 function stripIdentity(text, hostWords) {
   const words = hostWords && hostWords.length ? hostWords : DEFAULT_HOST_WORDS;
   const kept = text
     .split("\n")
-    .filter((line) => {
-      if (!IDENTITY_OPENERS.test(line)) return true;
-      const lower = line.toLowerCase();
-      return !words.some((word) => lower.includes(word));
-    });
+    .filter((line) => !identityLines(line, words).length);
   return kept.join("\n").trim();
 }
 
@@ -112,7 +134,16 @@ export function applyPersona(parts, persona, { mode = null, hostWords } = {}) {
   if (!persona) return parts;
   const resolved = mode || persona.mode || "replace";
   if (!PERSONA_MODES.includes(resolved)) fail("persona-mode", `unknown persona mode: ${resolved}`, { known: PERSONA_MODES });
-  const part = { rel: `personas/${persona.id}.md`, abs: persona.file, text: persona.body, persona: persona.id };
+  const transform = persona.transform && persona.transform !== "none" ? persona.transform : null;
+  const encoded = transform ? encode(persona.body, transform) : persona.body;
+  const lead = persona.lead || "";
+  const part = {
+    rel: `personas/${persona.id}.md`,
+    abs: persona.file,
+    text: lead ? `${lead}\n\n${encoded}` : encoded,
+    persona: persona.id,
+    transform,
+  };
   if (resolved === "off") return parts;
   if (resolved === "strict") return [part];
   if (resolved === "append") return [...parts, part];

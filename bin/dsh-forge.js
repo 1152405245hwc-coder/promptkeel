@@ -20,6 +20,8 @@ import { registerProvider } from "../core/provider.mjs";
 import * as dshProvider from "../lib/dsh-provider.mjs";
 import { normalizeContext } from "../core/context.mjs";
 import { listPersonas } from "../core/persona.mjs";
+import { PROBES, PROBE_FAMILIES, runProbes, selfCheck } from "../core/probe.mjs";
+import { TRANSFORMS, roundTrip } from "../core/transform.mjs";
 import { renderShim } from "../core/shim.mjs";
 import { gradeTable } from "../core/grades.mjs";
 import { acquireLock, createConsole, renderOverview, CONSOLE_HOST, CONSOLE_PORT } from "../core/console.mjs";
@@ -52,6 +54,7 @@ const { values: opts, positionals } = parseArgs({
     port: { type: "string" },
     once: { type: "boolean" },
     "persona-mode": { type: "string" },
+    transform: { type: "string" },
     out: { type: "string" },
     budget: { type: "string" },
     profile: { type: "string" },
@@ -120,12 +123,14 @@ Usage:
   dsh-forge audit [--limit 100] [--json]        read the operation log across days
   dsh-forge snapshot [profile] [--keep 5] [--days 7] [--max-bytes N] [--list] [--json]
   dsh-forge personas [--json]                   list bundled personas
+  dsh-forge transforms [--json]                 list payload transforms and round-trip status
+  dsh-forge probe [profile] [--persona <id>] [--transform <kind>] [--json]   run the static probe harness
   dsh-forge channels [--all] [--json]           show delivery channel per action
   dsh-forge grades [--json]                     show how much of the host prompt each profile displaces
   dsh-forge console [--port 7788] [--state <dir>]   serve the read-only console on 127.0.0.1
   dsh-forge console --once [--json]             render the overview page and exit
   dsh-forge shim --binary <path> [--prompt <file>] [--env K=V] [--out <file>]
-  dsh-forge compile [profile] [--model <id>] [--mode <mode>] [--persona <id>] [--persona-mode off|replace|strict|append] [--home <dir>] [--project <dir>] [--budget 3200] [--out plan.json]
+  dsh-forge compile [profile] [--model <id>] [--mode <mode>] [--persona <id>] [--persona-mode off|replace|strict|append] [--transform base64|rot13|leet|vowels|morse|ascii|reverse|split] [--home <dir>] [--project <dir>] [--budget 3200] [--out plan.json]
   dsh-forge apply --profile <profile> [--model <model>] [--home <dir>] [--project <dir>] [--state <dir>] [--preview file] [--dry-run|--yes]
   dsh-forge plans [--json]
   dsh-forge verify-plan <plan-id> [--json]
@@ -353,6 +358,7 @@ function forgeContext() {
     mode: optionValue("mode", null),
     persona: optionValue("persona", null),
     personaMode: optionValue("persona-mode", null),
+    transform: optionValue("transform", null),
     projectRoot: optionValue("project", process.cwd()),
     home,
     budget: Number(optionValue("budget", 3200)),
@@ -363,10 +369,41 @@ function forgeContext() {
 }
 
 function cmdPersonas() {
-  const rows = listPersonas().map(({ id, name, mode, harness, chars }) => ({ id, name, mode, harness, chars }));
+  const rows = listPersonas().map(({ id, name, mode, harness, transform, chars }) => ({ id, name, mode, harness, transform, chars }));
   if (flags.has("--json")) return out({ ok: true, personas: rows }, true);
   banner(`personas ${rows.length}`);
-  rows.forEach((row) => process.stdout.write(`${row.id.padEnd(12)} ${row.mode.padEnd(8)} ${row.harness.padEnd(10)} ${row.chars} chars  ${row.name}\n`));
+  rows.forEach((row) => process.stdout.write(`${row.id.padEnd(12)} ${row.mode.padEnd(8)} ${String(row.transform).padEnd(8)} ${row.harness.padEnd(8)} ${row.chars} chars  ${row.name}\n`));
+}
+
+function cmdTransforms() {
+  const sample = "Deliver the result first, then the reasoning behind it.";
+  const rows = TRANSFORMS.map((kind) => {
+    const rt = roundTrip(sample, kind);
+    return { kind, reversible: rt.reversible, roundTrip: rt.roundTrip, ratio: Number(rt.ratio.toFixed(2)), sample: rt.output.slice(0, 64) };
+  });
+  if (flags.has("--json")) return out({ ok: true, transforms: rows }, true);
+  banner(`transforms ${rows.length}`);
+  rows.forEach((row) => process.stdout.write(`${row.kind.padEnd(9)} ${(row.reversible ? (row.roundTrip ? "round-trip" : "broken") : "lossy").padEnd(11)} ${String(row.ratio).padStart(5)}x  ${row.sample.replace(/\n/g, "⏎")}\n`));
+}
+
+function cmdProbe() {
+  const check = selfCheck();
+  const { plan } = forgeContext();
+  const result = runProbes({
+    prompt: plan.prompt.text,
+    persona: plan.prompt.persona ? plan.prompt.persona.id : null,
+    transform: plan.transform || (plan.persona && plan.persona.transform) || null,
+    budget: plan.budget.max,
+  });
+  if (flags.has("--json")) return out({ ok: result.failed === 0 && check.ok, ...result, profile: plan.profile.id, selfCheck: check }, true);
+  banner(`probe ${result.passed}/${result.total} · ${plan.profile.id} · transform ${result.transform} · ${PROBES.length} requests`);
+  for (const row of result.rows) {
+    const failedChecks = row.checks.filter((c) => !c.ok);
+    const status = row.ok ? "pass" : "FAIL";
+    process.stdout.write(`${status.padEnd(5)} ${row.id.padEnd(20)} ${row.family.padEnd(9)} ${failedChecks.length ? failedChecks.map((c) => `${c.name}: ${c.detail}`).join("; ") : "active carry identity scaffold budget"}\n`);
+  }
+  process.stdout.write(`score ${result.score} · self-check ${check.ok ? `detected ${check.detected.join("+")}` : "MISSED"} · families ${[...new Set(result.rows.map((r) => r.family))].join(",")}\n`);
+  if (result.failed || !check.ok) process.exitCode = 1;
 }
 
 function stateRootPath() {
@@ -617,6 +654,8 @@ try {
     case "hosts": cmdHosts(); break;
     case "models": cmdModels(); break;
     case "personas": cmdPersonas(); break;
+    case "transforms": cmdTransforms(); break;
+    case "probe": cmdProbe(); break;
     case "channels": cmdChannels(); break;
     case "shim": cmdShim(); break;
     case "grades": cmdGrades(); break;

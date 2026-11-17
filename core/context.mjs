@@ -14,6 +14,7 @@ export function normalizeContext(input = {}) {
     mode: input.mode ?? null,
     persona: input.persona ?? pick("persona") ?? null,
     personaMode: input.personaMode ?? pick("personaMode") ?? null,
+    transform: input.transform ?? pick("transform") ?? null,
     budget: input.budget ?? 3200,
     env: { ...nested, stateRoot: pick("stateRoot"), hostRoot: pick("hostRoot"), dshHome: pick("dshHome") },
   };

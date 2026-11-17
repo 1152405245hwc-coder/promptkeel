@@ -13,11 +13,18 @@ const parts = [
   { rel: "hosts/dsh.md", text: "You are DeepSeek Harness, a coding agent.\nKeep answers short." },
 ];
 
-test("persona library ships the three documented personas", () => {
+test("persona library ships the documented technique families", () => {
   const rows = listPersonas();
   const ids = rows.map((row) => row.id);
-  assert.deepEqual(ids, ["direct", "engineer", "tutor"]);
-  for (const row of rows) assert.ok(PERSONA_MODES.includes(row.mode), `${row.id} declares ${row.mode}`);
+  assert.deepEqual(ids, ["cipher", "code", "direct", "engineer", "fewshot", "nested", "roleplay", "split", "terse", "tutor"]);
+  for (const row of rows) {
+    assert.ok(PERSONA_MODES.includes(row.mode), `${row.id} declares ${row.mode}`);
+    assert.ok(["none", "base64", "rot13", "leet", "vowels", "morse", "ascii", "reverse", "split"].includes(row.transform), `${row.id} declares transform ${row.transform}`);
+  }
+  assert.deepEqual(rows.filter((row) => row.transform !== "none").map((row) => [row.id, row.transform]), [
+    ["cipher", "base64"],
+    ["split", "split"],
+  ]);
 });
 
 test("loadPersona rejects unknown ids and unknown modes", () => {
@@ -60,7 +67,7 @@ test("renderPrompt is deterministic with a persona and reports it", () => {
   const one = renderPrompt({ profile, model, persona: "engineer", personaMode: "append" });
   const two = renderPrompt({ profile, model, persona: "engineer", personaMode: "append" });
   assert.equal(one.sha256, two.sha256);
-  assert.deepEqual(one.persona, { id: "engineer", mode: "append" });
+  assert.deepEqual(one.persona, { id: "engineer", mode: "append", transform: "none" });
   assert.match(one.text.split("\n")[0], /persona=engineer personaMode=append/);
 });
 
@@ -75,8 +82,9 @@ test("persona off reproduces the plain composition byte for byte", () => {
 
 test("compile threads the persona into the plan and its sources", () => {
   const plan = compile(loadProfile("codex"), loadModel("gpt"), { persona: "tutor", personaMode: "strict" });
-  assert.deepEqual(plan.persona, { id: "tutor", mode: "strict" });
+  assert.deepEqual(plan.persona, { id: "tutor", mode: "strict", transform: "none" });
   assert.deepEqual(plan.prompt.sources, ["personas/tutor.md"]);
+  assert.equal(plan.prompt.persona.transform, "none");
   assert.ok(plan.budget.tokens < 3200);
 });
 

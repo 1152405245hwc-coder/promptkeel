@@ -43,7 +43,7 @@ export function resolveTargetPath(target, { home = process.env.HOME || process.e
  * Compile a profile into a pure data plan. This function performs no writes.
  * Identical inputs must produce an identical planId on every machine.
  */
-export function compile(profile, model, { mode = null, persona = null, personaMode = null, home, projectRoot, promptRoot, budget = 3200, env } = {}) {
+export function compile(profile, model, { mode = null, persona = null, personaMode = null, transform = null, home, projectRoot, promptRoot, budget = 3200, env } = {}) {
   const normalizedProfile = normalizeProfile(profile);
   validateModel(model);
   const maxTokens = Number(budget);
@@ -73,7 +73,7 @@ export function compile(profile, model, { mode = null, persona = null, personaMo
   }
   const pre = preflight(normalizedProfile, { host: normalizedProfile.host, model });
   if (!pre.ok) fail("preflight", "profile preflight failed", { problems: pre.problems });
-  const composed = renderPrompt({ profile: normalizedProfile, model, mode, persona, personaMode, root: promptRoot });
+  const composed = renderPrompt({ profile: normalizedProfile, model, mode, persona, personaMode, transform, root: promptRoot });
   const actions = [];
   const compileContext = {
     profile: normalizedProfile,
@@ -227,7 +227,16 @@ export function compile(profile, model, { mode = null, persona = null, personaMo
     model: { id: model.id, version: model.version || null },
     mode,
     persona: composed.persona,
-    prompt: { sha256: composed.sha256, bodySha: composed.bodySha, tokens: composed.tokens, sources: composed.sources, text: composed.text },
+    transform: composed.transform,
+    prompt: {
+      sha256: composed.sha256,
+      bodySha: composed.bodySha,
+      tokens: composed.tokens,
+      sources: composed.sources,
+      text: composed.text,
+      persona: composed.persona,
+      transform: composed.transform,
+    },
     budget: { tokens: composed.tokens, max: maxTokens, ok: composed.tokens <= maxTokens },
     capabilities: pre.rows,
     channels: channelSummary,

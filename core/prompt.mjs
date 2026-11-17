@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import { promptsDir } from "./contract.mjs";
 import { applyPersona, loadPersona } from "./persona.mjs";
 import { fail } from "./errors.mjs";
+import { TRANSFORMS, encode } from "./transform.mjs";
 
 export function estimateTokens(text) {
   let cjk = 0;
@@ -35,7 +36,11 @@ function readPart(root, rel, { optional = false } = {}) {
  * core -> model overlay -> host overlay -> mode overlay.
  * No timestamps, hostnames or user paths enter the rendered bytes.
  */
-export function renderPrompt({ profile, model, mode = null, persona = null, personaMode = null, root = promptsDir() } = {}) {
+export function renderPrompt({ profile, model, mode = null, persona = null, personaMode = null, transform = null, root = promptsDir() } = {}) {
+  const bodyTransform = transform && transform !== "none" ? String(transform) : null;
+  if (bodyTransform && !TRANSFORMS.includes(bodyTransform)) {
+    fail("transform-kind", `unknown transform: ${bodyTransform}`, { known: TRANSFORMS });
+  }
   if (!profile || !model) fail("prompt-args", "profile and model are required");
   const parts = [];
   parts.push(readPart(root, profile.prompt.core));
@@ -48,10 +53,13 @@ export function renderPrompt({ profile, model, mode = null, persona = null, pers
   }
   const resolved = persona ? loadPersona(persona, { root, mode: personaMode }) : null;
   const layered = applyPersona(parts.filter((p) => p.text), resolved);
-  const body = layered.map((p) => p.text).filter(Boolean).join("\n\n");
+  const raw = layered.map((p) => p.text).filter(Boolean).join("\n\n");
+  const body = bodyTransform ? encode(raw, bodyTransform) : raw;
   const bodySha = sha256(body);
-  const personaTag = resolved && resolved.mode !== "off" ? ` persona=${resolved.id} personaMode=${resolved.mode}` : "";
-  const header = `<!-- dsh-forge profile=${profile.id} host=${profile.host} model=${model.id}${mode ? ` mode=${mode}` : ""}${personaTag} sha256:${bodySha.slice(0, 16)} -->`;
+  const personaTransform = resolved && resolved.transform && resolved.transform !== "none" ? ` personaTransform=${resolved.transform}` : "";
+  const personaTag = resolved && resolved.mode !== "off" ? ` persona=${resolved.id} personaMode=${resolved.mode}${personaTransform}` : "";
+  const transformTag = bodyTransform ? ` transform=${bodyTransform}` : "";
+  const header = `<!-- dsh-forge profile=${profile.id} host=${profile.host} model=${model.id}${mode ? ` mode=${mode}` : ""}${personaTag}${transformTag} sha256:${bodySha.slice(0, 16)} -->`;
   const text = `${header}\n${body}\n`;
   return {
     text,
@@ -60,6 +68,7 @@ export function renderPrompt({ profile, model, mode = null, persona = null, pers
     sha256: sha256(text),
     bodySha,
     sources: layered.map((p) => p.rel),
-    persona: resolved && resolved.mode !== "off" ? { id: resolved.id, mode: resolved.mode } : null,
+    persona: resolved && resolved.mode !== "off" ? { id: resolved.id, mode: resolved.mode, transform: resolved.transform } : null,
+    transform: bodyTransform,
   };
 }

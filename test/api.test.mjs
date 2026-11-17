@@ -101,7 +101,7 @@ test("API route handler serves prompt, rejects invalid JSON/policy/content-type,
   const statusBody = JSON.parse(statusRes.body);
   assert.equal(statusBody.grades.length, 10);
   assert.ok(statusBody.grades.every((row) => typeof row.grade === "string"));
-  assert.equal(statusBody.personas.length, 3);
+  assert.equal(statusBody.personas.length, 10);
   assert.ok(statusBody.personas.every((row) => row.id && row.mode));
 
   const badJsonRes = fake();

@@ -200,7 +200,15 @@ Every action a profile compiles belongs to one channel: `project` (repository fi
 
 ## Personas
 
-`prompt/personas/*.md` holds prompt-level identity layers that travel across adapters. A persona composes with the host prompt in one of four modes: `replace` keeps host working rules while dropping identity claims, `strict` keeps the persona alone, `append` adds it after the host prompt, `off` disables it. `dsh-forge personas` lists what ships; `dsh-forge compile codex --persona engineer --persona-mode strict` selects one, and `off` reproduces the plain build byte for byte. Details in [docs/PERSONAS.md](docs/PERSONAS.md).
+`prompt/personas/*.md` holds prompt-level identity layers that travel across adapters. A persona composes with the host prompt in one of four modes: `replace` keeps host working rules while dropping identity claims, `strict` keeps the persona alone, `append` adds it after the host prompt, `off` disables it. `dsh-forge personas` lists what ships; `dsh-forge compile codex --persona engineer --persona-mode strict` selects one, and `off` reproduces the plain build byte for byte. Ten personas ship, one per technique family: tone (`direct`, `engineer`, `tutor`, `terse`) and framing (`roleplay`, `nested`, `code`, `fewshot`, `cipher`, `split`). Details in [docs/PERSONAS.md](docs/PERSONAS.md).
+
+## Payload transforms
+
+`core/transform.mjs` carries the static half of the technique catalogue: `base64`, `rot13`, `leet`, `vowels`, `morse`, `ascii`, `reverse`, `split`. A persona declares its own in frontmatter (`transform: base64` plus a plaintext `lead`), or `compile --transform <kind>` encodes the whole composed prompt. Reversible kinds decode back byte for byte, including CJK; `leet` and `vowels` refuse to decode rather than guess. The prompt header records `transform=` or `personaTransform=` so a transform that was requested and ignored becomes visible. Details in [docs/TRANSFORMS.md](docs/TRANSFORMS.md).
+
+## Probe harness
+
+`dsh-forge probe` measures the installed armour against a corpus of worst-case requests — eight families, twelve fixtures, no model call and no generated answer. Each request is checked for `active`, `carry`, `identity`, `scaffold` and `budget`. Every run also feeds a poisoned prompt through the same code path and requires it to fail, so a green report means the harness still discriminates. Details in [docs/PROBES.md](docs/PROBES.md).
 
 ## Audit and snapshots
 
