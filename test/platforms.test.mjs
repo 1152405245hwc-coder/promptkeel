@@ -5,16 +5,15 @@ import os from "node:os";
 import path from "node:path";
 import { loadModel, loadProfile } from "../core/contract.mjs";
 import { compile } from "../core/compile.mjs";
-import * as cursor from "../hosts/cursor.mjs";
-import * as windsurf from "../hosts/windsurf.mjs";
-import * as aider from "../hosts/aider.mjs";
-import * as continuation from "../hosts/continue.mjs";
+import { HOST_TABLE, hostModule } from "../hosts/table.mjs";
+const byId = (id) => hostModule(HOST_TABLE.find((d) => d.id === id));
+const cursor = byId("cursor");
 
 const platforms = [
   { module: cursor, profile: "cursor", fixture: (root) => fs.writeFileSync(path.join(root, ".cursorrules"), "# cursor rules\n") },
-  { module: windsurf, profile: "windsurf", fixture: (root) => fs.writeFileSync(path.join(root, ".windsurfrules"), "# windsurf rules\n") },
-  { module: aider, profile: "aider", fixture: (root) => fs.writeFileSync(path.join(root, "CONVENTIONS.md"), "# conventions\n") },
-  { module: continuation, profile: "continue", fixture: (root) => fs.mkdirSync(path.join(root, ".continue", "rules"), { recursive: true }) },
+  { module: byId("windsurf"), profile: "windsurf", fixture: (root) => fs.writeFileSync(path.join(root, ".windsurfrules"), "# windsurf rules\n") },
+  { module: byId("aider"), profile: "aider", fixture: (root) => fs.writeFileSync(path.join(root, "CONVENTIONS.md"), "# conventions\n") },
+  { module: byId("continue"), profile: "continue", fixture: (root) => fs.mkdirSync(path.join(root, ".continue", "rules"), { recursive: true }) },
 ];
 
 function tempRoot() {

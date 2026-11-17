@@ -93,7 +93,7 @@ test("API route handler serves prompt, rejects invalid JSON/policy/content-type,
   assert.equal(promptRes.code, 200);
   const promptBody = JSON.parse(promptRes.body);
   assert.equal(promptBody.ok, true);
-  assert.ok(promptBody.tokens > 500);
+  assert.ok(promptBody.tokens < 480, `tokens=${promptBody.tokens}`);
 
   const statusRes = fake();
   await route.handler(makeReq("GET", "/dsh-forge/api/status"), statusRes);

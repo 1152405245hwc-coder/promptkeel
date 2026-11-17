@@ -1,32 +1,18 @@
 import * as dsh from "./dsh.mjs";
-import * as claude from "./claude-code.mjs";
-import * as codex from "./codex.mjs";
-import * as gemini from "./gemini.mjs";
-import * as opencode from "./opencode.mjs";
-import * as generic from "./generic.mjs";
-import * as cursor from "./cursor.mjs";
-import * as windsurf from "./windsurf.mjs";
-import * as aider from "./aider.mjs";
-import * as continuation from "./continue.mjs";
 import * as hermes from "./hermes.mjs";
 import * as openclaw from "./openclaw.mjs";
 import * as muse from "./muse.mjs";
+import { HOST_TABLE, hostModule } from "./table.mjs";
 import { detectWithAdapter, normalizeAdapter } from "./adapter.mjs";
 import { fail } from "../core/errors.mjs";
 
 export { detectWithAdapter, normalizeAdapter };
 
+const CONSOLIDATED = Object.fromEntries(HOST_TABLE.map((descriptor) => [descriptor.id, hostModule(descriptor)]));
+
 export const HOSTS = {
   dsh,
-  "claude-code": claude,
-  codex,
-  gemini,
-  opencode,
-  generic,
-  cursor,
-  windsurf,
-  aider,
-  continue: continuation,
+  ...CONSOLIDATED,
   hermes,
   openclaw,
   muse,

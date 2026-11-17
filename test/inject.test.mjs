@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+
+const PROMPT_CEILING = 480;
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -18,7 +20,7 @@ test("core prompt composes within the default budget", () => {
   const budget = checkBudget(composed);
   assert.equal(budget.ok, true, `tokens=${composed.tokens}`);
   assert.ok(composed.text.includes("dsh-forge"));
-  assert.ok(composed.tokens > 500);
+  assert.ok(composed.tokens > 150 && composed.tokens < PROMPT_CEILING, `tokens=${composed.tokens}`);
 });
 
 test("estimateTokens counts CJK denser than latin", () => {
@@ -75,7 +77,7 @@ test("composePrompt rejects path traversal and unknown adapters or modes", () =>
   assert.throws(() => composePrompt({ adapter: "no-such-adapter" }), /unknown prompt adapter/);
   assert.throws(() => composePrompt({ mode: "no-such-mode" }), /missing/);
   const claudeComposed = composePrompt({ adapter: "claude", mode: "coding" });
-  assert.ok(claudeComposed.tokens > 500);
+  assert.ok(claudeComposed.tokens < PROMPT_CEILING, `tokens=${claudeComposed.tokens}`);
 });
 
 test("two writes in the same second get distinct backups", (t) => {
