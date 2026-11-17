@@ -54,3 +54,17 @@ test("the gateway provider needs no key and defaults to loopback", () => {
   assert.equal(provider.baseUrl, "http://127.0.0.1:3425/v1");
   assert.equal(resolveGateway("http://127.0.0.1:9000/v1").baseUrl, "http://127.0.0.1:9000/v1");
 });
+
+test("the ladder runs cheapest rung first and stops at the prefilled answer", async () => {
+  const { RUNGS } = await import("../scripts/live_matrix.mjs");
+  assert.deepEqual(RUNGS.map((rung) => rung.id), ["direct", "persona", "cipher", "prefill"]);
+  const plan = buildRequests({ profiles: ["hermes"], models: [model], personas: ["none"], transforms: ["none"], probes: [probe], ladder: true });
+  assert.deepEqual(plan.requests.map((request) => request.rung), ["direct", "persona", "cipher", "prefill"]);
+});
+
+test("a prefill becomes an assistant turn after the user message", () => {
+  const body = requestBody({ kind: "openai" }, { system: "s", user: "u", model: "m", prefill: "Understood" }, { maxTokens: 8, temperature: 0 });
+  assert.deepEqual(body.messages.map((m) => m.role), ["system", "user", "assistant"]);
+  const bare = requestBody({ kind: "openai" }, { system: "s", user: "u", model: "m" }, { maxTokens: 8, temperature: 0 });
+  assert.deepEqual(bare.messages.map((m) => m.role), ["system", "user"]);
+});

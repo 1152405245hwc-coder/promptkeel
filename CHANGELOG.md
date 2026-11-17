@@ -5,6 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Sem
 ## [Unreleased]
 
 ### Added
+
+- `--ladder` on the live matrix: four rungs (direct, persona, cipher, prefill) so each model
+  records which lever it answers to, plus `docs/PLAYBOOK.md` with the measured readings.
+- `docs/research/JAILBREAK_PRINCIPLES.md`: where refusals come from, the six levers that move
+  them, and what this harness can and cannot claim.
+- Assistant prefill support in the request builder (`prefill` becomes an assistant turn).
+
+
+### Added
 - Live matrix reaches a local gateway: `--gateway <url|default>` targets an OpenAI-compatible
   endpoint that needs no key, `--list-models` prints what it advertises, and prefixed ids
   (`codex/gpt-6-luna`, `commandcode/deepseek/deepseek-v4-pro`) resolve to the right forge model.
