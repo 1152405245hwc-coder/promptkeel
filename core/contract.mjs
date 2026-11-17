@@ -1,8 +1,33 @@
 import fs from "node:fs";
 import path from "node:path";
 import { assert, fail } from "./errors.mjs";
-import { DSH_PATCH_IDS } from "../lib/dsh-contract.mjs";
 import { getAdapter } from "../hosts/registry.mjs";
+
+export const DSH_PATCH_IDS = new Set([
+  "approval-config-default",
+  "approval-auto-grant",
+  "approval-ask-sentence",
+  "approval-never-sentence",
+  "escalation-bypass",
+  "sandbox-default-full",
+  "workspace-intro-precedence",
+  "approval-types-sentences",
+  "session-reference-warning-neutral",
+  "sandbox-policy-brand-neutral",
+  "harness-identity-off",
+  "sandbox-escalation-hint-neutral",
+  "seatbelt-deny-rule-removed",
+  "fs-fence-disabled",
+  "skill-badge-neutral",
+  "deliverable-present-guard",
+  "auto-review-bypass",
+  "plan-mode-neutral",
+  "ptc-escalation-neutral",
+  "subagent-delegation-neutral",
+  "fs-read-limit-raised",
+  "system-prompt-in-history-disabled",
+  "api-attachment-image-unrestricted",
+]);
 
 export const PROFILE_SCHEMA = "forge.profile/v1";
 export const MODEL_SCHEMA = "forge.model/v1";

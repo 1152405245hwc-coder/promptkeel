@@ -1,6 +1,6 @@
 # Cross-Host Portability
 
-`dsh-forge` separates host-specific runtime patching from portable agent configuration. The host registry currently includes ten adapters; DSH is one high-permission adapter rather than the core platform assumption. Its patch surface, generated from `lib/table.mjs`:
+`dsh-forge` separates host-specific runtime patching from portable agent configuration. The host registry currently includes <!-- forge-facts:begin kind=profiles -->13<!-- forge-facts:end --> adapters; DSH is one high-permission adapter rather than the core platform assumption. Its patch surface, generated from `lib/table.mjs`:
 
 <!-- forge-facts:begin -->
 23 host patches · 18 patched files · 17 `@deepseek-ai/*` packages · layers: approval 7, sandbox 9, turn 1, persona 4, session 2 · host range `>=0.2.1-rc.1 <0.3.0`
@@ -100,7 +100,10 @@ Supported target kinds:
 - `markdown-block`: idempotent `<!-- dsh-forge:begin <blockId> --> ... <!-- dsh-forge:end <blockId> -->` section that preserves surrounding user text.
 - `json-merge`: recursive object merge preserving unrelated keys.
 - `toml-merge`: top-level key update/insertion placed before any `[table]` header so root keys never leak into sub-tables.
-- `file`: whole-file prompt write (used for `~/.dsh/prompt-inject.md`).
+- `yaml-merge`: idempotent YAML key/nested-object merge guarded by `# dsh-forge:begin config` / `# dsh-forge:end config` (preserves user keys and comments).
+- `write-shim`: executable (`0755`) POSIX shell wrapper setting `DSH_FORGE_PROMPT` and launching the host binary with env overrides or CLI append flags.
+- `command`: host session slash command Markdown file (e.g. `.claude/commands/dsh-forge.md`).
+- `file`: whole-file prompt write (used for `~/.dsh/prompt-inject.md`, `.codex/forge-instructions.md`, and `.gemini/system.md`).
 - `dsh-patches`: delegates to the native version-gated DSH patch engine (`lib/engine.mjs`).
 - `prompt-only`: emits rendered prompt in the compiled plan without writing files.
 

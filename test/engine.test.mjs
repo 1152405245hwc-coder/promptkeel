@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
 import { PATCHES } from "../lib/table.mjs";
+import { DSH_PATCH_IDS } from "../core/contract.mjs";
 import { inspectPatch, dryRun, apply, revert, upgrade, verifyApplied, normalizeFiles, replacementsOf, resolvePatch, satisfies, listBackups } from "../lib/engine.mjs";
 import { packAsarArchive, hostStorageState, unpackHostAsar } from "../lib/asar.mjs";
 
@@ -46,6 +47,7 @@ test("every patch entry is complete, well-typed and uniquely named", () => {
   assert.equal(layers.size, 5);
   const ids = PATCHES.map((patch) => patch.id);
   assert.equal(new Set(ids).size, ids.length);
+  assert.deepEqual(new Set(ids), DSH_PATCH_IDS);
   for (const patch of PATCHES) {
     assert.match(patch.id, /^[a-z0-9]+(?:-[a-z0-9]+)+$/, `id shape: ${patch.id}`);
     assert.ok(patch.title.length >= 12, `title: ${patch.id}`);

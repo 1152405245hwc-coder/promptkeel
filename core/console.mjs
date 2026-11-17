@@ -370,7 +370,7 @@ function sendJson(res, status, data) {
 function allowConsoleRequest(req, res, { requireCsrf = false, csrfToken = "" } = {}) {
   const authority = String(req.headers.host || "").trim();
   const hostname = hostnameOf(authority);
-  if (authority && !LOOPBACK.has(hostname)) {
+  if (!authority || !LOOPBACK.has(hostname)) {
     sendJson(res, 403, { ok: false, error: "forbidden host" });
     return false;
   }
@@ -386,7 +386,7 @@ function allowConsoleRequest(req, res, { requireCsrf = false, csrfToken = "" } =
   if (origin) {
     try {
       const u = new URL(origin);
-      if ((u.protocol !== "http:" && u.protocol !== "https:") || (authority && u.host.toLowerCase() !== authority.toLowerCase())) {
+      if ((u.protocol !== "http:" && u.protocol !== "https:") || u.host.toLowerCase() !== authority.toLowerCase()) {
         sendJson(res, 403, { ok: false, error: "forbidden origin" });
         return false;
       }

@@ -2,9 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { compile } from "./compile.mjs";
+import { DSH_PATCH_IDS } from "./contract.mjs";
 import { verifyCompiled, previewPlan, applyPlan, revertPlan, stateRoot } from "./executor.mjs";
 import { sha256 } from "./prompt.mjs";
-import { DSH_PATCH_IDS } from "../lib/dsh-contract.mjs";
 
 const FILE_OPS = new Set(["write-file", "write-shim", "merge-block", "merge-json", "merge-toml", "merge-yaml"]);
 const BATCH_SCHEMA = "forge.batch/v1";

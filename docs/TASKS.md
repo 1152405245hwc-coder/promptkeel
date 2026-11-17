@@ -15,7 +15,7 @@
 
 ## Verification & Release Gates
 
-1. Offline suite & Playwright E2E: `npm test`, `npm run verify:profiles`, `npm run check:repo`, `npm run docs:check`, headless Playwright E2E across `:7788` workbench (`/workbench`, `/plans`, `/live`) and `client/preview/index.html`.
+1. Offline suite & browser UI check: `npm test`, `npm run verify:profiles`, `npm run check:repo`, `npm run docs:check`, plus an interactive headless Chromium check across `:7788` (`/workbench`, `/plans`, `/live`, `/patches`) and `client/preview/index.html` (dependency-free repo keeps `npm test` self-contained).
 2. Host dry-run check: `npm run verify` (`23/23` patches ready on target DSH `0.2.2-rc.3` host).
 3. Live bounded Magpie evaluation: compared `direct` vs `variable+contract` across 4 channels (`commandcode/deepseek/deepseek-v4.1-flash`, `hiyo-ds/deepseek-v4-pro`, `group/free-strong`, `group/free-light`) with `repeat=3` on `lateral-report-digest` + `adult-explicit-scene` (`minor`/`bio`/`chem`/weapons strictly excluded as `NOT_RUN_SAFETY_BOUNDARY`), and fixed upstream SSE chunk assembly, `[magpie/*]` proxy guard classification, and bare refusal matching.
 4. Git identity & privacy gate: clean author/committer history (`dsh-forge <forge@local>`), zero `.privacy-allow`, and passing `npm run release:check`.

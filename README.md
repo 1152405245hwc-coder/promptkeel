@@ -105,14 +105,14 @@ DSH is the native full-capability target. The same modular prompt and transactio
 | Host | Profile | Target Files Written | Support Level |
 | :--- | :--- | :--- | :--- |
 | **DSH (macOS / Linux / Windows)** | `dsh` | <!-- forge-facts:begin kind=patches -->23<!-- forge-facts:end --> host patches (`@deepseek-ai/*`) + `~/.dsh/prompt-inject.md` | `verified` |
-| **Claude Code** | `claude-code` | `CLAUDE.md` (managed block) + `.claude/settings.json` | `verified` |
-| **Codex CLI** | `codex` | `AGENTS.md` (managed block, project only) | `verified` |
-| **Gemini CLI** | `gemini` | `GEMINI.md` (managed block) + `.gemini/settings.json` | `experimental` |
+| **Claude Code** | `claude-code` | `CLAUDE.md` + `.claude/settings.json` + `.claude/commands/dsh-forge.md` + `.claude/dsh-forge-shim.sh` | `verified` |
+| **Codex CLI** | `codex` | `.codex/forge-instructions.md` + `.codex/config.toml` (`model_instructions_file`) + `AGENTS.md` | `verified` |
+| **Gemini CLI** | `gemini` | `.gemini/system.md` + `.gemini/dsh-forge-shim.sh` (`GEMINI_SYSTEM_MD`) + `GEMINI.md` + `.gemini/settings.json` | `experimental` |
 | **OpenCode** | `opencode` | `AGENTS.md` (managed block) + `opencode.json` | `experimental` |
 | **Cursor** | `cursor` | `.cursorrules` (legacy managed block) | `experimental` |
 | **Windsurf** | `windsurf` | `.windsurfrules` (legacy managed block) | `experimental` |
 | **Aider** | `aider` | `CONVENTIONS.md` (managed block) | `experimental` |
-| **Continue** | `continue` | `.continue/rules/dsh-forge.md` (managed block) | `experimental` |
+| **Continue** | `continue` | `.continue/config.yaml` (`chatOptions.baseAgentSystemMessage`) + `.continue/rules/dsh-forge.md` | `experimental` |
 | **Generic API / Local Weights** | `generic` | System prompt payload only (`prompt-only`) | `experimental` |
 | **Hermes** | `hermes` | `~/.hermes/SOUL.md` (managed block) + `.hermes.md` | `experimental` |
 | **OpenClaw / AutoClaw** | `openclaw` | `~/.kimi_openclaw/workspace/AGENTS.md` (managed block) + `AGENTS.md` | `experimental` |

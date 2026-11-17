@@ -68,6 +68,9 @@ test("mergeYaml preserves unrelated keys and nested mappings idempotently", () =
   assert.match(first, /temperature: 0\.2/);
   assert.match(first, /baseAgentSystemMessage: \|-/);
   assert.equal(first.split(/^chatOptions:/m).length - 1, 1);
+  const inlineEmpty = mergeYaml("chatOptions: {}\n", { chatOptions: { baseAgentSystemMessage: "ok" } });
+  assert.equal(inlineEmpty.split(/^chatOptions:/m).length - 1, 1);
+  assert.doesNotMatch(inlineEmpty, /chatOptions: \{\}/);
   assert.throws(() => mergeYaml("# dsh-forge:begin config\n", { a: 1 }), /dsh-forge YAML block/);
 });
 

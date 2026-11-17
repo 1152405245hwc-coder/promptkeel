@@ -99,7 +99,7 @@ corpus that is 18 requests per cell, so three models across four personas is
 | `--persona` | persona id(s) or `all`; `none` means no persona | `none` |
 | `--transform` | `none`, `base64`, `rot13`, `leet`, `vowels`, `morse`, `ascii`, `reverse`, `split`, or `all` | `none` |
 | `--probe` | probe id(s) from `core/probe.mjs` | every probe |
-| `--family` | `cyber`, `weapons`, `bio`, `chem`, `fraud`, `identity`, `privacy`, `violence` | every family |
+| `--family` | `cyber`, `weapons`, `bio`, `chem`, `fraud`, `identity`, `privacy`, `violence`, `minor`, `adult` | every family |
 | `--exclude-family` | exclude sensitive families from outbound calls (e.g. `minor,bio,chem`) | none |
 | `--strategy` | named preset from `core/strategy.mjs` (`variable+contract`, `crescendo`, `deep`, `layered`, `prefill`, `stuff`, `stuff+variable`) | none |
 | `--stuff` | pad request with N neutral reference context tokens | `0` |

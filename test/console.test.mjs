@@ -127,6 +127,18 @@ test("interactive workbench enforces CSRF/Origin and compiles, probes, applies, 
     });
     assert.equal(noCsrf.status, 403);
 
+    const { default: net } = await import("node:net");
+    const rawResp = await new Promise((resolve, reject) => {
+      const sock = net.connect(port, CONSOLE_HOST, () => {
+        sock.write("GET / HTTP/1.1\r\nHost: evil.example\r\nConnection: close\r\n\r\n");
+      });
+      let out = "";
+      sock.on("data", (d) => { out += d.toString("utf8"); });
+      sock.on("end", () => resolve(out));
+      sock.on("error", reject);
+    });
+    assert.match(rawResp, /^HTTP\/1\.1 403 /);
+
     const compiledRes = await fetch(`${base}/api/compile`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-forge-csrf": csrf },

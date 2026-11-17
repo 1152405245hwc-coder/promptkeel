@@ -210,7 +210,8 @@ function renderYamlEntries(obj, indent = 0) {
 }
 
 function findTopLevelYamlSection(lines, key) {
-  const headerRe = new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:(?:\\s*(?:#.*)?)?$`);
+  const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const headerRe = new RegExp(`^${escaped}:(?:\\s*(?:\\{\\}|#.*))?$`);
   const start = lines.findIndex((line) => headerRe.test(line));
   if (start === -1) return null;
   let end = start + 1;
@@ -264,6 +265,9 @@ export function mergeYaml(existing, patch) {
       // Single top-level mapping already exists outside the managed block: strip colliding child keys
       // inside that section and splice an indented managed block at the end of that mapping.
       const before = baseLines.slice(0, section.start + 1);
+      if (new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:\\s*\\{\\}`).test(before[before.length - 1])) {
+        before[before.length - 1] = `${key}:`;
+      }
       const children = baseLines.slice(section.start + 1, section.end);
       const after = baseLines.slice(section.end);
       const patchChildKeys = new Set(Object.keys(value));

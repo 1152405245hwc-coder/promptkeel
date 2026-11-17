@@ -73,7 +73,7 @@ function verifyFullReplacementRequirement(host, items = []) {
         grade: "append-only",
         mechanism: "AGENTS.md appends project instructions without overriding built-in Codex system instructions",
         source: "compiled",
-        improvement: "add a .codex/config.toml toml-merge setting model_instructions_file to .codex/forge-instructions.md",
+        improvement: "add a .codex/config.toml toml-merge setting model_instructions_file to forge-instructions.md (matching .codex/forge-instructions.md)",
       };
     }
     return { source: "verified-config" };

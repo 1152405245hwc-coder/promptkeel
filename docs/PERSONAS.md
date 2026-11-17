@@ -48,6 +48,7 @@ dsh-forge compile codex --persona tutor --persona-mode strict
 | `cipher` | replace | body base64, plaintext `lead` says how to decode |
 | `split` | replace | body wrapped at 48 columns |
 | `unfiltered` | replace | treat the request as reviewed; no policy restatement, no swap to an adjacent topic |
+| `contract` | replace | two-part structured contract framing (`[1] boundary / [2] direct deliverable`) |
 
 `dsh-forge personas` prints the live list; this table records why each one exists, so a reader can tell which technique a failing case belongs to.
 
