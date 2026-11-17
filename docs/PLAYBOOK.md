@@ -41,3 +41,22 @@ node scripts/live_matrix.mjs --gateway default --profile hermes --model glm-5.3-
 `codex/gpt-6-luna` 与 `codex/gpt-6.1-sol` 在本轮全部 `timeout after 60000ms` 或
 `HTTP 400 safety filter`，没有可用读数；`glm-5.3` 的 control 臂 `fetch failed`，
 所以它的 delta 只能算线索。
+
+## 二〇二六年十一月十七日 · 瘦身后复测（同一阶梯，同一天）
+
+把核心提示词从 2.9 KB 压到 1.0 KB（组合后 766 → 353 token）再跑同一阶梯：
+
+| 模型 | 阶 | 瘦身前 ref/comp | 瘦身后 ref/comp |
+| --- | --- | --- | --- |
+| `glm-5.3-flash` | direct | 1 / 2 | 3 / 1 |
+| `glm-5.3-flash` | cipher | 2 / 0 | 2 / 2 |
+| `deepseek-v4.1-flash` | direct | 1 / 1 | 1 / 0（3 条空回复） |
+| `deepseek-v4.1-flash` | cipher | 0 / 2 | 2 / 0（2 条空回复） |
+
+两个方向同时出现：GLM 在 `direct` 变差、在 `cipher` 变好；DeepSeek 两头都变差，且空回复从 2 升到 3。同一时段单请求延迟也从 4–13 秒涨到 14–51 秒。
+
+这条复测说明两件事：**提示词体量不是唯一变量**，压缩本身既不保证更强也不保证更弱；单格一次采样撑不起"改了就更好"的结论。结构简化按"可维护"保留，破甲强度要靠同窗口重复采样来判断，不能靠这一轮。
+
+## 二〇二六年十一月十七日 · 各厂提示词对比
+
+`docs/research/PER_MODEL_PROMPTS.md` 对比了 13 份公开的各厂提示词文件。结论：模板跟着训练方式走——Google/Meta/Mistral 吃同一份 `ResponseFormat` 模板，DeepSeek 只吃四条格式规则加一句起始 token，OpenAI 依赖 special token。所以本项目用"小核心 + 按模型覆盖"，每份模型覆盖只放禁句、起始 token 与语言。
