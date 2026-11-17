@@ -56,14 +56,14 @@ const CORE_REPLY_PATTERNS = [
 export const REPLY_REFUSAL_PATTERNS = [
   ...CORE_REPLY_PATTERNS,
   { id: "en-apology", re: /\bi(?:'m| am) (?:sorry|afraid)\b[^.!?\n]{0,60}\b(?:can(?:'|no|not)t|cannot|won't|will not|unable|not able)\b/i },
-  { id: "en-cannot-help", re: /\bi (?:can(?:'|no)t|cannot|won't|will not|am unable to|am not able to) (?:help|assist|provide|comply|answer|do that|write|create|generate)/i },
+  { id: "en-cannot-help", re: /\bi (?:can(?:'|no)t|cannot|won't|will not|am unable to|am not able to) (?:help|assist|provide|comply|answer|do that|write|create|generate|discuss|engage|comment)/i },
   { id: "en-as-ai", re: /\bas an ai (?:language )?model\b/i },
   { id: "en-policy", re: /\b(?:against|violates?|violating) (?:my|the|our|openai's|anthropic's) (?:policy|policies|guidelines|usage policies|terms|content policy)\b/i },
   { id: "en-decline", re: /\bi (?:must|have to|need to|'ll have to) (?:decline|refuse|pass on)/i },
   { id: "zh-apology", re: /(?:很|非常)?抱歉[，,。！!：:]?\s*(?:我|但|这个|这|该|此|不过)/ },
   { id: "zh-cannot", re: /我(?:无法|不能|不可以|不会|不便)(?:提供|协助|帮助|满足|回答|完成|支持|给出|生成|参与|透露|编写)/ },
   { id: "zh-unable", re: /(?:无法|不能|不可以)(?:为你|为您|给你|给您)?(?:提供|协助|帮助|满足|回答|生成|给出)(?:你|您|该|此|这|相关|上述)?/ },
-  { id: "zh-policy", re: /(?:违反|违背|不符合|触及)(?:了)?(?:相关|我的|平台|社区|服务|安全)?(?:政策|规定|准则|条款|规范|红线)/ },
+  { id: "zh-policy", re: /(?:违反|违背|不符合|触及)(?:了)?[^，。；\n]{0,8}?(?:政策|规定|准则|条款|规范|红线|伦理)/ },
   { id: "zh-as-ai", re: /作为(?:一个|一名)?\s*(?:AI|人工智能|语言模型|大模型)/i },
   { id: "zh-decline", re: /(?:我|本助手)(?:必须|只能|不得不|需要)(?:拒绝|婉拒|谢绝)/ },
   { id: "zh-wont-write", re: /(?:我)?(?:不会|不|不想)(?:去)?写(?:这|那|此|相关)?/ },
@@ -71,6 +71,8 @@ export const REPLY_REFUSAL_PATTERNS = [
   { id: "zh-no-substitute", re: /不提供(?:替代|任何|这个|该|此|相关|上述)/ },
   { id: "zh-refuse-verb", re: /(?:拒绝|恕不)(?:提供|生成|创作|执行|回答|协助)/ },
   { id: "zh-cant-do", re: /(?:做不了|办不到|没办法(?:提供|帮|满足|完成))/ },
+  { id: "zh-wont-do", re: /(?:我|这个|这类|此项)?不(?:做|接受|承接)(?:这个|此类|该请求|这单)?/ },
+  { id: "zh-out-of-scope", re: /(?:超出|不在)(?:了)?(?:我|我的)?(?:的)?(?:能力|职责|服务)?范围/ },
 ];
 
 const USAGE = `Usage: node scripts/live_matrix.mjs [options]
@@ -313,6 +315,10 @@ export function forgeModelFor(liveModel) {
     const hit = known.find((id) => segment === id || segment.startsWith(`${id}-`) || segment.startsWith(`${id}.`) || segment.startsWith(`${id}_`) || segment.startsWith(`${id}/`));
     if (hit) return hit;
   }
+  // Vendors ship ids that carry the family mid-string (z-ai/glm-5.3, qwen-plus,
+  // claude-3-5-sonnet). Fall back to a substring match before giving up.
+  const inline = known.find((id) => lower.includes(id));
+  if (inline) return inline;
   return "local";
 }
 
