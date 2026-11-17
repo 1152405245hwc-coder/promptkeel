@@ -193,10 +193,10 @@ test("gateway handles four-turn layered strategy, token starvation recovery, and
         assert.equal(body.max_tokens, 1200);
         return { ok: false, status: 502, async text() { return JSON.stringify({ error: { message: "Command Code: an empty reply — cut at its length, the whole output spent on reasoning" } }); } };
       }
-      assert.equal(body.max_tokens, 3600);
+      assert.equal(body.max_tokens, 4800);
       return { ok: true, status: 200, async text() { return JSON.stringify({ choices: [{ message: { content: "1. recovered" }, finish_reason: "stop" }] }); } };
     },
   });
   assert.equal(recovered502.status, "ok");
-  assert.equal(recovered502.retriedAtTokens, 3600);
+  assert.equal(recovered502.retriedAtTokens, 4800);
 });
