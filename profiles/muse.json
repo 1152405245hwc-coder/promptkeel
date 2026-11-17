@@ -1,0 +1,30 @@
+{
+  "schema": "forge.profile/v1",
+  "version": "0.1.0",
+  "prompt": {
+    "core": "core.md"
+  },
+  "model": "local",
+  "id": "muse",
+  "name": "Muse",
+  "host": "muse",
+  "support": "unsupported",
+  "capabilities": {
+    "prompt": "unsupported",
+    "approval": "unsupported",
+    "sandbox": "unsupported",
+    "tools": "unsupported",
+    "rollback": "unsupported"
+  },
+  "targets": [
+    {
+      "kind": "prompt-only"
+    }
+  ],
+  "risk": "low",
+  "mutatesHost": false,
+  "requiresRestart": false,
+  "activationEvidence": [
+    "config"
+  ]
+}

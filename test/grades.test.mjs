@@ -38,7 +38,7 @@ test("append-only hosts without a shim report the improvement", () => {
 
 test("gradeTable covers every profile and keeps support level", () => {
   const rows = gradeTable(listProfiles());
-  assert.equal(rows.length, 10);
+  assert.equal(rows.length, listProfiles().length);
   const dsh = rows.find((row) => row.id === "dsh");
   assert.equal(dsh.support, "verified");
   assert.equal(dsh.grade, "replace-with-residue");

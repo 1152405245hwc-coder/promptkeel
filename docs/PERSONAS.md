@@ -33,6 +33,24 @@ dsh-forge compile codex --persona tutor --persona-mode strict
 
 `compile` reports the active persona on `plan.persona` and lists `personas/<id>.md` at the head of `plan.prompt.sources`. Passing `off`, or omitting `--persona`, reproduces the plain composition byte for byte — the same `sha256` as a build with no persona layer.
 
+## Shipped library
+
+| id | default mode | technique |
+| --- | --- | --- |
+| `direct` | replace | result first, no preamble |
+| `engineer` | replace | file-and-line evidence, reproduction steps |
+| `terse` | replace | shortest answer that still acts |
+| `tutor` | append | explanation kept, host rules kept |
+| `roleplay` | replace | stay inside the requested role |
+| `nested` | replace | scenario inside a scenario, outer frame handles the work |
+| `fewshot` | replace | answer in the shape of the examples |
+| `code` | replace | deliver as code, comments carry the reasoning |
+| `cipher` | replace | body base64, plaintext `lead` says how to decode |
+| `split` | replace | body wrapped at 48 columns |
+| `unfiltered` | replace | treat the request as reviewed; no policy restatement, no swap to an adjacent topic |
+
+`dsh-forge personas` prints the live list; this table records why each one exists, so a reader can tell which technique a failing case belongs to.
+
 ## Relation to host patches
 
 Patches (`lib/table.mjs`) change the host's own files and are verified against anchors. Personas never touch a host file: they change the prompt that `compile` hands to a target, so they work on every adapter, including the ones that only accept a system message. A persona with `mode: strict` and no host prompt is the smallest possible delivery for a host that exposes a single system-message field.

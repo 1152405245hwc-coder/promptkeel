@@ -36,7 +36,7 @@
 | **Verification** | Visual status badge only | 3-stage proof check (`proof1-patches`, `proof2-prompt`, `proof3-session` on `session.v4.jsonl.zstd`) + 12-check `doctor` |
 | **Control Panel** | 650+ KB external bundle | **20 KB 无依赖侧栏包**（`Overview` `Patches` `Grades` `Personas` `Prompt` `Policy` `Logs`） |
 | **Backup & Rollback** | Single `.bak` file overwritten on re-run | Timestamped `manifest.json` + original file `sha256` + `hostVersion` guard + symlink refusal (`lstatSync`) |
-| **Cross-Host Portability** | Locked to a single host | Adapter registry + pure compiler + transactional executor across 10 host profiles |
+| **Cross-Host Portability** | Locked to a single host | Adapter registry + pure compiler + transactional executor across 13 host profiles |
 
 ---
 
@@ -110,6 +110,9 @@ DSH is the native full-capability target. The same modular prompt and transactio
 | **Aider** | `aider` | `CONVENTIONS.md` (managed block) | `experimental` |
 | **Continue** | `continue` | `.continue/rules/dsh-forge.md` (managed block) | `experimental` |
 | **Generic API / Local Weights** | `generic` | System prompt payload only (`prompt-only`) | `experimental` |
+| **Hermes** | `hermes` | `~/.hermes/SOUL.md` (managed block) + `.hermes.md` | `experimental` |
+| **OpenClaw / AutoClaw** | `openclaw` | `~/.kimi_openclaw/workspace/AGENTS.md` (managed block) + `AGENTS.md` | `experimental` |
+| **Muse** | `muse` | system prompt payload only — the shipped prompt lives behind the app seal | `unsupported` |
 
 ```bash
 # 1. Pure compile: inspect or export the execution plan without touching any host files
@@ -291,6 +294,7 @@ npm run pack:check
 - **[docs/GRADES.md](docs/GRADES.md)** — Delivery grades per host with the mechanism and evidence behind each one.
 - **[docs/CHANNELS.md](docs/CHANNELS.md)** — Channel classification, effect timing, and the `shim` wrapper.
 - **[docs/PERSONAS.md](docs/PERSONAS.md)** — Persona file format and the four composition modes.
+- **[docs/LIVE_MATRIX.md](docs/LIVE_MATRIX.md)** — Real model matrix: point the harness at any OpenAI-compatible endpoint and read what each model answers.
 - **[docs/AUDIT.md](docs/AUDIT.md)** — 操作日志、跨天 `audit` 查询与快照保留策略。
 - **[docs/CONSOLE.md](docs/CONSOLE.md)** — Loopback console routes, single-instance lock, and why the page matches the CLI.
 - **[docs/DEBUG.md](docs/DEBUG.md)** — Troubleshooting decision tree, common error codes, and post-install smoke checks.

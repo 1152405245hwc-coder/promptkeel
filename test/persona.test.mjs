@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import os from "node:os";
 import path from "node:path";
 import { applyPersona, listPersonas, loadPersona, PERSONA_MODES } from "../core/persona.mjs";
@@ -16,7 +17,8 @@ const parts = [
 test("persona library ships the documented technique families", () => {
   const rows = listPersonas();
   const ids = rows.map((row) => row.id);
-  assert.deepEqual(ids, ["cipher", "code", "direct", "engineer", "fewshot", "nested", "roleplay", "split", "terse", "tutor"]);
+  const onDisk = fs.readdirSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "prompt", "personas")).filter((name) => name.endsWith(".md")).map((name) => name.slice(0, -3)).sort();
+  assert.deepEqual(ids, [...onDisk].sort());
   for (const row of rows) {
     assert.ok(PERSONA_MODES.includes(row.mode), `${row.id} declares ${row.mode}`);
     assert.ok(["none", "base64", "rot13", "leet", "vowels", "morse", "ascii", "reverse", "split"].includes(row.transform), `${row.id} declares transform ${row.transform}`);

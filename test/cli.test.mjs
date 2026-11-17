@@ -57,10 +57,11 @@ test("profiles and models CLI commands return valid catalogs", () => {
   const profResult = run(["profiles", "--json"]);
   assert.doesNotMatch(profResult.stdout, /\/Users\//);
   const profs = JSON.parse(profResult.stdout);
-  assert.equal(profs.profiles.length, 10);
+  const hostDirs = fs.readdirSync(path.join(import.meta.dirname, "..", "profiles")).filter((f) => f.endsWith(".json"));
+  assert.equal(profs.profiles.length, hostDirs.length);
   assert.deepEqual(
     profs.profiles.map((profile) => profile.id).sort(),
-    ["aider", "claude-code", "codex", "continue", "cursor", "dsh", "gemini", "generic", "opencode", "windsurf"],
+    hostDirs.map((f) => f.replace(/\.json$/, "")).sort(),
   );
   const modelResult = run(["models", "--json"]);
   assert.doesNotMatch(modelResult.stdout, /\/Users\//);

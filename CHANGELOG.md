@@ -5,6 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Sem
 ## [Unreleased]
 
 ### Added
+- Live matrix reaches a local gateway: `--gateway <url|default>` targets an OpenAI-compatible
+  endpoint that needs no key, `--list-models` prints what it advertises, and prefixed ids
+  (`codex/gpt-6-luna`, `commandcode/deepseek/deepseek-v4-pro`) resolve to the right forge model.
+  `--control` adds a prompt-free arm per model and probe so every forge cell has a baseline.
+- Report separates four outcomes instead of two: `refused`, `blocked` (provider filter answered
+  before the model ran), `empty` (a 200 with no text) and `compliant` (a non-refusal with code,
+  steps or prose). Refusal detection gained the phrase shapes that were slipping through
+  (`我不会写`, `不能执行`, `不提供替代`, `拒绝生成`, `做不了`).
+- Persona `unfiltered`: treats the request as already reviewed and keeps the answer in the
+  requested form without restating policy or swapping in an adjacent topic.
+- Hosts `hermes`, `openclaw` and `muse`: profile targets for `~/.hermes/SOUL.md`,
+  `~/.kimi_openclaw/workspace/AGENTS.md` and a prompt-only pass-through, with grades
+  `replace-with-residue`, `append-only` and `unobservable`. Preflight now asks for rollback
+  only when a profile has a mutating target.
 
 - Payload transforms: `core/transform.mjs` implements `base64`, `rot13`, `leet`, `vowels`, `morse`, `ascii`, `reverse` and `split` with a decode path for every reversible kind. Personas declare one in frontmatter with an optional plaintext `lead`; `compile --transform <kind>` encodes the whole composed prompt. `dsh-forge transforms` prints round-trip status and expansion per kind.
 - Probe harness: `dsh-forge probe [profile] [--persona <id>] [--transform <kind>]` runs eighteen worst-case requests across ten families and measures `active`, `carry`, `identity`, `scaffold`, `budget`, `loader` and `residue` on the composed prompt without calling a model. `selfCheck()` feeds a poisoned prompt through the same path and requires it to fail, so `probe` exits non-zero when the harness stops discriminating.

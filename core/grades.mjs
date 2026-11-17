@@ -40,6 +40,21 @@ export const HOST_GRADES = {
   windsurf: { grade: "append-only", mechanism: "rule files add to the built-in prompt", source: "research" },
   opencode: { grade: "append-only", mechanism: "project instructions add to the built-in prompt", source: "research" },
   aider: { grade: "append-only", mechanism: "CONVENTIONS.md adds to the built-in prompt", source: "research" },
+  hermes: {
+    grade: "replace-with-residue",
+    mechanism: "SOUL.md replaces the persona file; config.yaml still appends its own bootstrap section",
+    source: "measured",
+  },
+  openclaw: {
+    grade: "append-only",
+    mechanism: "workspace AGENTS.md and SOUL.md add to a packaged prompt that cannot be patched without breaking the signature",
+    source: "measured",
+  },
+  muse: {
+    grade: "unobservable",
+    mechanism: "the system prompt is delivered by the service; the bundle carries feature gates only",
+    source: "measured",
+  },
   generic: {
     grade: "unobservable",
     mechanism: "protocol-level system message; nothing in the host can be observed or graded from here",

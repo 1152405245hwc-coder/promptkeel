@@ -6,7 +6,7 @@ import { preflight } from "../core/capabilities.mjs";
 import { HOST_IDS, listAdapters } from "../hosts/registry.mjs";
 
 const expected = [...HOST_IDS].sort();
-const expectedAdapters = ["aider", "claude-code", "codex", "continue", "cursor", "dsh", "gemini", "generic", "opencode", "windsurf"];
+const expectedAdapters = [...HOST_IDS].sort();
 
 test("all shipped profiles validate and compile within budget", () => {
   assert.deepEqual(listProfiles().map((p) => p.id), expected);

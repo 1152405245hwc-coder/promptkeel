@@ -41,6 +41,30 @@ test("dry-run reports every patch in the table as hittable", (t) => {
   assert.ok(report.patches.every((p) => p.status === "hit"));
 });
 
+test("every patch entry is complete, well-typed and uniquely named", () => {
+  const layers = new Set(PATCHES.map((patch) => patch.layer));
+  assert.equal(layers.size, 5);
+  const ids = PATCHES.map((patch) => patch.id);
+  assert.equal(new Set(ids).size, ids.length);
+  for (const patch of PATCHES) {
+    assert.match(patch.id, /^[a-z0-9]+(?:-[a-z0-9]+)+$/, `id shape: ${patch.id}`);
+    assert.ok(patch.title.length >= 12, `title: ${patch.id}`);
+    assert.ok(["code", "prompt"].includes(patch.kind), `kind: ${patch.id}`);
+    assert.equal(typeof patch.required, "boolean", `required: ${patch.id}`);
+    assert.ok(patch.versions.length > 0, `versions: ${patch.id}`);
+    assert.ok(patch.why.length > 40, `why: ${patch.id}`);
+    const replacements = replacementsOf(patch);
+    assert.ok(replacements.length > 0, `replacements: ${patch.id}`);
+    for (const entry of replacements) {
+      assert.equal(typeof entry.find, "string", `find: ${patch.id}`);
+      assert.equal(typeof entry.replace, "string", `replace: ${patch.id}`);
+      assert.ok(entry.find.length > 8, `find too short: ${patch.id}`);
+    }
+    assert.equal(typeof patch.marker, "string", `marker: ${patch.id}`);
+    assert.ok(patch.marker.length > 8, `marker too short: ${patch.id}`);
+  }
+});
+
 test("apply then verify then revert restores every byte", (t) => {
   const hostRoot = fixture(t);
   const dshHome = tmpDir(t, "forge-home-");

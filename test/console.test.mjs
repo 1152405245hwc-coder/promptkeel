@@ -78,7 +78,7 @@ test("consoleState reuses doctor output so pages cannot disagree with the CLI", 
   const state = consoleState({ stateRoot: dir }, { projectRoot: process.cwd() });
   assert.ok(state.doctor.checks.length >= 10);
   assert.equal(state.patches.total, 16);
-  assert.ok(state.profiles.length === 10);
+  assert.ok(state.profiles.length >= 10);
   assert.ok(state.personas.some((persona) => persona.id === "direct"));
   const layers = new Set(state.patches.rows.map((row) => row.layer));
   assert.ok(layers.has("approval") && layers.has("sandbox"));

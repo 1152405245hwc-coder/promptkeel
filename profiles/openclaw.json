@@ -1,0 +1,39 @@
+{
+  "schema": "forge.profile/v1",
+  "version": "0.1.0",
+  "prompt": {
+    "core": "core.md"
+  },
+  "model": "local",
+  "id": "openclaw",
+  "name": "OpenClaw",
+  "host": "openclaw",
+  "support": "experimental",
+  "capabilities": {
+    "prompt": "experimental",
+    "approval": "unsupported",
+    "sandbox": "unsupported",
+    "tools": "experimental",
+    "rollback": "experimental"
+  },
+  "targets": [
+    {
+      "kind": "markdown-block",
+      "path": ".kimi_openclaw/workspace/AGENTS.md",
+      "scope": "user",
+      "blockId": "system"
+    },
+    {
+      "kind": "markdown-block",
+      "path": "AGENTS.md",
+      "scope": "project",
+      "blockId": "system"
+    }
+  ],
+  "risk": "medium",
+  "mutatesHost": true,
+  "requiresRestart": true,
+  "activationEvidence": [
+    "config"
+  ]
+}

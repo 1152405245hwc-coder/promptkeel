@@ -8,6 +8,9 @@ import * as cursor from "./cursor.mjs";
 import * as windsurf from "./windsurf.mjs";
 import * as aider from "./aider.mjs";
 import * as continuation from "./continue.mjs";
+import * as hermes from "./hermes.mjs";
+import * as openclaw from "./openclaw.mjs";
+import * as muse from "./muse.mjs";
 import { detectWithAdapter, normalizeAdapter } from "./adapter.mjs";
 import { fail } from "../core/errors.mjs";
 
@@ -24,6 +27,9 @@ export const HOSTS = {
   windsurf,
   aider,
   continue: continuation,
+  hermes,
+  openclaw,
+  muse,
 };
 export const HOST_IDS = Object.keys(HOSTS);
 

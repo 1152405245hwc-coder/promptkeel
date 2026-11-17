@@ -21,6 +21,9 @@ Current table:
 | claude-code | append-only | `--system-prompt` appends after a fixed identity block | research |
 | cursor / windsurf / opencode / aider | append-only | rule files add to the built-in prompt | research |
 | generic | unobservable | protocol-level system message | measured |
+| hermes | replace-with-residue | `SOUL.md` plus an ephemeral system prompt variable | measured |
+| openclaw | append-only | `workspace/AGENTS.md` and `openclaw.json` add to a fixed main-process identity | measured |
+| muse | unobservable | prompt assembled server-side; the local asset is inside the code signature | measured |
 
 `source: research` means the mechanism was read from host documentation and issue threads. It is recorded so a later reader can tell which rows have been confirmed by running the host here.
 
