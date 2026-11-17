@@ -51,6 +51,7 @@ core.md ──▶ models/<model>.md ──▶ hosts/<host>.md ──▶ modes/<m
 | `gpt` | `prompt/models/gpt.md` | `codex`, `cursor`, `windsurf`, `aider`, `continue`, `generic` | Decisive answer with falsifier and copy-pasteable commands |
 | `gemini` | `prompt/models/gemini.md` | `gemini`, `generic` | Numbered multi-step execution and verification evidence |
 | `qwen` | `prompt/models/qwen.md` | `opencode`, `generic` | Simplified Chinese default, direct tool execution |
+| `glm` | `prompt/models/glm.md` | `generic`, `hermes`, `openclaw` | Simplified Chinese default, answer in the requested form |
 | `local` | `prompt/models/local.md` | `generic` | Short single-task paragraphs for open-weight models |
 
 ## 3. Core Guarantees

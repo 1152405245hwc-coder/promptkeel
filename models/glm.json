@@ -1,0 +1,9 @@
+{
+  "schema": "forge.model/v1",
+  "id": "glm",
+  "name": "GLM",
+  "version": "0.1.0",
+  "prompt": "models/glm.md",
+  "hosts": ["generic", "hermes", "openclaw"],
+  "effects": ["P", "T", "S", "W", "M"]
+}

@@ -66,7 +66,8 @@ test("profiles and models CLI commands return valid catalogs", () => {
   const modelResult = run(["models", "--json"]);
   assert.doesNotMatch(modelResult.stdout, /\/Users\//);
   const mods = JSON.parse(modelResult.stdout);
-  assert.equal(mods.models.length, 6);
+  const modelDirs = fs.readdirSync(path.join(import.meta.dirname, "..", "models")).filter((f) => f.endsWith(".json"));
+  assert.equal(mods.models.length, modelDirs.length);
 });
 
 test("profile apply preview rejects a changed target", () => {

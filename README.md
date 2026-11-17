@@ -65,7 +65,7 @@ dsh-forge/
 │   ├── registry.mjs        # Host catalog (detectHost, detectAll)
 │   └── *.mjs               # dsh, claude-code, codex, gemini, opencode, generic, cursor, windsurf, aider, continue
 ├── profiles/               # Declarative target profiles for the ten registered adapters
-├── models/                 # Model family metadata & overlay bindings (deepseek, claude, gpt, gemini, qwen, local)
+├── models/                 # Model family metadata & overlay bindings (deepseek, claude, gpt, gemini, qwen, glm, local)
 ├── prompt/                 # Modular prompt sources
 │   ├── core.md             # Base execution rubric (routing, boundary handling, A-D evidence grading)
 │   ├── adapters/           # DSH runtime adapters (deepseek, generic)
