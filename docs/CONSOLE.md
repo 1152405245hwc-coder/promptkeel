@@ -38,3 +38,12 @@ The default state directory is `$HOME/.dsh/dsh-forge`; `--state` points it elsew
 The console does not recompute anything. `consoleState()` calls `doctor()` and renders its result, so a page and `dsh-forge doctor` cannot disagree about the same host. Profiles are compiled with the current working directory as `projectRoot`, and a profile that fails to compile is shown with its error instead of disappearing from the table.
 
 Requests never reach the host, the filesystem, or the network beyond `127.0.0.1`. A failure inside the state builder is rendered as `{"error": "..."}`; the page still answers, and the failure stays visible rather than turning into an empty panel.
+
+## Design
+
+Both surfaces share one palette so a screenshot of either is recognisable as dsh-forge: `#0b0e13` background, `#141b24` panel, `#232d3a` rule, amber `#f0b35b` for the brand and the active route, and semantic chips (green ready/ok, amber partial/research, red drift/unobservable).
+
+- **Console** renders server-side HTML with no script at all. A sticky bar holds the brand mark, the route pills and two read-only chips; each page starts with a title, a one-line subtitle naming what the page proves, then metric cards and dense tables. Route highlighting comes from the server (`aria-current="page"`), so a page never claims a section it is not.
+- **Sidebar** keeps the dependency-free `React.createElement` source and adds the `Grades` and `Personas` tabs on top of the existing five. Tables scroll horizontally inside their section, so the panel survives the narrow DSH column.
+- Metric cards carry a thin progress meter when a ratio exists (patches ready, checks passing). The meter turns amber whenever the ratio is below 100%, which is the only signal colour either surface uses for "less than whole".
+- Print styles drop the chrome; a printed console page is a white sheet with tables only.

@@ -30,7 +30,7 @@
 | **Host Patch Surface** | 80+ brittle UI & runtime string replacements that break on minor host updates | **8 version-gated patches** across 5 `@deepseek-ai/*` files with per-version `variants` support |
 | **Prompt Composition** | Monolithic hardcoded prompt or ad-hoc session file edits | Modular `core + model/adapter + host + mode` pipeline (~693 tokens default), `<= 3200` token gate, and `sha256` header |
 | **Verification** | Visual status badge only | 3-stage proof check (`proof1-patches`, `proof2-prompt`, `proof3-session` on `session.v4.jsonl.zstd`) + 12-check `doctor` |
-| **Control Panel** | 650+ KB external bundle | **15 KB dependency-free sidebar bundle** (`Overview`, `Patches`, `Prompt`, `Policy`, `Logs`) |
+| **Control Panel** | 650+ KB external bundle | **20 KB dependency-free sidebar bundle** (`Overview`, `Patches`, `Grades`, `Personas`, `Prompt`, `Policy`, `Logs`) |
 | **Backup & Rollback** | Single `.bak` file overwritten on re-run | Timestamped `manifest.json` + original file `sha256` + `hostVersion` guard + symlink refusal (`lstatSync`) |
 | **Cross-Host Portability** | Locked to a single host | Adapter registry + pure compiler + transactional executor across 10 host profiles |
 

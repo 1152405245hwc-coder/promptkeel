@@ -83,3 +83,18 @@ test("consoleState reuses doctor output so pages cannot disagree with the CLI", 
   const layers = new Set(state.patches.rows.map((row) => row.layer));
   assert.ok(layers.has("approval") && layers.has("sandbox"));
 });
+
+test("pages carry the console design system and highlight the current route", () => {
+  const html = renderOverview(fixture);
+  assert.match(html, /class="top"/);
+  assert.match(html, /class="grid"/);
+  assert.match(html, /class="card"/);
+  assert.match(html, /aria-current="page">overview/);
+  assert.doesNotMatch(html, /<script/);
+});
+
+test("the sidebar bundle ships the grade and persona tabs", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const bundle = await readFile(new URL("../client/client.js", import.meta.url), "utf8");
+  for (const label of ["分级", "人设", "df-personas", "df-badge"]) assert.ok(bundle.includes(label), label);
+});

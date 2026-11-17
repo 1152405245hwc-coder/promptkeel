@@ -95,6 +95,15 @@ test("API route handler serves prompt, rejects invalid JSON/policy/content-type,
   assert.equal(promptBody.ok, true);
   assert.ok(promptBody.tokens > 500);
 
+  const statusRes = fake();
+  await route.handler(makeReq("GET", "/dsh-forge/api/status"), statusRes);
+  assert.equal(statusRes.code, 200);
+  const statusBody = JSON.parse(statusRes.body);
+  assert.equal(statusBody.grades.length, 10);
+  assert.ok(statusBody.grades.every((row) => typeof row.grade === "string"));
+  assert.equal(statusBody.personas.length, 3);
+  assert.ok(statusBody.personas.every((row) => row.id && row.mode));
+
   const badJsonRes = fake();
   await route.handler(
     makeReq("POST", "/dsh-forge/api/policy", {

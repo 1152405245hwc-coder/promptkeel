@@ -15,6 +15,8 @@ const NS = "dsh-forge";
 const TABS = [
   { id: "overview", label: "总览" },
   { id: "patches", label: "补丁" },
+  { id: "grades", label: "分级" },
+  { id: "personas", label: "人设" },
   { id: "prompt", label: "提示词" },
   { id: "policy", label: "策略" },
   { id: "logs", label: "日志" },
@@ -32,56 +34,70 @@ function api(path, options) {
 }
 
 const css = `
-.df-root{--df-bg:#0d1014;--df-panel:#141920;--df-panel2:#1a212a;--df-line:#26303b;--df-text:#e6edf3;--df-dim:#8b98a5;--df-amber:#f0b35b;--df-green:#5fd39b;--df-red:#ef6b73;--df-blue:#6cb6ff;
-position:absolute;inset:0;display:flex;flex-direction:column;background:var(--df-bg);color:var(--df-text);font-family:"SF Pro Text","PingFang SC",system-ui,sans-serif;font-size:13px;overflow:hidden}
-.df-head{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--df-line);background:linear-gradient(180deg,#151b22,#10151b)}
-.df-logo{font:700 15px/1 "SF Mono",ui-monospace,monospace;letter-spacing:.12em;color:var(--df-amber)}
-.df-pill{padding:3px 9px;border-radius:999px;font-size:11px;border:1px solid var(--df-line);color:var(--df-dim)}
-.df-pill.ok{color:var(--df-green);border-color:rgba(95,211,155,.35);background:rgba(95,211,155,.08)}
-.df-pill.bad{color:var(--df-red);border-color:rgba(239,107,115,.35);background:rgba(239,107,115,.08)}
-.df-tabs{display:flex;gap:2px;padding:0 14px;border-bottom:1px solid var(--df-line);background:#11161c}
-.df-tab{padding:10px 14px;color:var(--df-dim);cursor:pointer;border-bottom:2px solid transparent;background:none;border-top:0;border-left:0;border-right:0;font:inherit}
+.df-root{--df-bg:#0b0e13;--df-panel:#141b24;--df-panel2:#18212c;--df-line:#232d3a;--df-text:#e7eef6;--df-dim:#8a97a6;--df-mute:#5d6a79;--df-amber:#f0b35b;--df-green:#5fd39b;--df-red:#ef6b73;--df-blue:#6cb6ff;
+position:absolute;inset:0;display:flex;flex-direction:column;background:radial-gradient(900px 460px at 12% -14%,#16202b 0,#0b0e13 60%);color:var(--df-text);font-family:"SF Pro Text","PingFang SC",system-ui,sans-serif;font-size:13px;overflow:hidden}
+.df-head{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--df-line);background:rgba(11,14,19,.86)}
+.df-mark{width:20px;height:20px;border-radius:5px;display:grid;place-items:center;font:700 10px/1 "SF Mono",ui-monospace,monospace;color:#1a1206;background:linear-gradient(145deg,rgba(240,179,91,.95),rgba(240,179,91,.3));box-shadow:inset 0 0 0 1px rgba(240,179,91,.4)}
+.df-logo{font:700 11.5px/1 "SF Mono",ui-monospace,monospace;letter-spacing:.16em;color:var(--df-amber)}
+.df-pill{padding:2px 7px;border-radius:6px;font-size:10.5px;border:1px solid var(--df-line);color:var(--df-dim);white-space:nowrap}
+.df-pill.ok{color:var(--df-green);border-color:rgba(95,211,155,.34);background:rgba(95,211,155,.08)}
+.df-pill.bad{color:var(--df-red);border-color:rgba(239,107,115,.34);background:rgba(239,107,115,.08)}
+.df-tabs{display:flex;gap:1px;padding:0 8px;border-bottom:1px solid var(--df-line);background:#10151c;overflow-x:auto;scrollbar-width:none}
+.df-tabs::-webkit-scrollbar{display:none}
+.df-tab{padding:9px 9px;color:var(--df-dim);cursor:pointer;border:0;border-bottom:2px solid transparent;background:none;font:inherit;font-size:12px;white-space:nowrap;transition:color .15s ease}
 .df-tab:hover{color:var(--df-text)}
-.df-tab.on{color:var(--df-amber);border-bottom-color:var(--df-amber)}
-.df-body{flex:1;overflow:auto;padding:18px 20px}
-.df-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px}
-.df-card{background:var(--df-panel);border:1px solid var(--df-line);border-radius:10px;padding:12px 14px}
-.df-card .k{font-size:11px;color:var(--df-dim);margin-bottom:6px}
-.df-card .v{font:600 20px/1.1 "SF Mono",ui-monospace,monospace}
-.df-sec{background:var(--df-panel);border:1px solid var(--df-line);border-radius:10px;margin-bottom:14px;overflow:hidden}
-.df-sec h3{margin:0;padding:10px 14px;font-size:12px;letter-spacing:.08em;color:var(--df-dim);border-bottom:1px solid var(--df-line);background:var(--df-panel2);font-weight:600}
-.df-row{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid rgba(38,48,59,.55)}
+.df-tab.on{color:var(--df-amber);border-bottom-color:var(--df-amber);font-weight:600}
+.df-body{flex:1;overflow:auto;padding:14px}
+.df-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.df-card{background:linear-gradient(180deg,var(--df-panel2),var(--df-panel));border:1px solid var(--df-line);border-radius:10px;padding:10px 11px}
+.df-card .k{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--df-mute);margin-bottom:5px}
+.df-card .v{font:650 17px/1.15 "SF Mono",ui-monospace,monospace;letter-spacing:-.02em}
+.df-card .hint{margin-top:4px;font-size:10.5px;color:var(--df-dim)}
+.df-meter{margin-top:7px;height:4px;border-radius:999px;background:#1d2632;overflow:hidden}
+.df-meter i{display:block;height:100%;background:linear-gradient(90deg,var(--df-green),#8ee0ba)}
+.df-meter.warn i{background:linear-gradient(90deg,var(--df-amber),#f6d09a)}
+.df-sec{background:var(--df-panel);border:1px solid var(--df-line);border-radius:10px;margin-bottom:11px;overflow:hidden}
+.df-sec h3{margin:0;padding:9px 12px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--df-dim);border-bottom:1px solid var(--df-line);background:var(--df-panel2);font-weight:600}
+.df-row{display:flex;align-items:center;gap:9px;padding:8px 12px;border-bottom:1px solid rgba(35,45,58,.6)}
 .df-row:last-child{border-bottom:0}
-.df-dot{width:7px;height:7px;border-radius:50%;flex:none}
-.df-dot.ok{background:var(--df-green)}.df-dot.warn{background:var(--df-amber)}.df-dot.fail{background:var(--df-red)}
-.df-name{width:180px;flex:none;color:var(--df-text)}
-.df-detail{color:var(--df-dim);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.df-btn{padding:6px 12px;border-radius:7px;border:1px solid var(--df-line);background:var(--df-panel2);color:var(--df-text);cursor:pointer;font:inherit}
+.df-dot{width:6px;height:6px;border-radius:50%;flex:none;background:var(--df-mute)}
+.df-dot.ok{background:var(--df-green)}.df-dot.warn{background:var(--df-amber)}.df-dot.fail,.df-dot.bad{background:var(--df-red)}
+.df-name{width:120px;flex:none;color:var(--df-text);font-size:12px}
+.df-detail{color:var(--df-dim);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:"SF Mono",ui-monospace,monospace}
+.df-btn{padding:5px 10px;border-radius:7px;border:1px solid var(--df-line);background:var(--df-panel2);color:var(--df-text);cursor:pointer;font:inherit;font-size:12px;transition:border-color .15s ease,color .15s ease}
 .df-btn:hover{border-color:var(--df-amber);color:var(--df-amber)}
+.df-btn:focus-visible{outline:2px solid rgba(240,179,91,.6);outline-offset:1px}
 .df-btn.primary{border-color:rgba(240,179,91,.5);background:rgba(240,179,91,.12);color:var(--df-amber)}
 .df-btn.danger{border-color:rgba(239,107,115,.4);color:var(--df-red)}
 .df-btn:disabled{opacity:.45;cursor:default}
-.df-toolbar{display:flex;gap:8px;margin-bottom:12px;align-items:center}
+.df-toolbar{display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap}
 .df-spacer{flex:1}
+.df-scroll{overflow-x:auto}
 .df-table{width:100%;border-collapse:collapse}
-.df-table th{text-align:left;font-size:11px;color:var(--df-dim);padding:8px 14px;border-bottom:1px solid var(--df-line);font-weight:600}
-.df-table td{padding:9px 14px;border-bottom:1px solid rgba(38,48,59,.55);vertical-align:middle}
+.df-table th{text-align:left;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--df-mute);padding:8px 12px;border-bottom:1px solid var(--df-line);font-weight:600;white-space:nowrap}
+.df-table td{padding:8px 12px;border-bottom:1px solid rgba(35,45,58,.6);vertical-align:middle}
 .df-table tr:last-child td{border-bottom:0}
-.df-mono{font-family:"SF Mono",ui-monospace,monospace;font-size:12px}
-.df-badge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:11px;border:1px solid var(--df-line);color:var(--df-dim)}
-.df-badge.applied{color:var(--df-green);border-color:rgba(95,211,155,.35)}
-.df-badge.hit{color:var(--df-blue);border-color:rgba(108,182,255,.35)}
-.df-badge.miss,.df-badge.missing,.df-badge.partial,.df-badge.ambiguous{color:var(--df-red);border-color:rgba(239,107,115,.35)}
-.df-pre{margin:0;padding:14px;background:#0a0e12;border-radius:0;max-height:420px;overflow:auto;font:12px/1.55 "SF Mono",ui-monospace,monospace;color:#c8d3de;white-space:pre-wrap}
-.df-policy{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.df-opt{padding:14px;border:1px solid var(--df-line);border-radius:10px;cursor:pointer;background:var(--df-panel)}
-.df-opt.on{border-color:var(--df-amber);background:rgba(240,179,91,.06)}
-.df-opt b{display:block;margin-bottom:6px}
-.df-opt span{color:var(--df-dim);font-size:12px;line-height:1.5}
-.df-empty{padding:36px;text-align:center;color:var(--df-dim)}
-.df-err{padding:10px 14px;border:1px solid rgba(239,107,115,.4);background:rgba(239,107,115,.08);color:var(--df-red);border-radius:8px;margin-bottom:12px}
-.df-log{padding:7px 14px;border-bottom:1px solid rgba(38,48,59,.45);font:12px/1.5 "SF Mono",ui-monospace,monospace;color:#b9c6d2}
-.df-log time{color:var(--df-dim);margin-right:10px}
+.df-table tbody tr:nth-child(even){background:rgba(24,33,44,.4)}
+.df-mono{font-family:"SF Mono",ui-monospace,monospace;font-size:11.5px}
+.df-badge{display:inline-block;padding:1px 6px;border-radius:5px;font-size:10.5px;border:1px solid var(--df-line);color:var(--df-dim);white-space:nowrap}
+.df-badge.applied,.df-badge.ready,.df-badge.ok,.df-badge.replace-full{color:var(--df-green);border-color:rgba(95,211,155,.34);background:rgba(95,211,155,.07)}
+.df-badge.hit{color:var(--df-blue);border-color:rgba(108,182,255,.34);background:rgba(108,182,255,.07)}
+.df-badge.warn,.df-badge.partial,.df-badge.append-only,.df-badge.research{color:var(--df-amber);border-color:rgba(240,179,91,.34);background:rgba(240,179,91,.07)}
+.df-badge.miss,.df-badge.missing,.df-badge.ambiguous,.df-badge.unobservable,.df-badge.shim-only{color:var(--df-red);border-color:rgba(239,107,115,.34);background:rgba(239,107,115,.07)}
+.df-pre{margin:0;padding:12px;background:#0a0e12;max-height:420px;overflow:auto;font:11.5px/1.55 "SF Mono",ui-monospace,monospace;color:#c8d3de;white-space:pre-wrap;word-break:break-word}
+.df-policy{display:grid;gap:8px}
+.df-opt{padding:11px 12px;border:1px solid var(--df-line);border-radius:9px;cursor:pointer;background:var(--df-panel);transition:border-color .15s ease,background .15s ease}
+.df-opt.on{border-color:var(--df-amber);background:rgba(240,179,91,.07)}
+.df-opt b{display:block;margin-bottom:4px;font-size:12.5px}
+.df-opt span{color:var(--df-dim);font-size:11.5px;line-height:1.5}
+.df-personas{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;padding:11px}
+.df-persona{border:1px solid var(--df-line);border-radius:9px;padding:10px 11px;background:var(--df-panel2)}
+.df-persona b{display:block;font:650 12px/1.4 "SF Mono",ui-monospace,monospace;color:var(--df-amber);margin-bottom:5px}
+.df-persona span{color:var(--df-dim);font-size:11px}
+.df-empty{padding:26px;text-align:center;color:var(--df-mute);font-size:12px}
+.df-err{padding:9px 12px;border:1px solid rgba(239,107,115,.4);background:rgba(239,107,115,.08);color:var(--df-red);border-radius:8px;margin-bottom:10px;font-size:12px}
+.df-log{padding:6px 12px;border-bottom:1px solid rgba(35,45,58,.5);font:11.5px/1.5 "SF Mono",ui-monospace,monospace;color:#b9c6d2;word-break:break-word}
+.df-log time{color:var(--df-mute);margin-right:8px}
 `;
 
 function useForge() {
@@ -115,7 +131,8 @@ function Shell() {
   return h("div", { className: "df-root" },
     h("style", null, css),
     h("header", { className: "df-head" },
-      h("div", { className: "df-logo" }, "DSH FORGE"),
+      h("div", { className: "df-mark" }, "F"),
+      h("div", { className: "df-logo" }, "FORGE"),
       h("span", { className: "df-pill " + (doctor && doctor.ok ? "ok" : "bad") }, doctor ? (doctor.ok ? "PASS" : "FAIL") : "…"),
       h("span", { className: "df-pill" }, "DSH " + (data ? data.doctor.version : "…")),
       h("div", { className: "df-spacer" }),
@@ -127,6 +144,8 @@ function Shell() {
       notice ? h("div", { className: "df-err", style: notice.ok ? { color: "var(--df-green)", borderColor: "rgba(95,211,155,.35)", background: "rgba(95,211,155,.07)" } : null }, notice.text) : null,
       tab === "overview" ? h(Overview, { data, okCount }) : null,
       tab === "patches" ? h(Patches, { data, busy, run }) : null,
+      tab === "grades" ? h(Grades, { data }) : null,
+      tab === "personas" ? h(Personas, { data }) : null,
       tab === "prompt" ? h(PromptView, { prompt, setPrompt, busy, run }) : null,
       tab === "policy" ? h(PolicyView, { data, busy, run }) : null,
       tab === "logs" ? h(LogView, { logs, setLogs, busy, run }) : null
@@ -239,6 +258,35 @@ function LogView({ logs, setLogs, busy, run }) {
       h("h3", null, "forge.log.jsonl"),
       logs.length ? logs.map((l, i) => { const extra = Object.fromEntries(Object.entries(l).filter(([k]) => !["ts", "level", "event"].includes(k))); return h("div", { className: "df-log", key: i }, h("time", null, (l.ts || "").replace("T", " ").slice(0, 19)), `${l.level || "info"} · ${l.event}${Object.keys(extra).length ? " · " + JSON.stringify(extra) : ""}`); }) : h("div", { className: "df-empty" }, "暂无日志")
     )
+  );
+}
+
+function Grades({ data }) {
+  const rows = (data && data.grades) || [];
+  if (!rows.length) return h("div", { className: "df-empty" }, "读取分级…");
+  return h("section", { className: "df-sec" },
+    h("h3", null, "投递分级 · " + rows.length + " 个宿主"),
+    h("div", { className: "df-scroll" }, h("table", { className: "df-table" },
+      h("thead", null, h("tr", null, ["宿主", "分级", "证据", "机制"].map((x) => h("th", { key: x }, x)))),
+      h("tbody", null, rows.map((r) => h("tr", { key: r.id },
+        h("td", { className: "df-mono" }, r.id),
+        h("td", null, h("span", { className: "df-badge " + (r.grade || "unobservable") }, r.grade || "unobservable")),
+        h("td", { className: "df-mono" }, r.source || "none"),
+        h("td", { className: "df-detail", title: r.mechanism || "" }, r.mechanism || "")
+      )))
+    ))
+  );
+}
+
+function Personas({ data }) {
+  const rows = (data && data.personas) || [];
+  if (!rows.length) return h("div", { className: "df-empty" }, "未找到人设文件");
+  return h("section", { className: "df-sec" },
+    h("h3", null, "人设库 · " + rows.length + " 条"),
+    h("div", { className: "df-personas" }, rows.map((r) => h("div", { className: "df-persona", key: r.id },
+      h("b", null, r.id),
+      h("span", null, (r.mode || "replace") + " · " + (r.harness || "any") + " · " + (r.chars || 0) + " 字")
+    )))
   );
 }
 

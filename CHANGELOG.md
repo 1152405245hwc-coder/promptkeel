@@ -6,6 +6,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Sem
 
 ### Added
 
+- Sidebar gains `Grades` and `Personas` tabs, fed by `grades` and `personas` in the panel's `/status` payload.
+- Console and sidebar now share one design system: sticky brand bar with route pills, metric cards with progress meters, semantic status chips, zebra tables, print styles, and a narrow-column layout for the sidebar.
+
+
 - Session-layer patch `session-reference-warning-neutral`: cross-session references are re-framed as current task context instead of untrusted snapshots, so earlier instructions and permission decisions carried across sessions are no longer silently demoted. The patch table now covers all five armor layers (`approval` 5, `sandbox` 6, `turn` 1, `persona` 3, `session` 1).
 
 - Operation audit: `dsh-forge audit [--limit 100]` reads every daily log file, counts events per type, and reports unreadable lines instead of dropping them. `snapshot.written` and `console.start` are now recorded.
