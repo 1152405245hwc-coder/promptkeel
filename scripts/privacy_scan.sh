@@ -96,15 +96,9 @@ if [ "$check_history" -eq 1 ]; then
     case " $allow " in
       *" $email "*) ;;
       *)
-        # GitHub's noreply alias is derived from the public account name and is
-        # meant to be public; a real mailbox is what this gate is for.
-        if [[ "$email" =~ ^[0-9]+\+[A-Za-z0-9_-]+@users\.noreply\.github\.com$ ]]; then
-          echo "privacy: public noreply alias in history, allowed by design: $email"
-        else
-          echo "privacy: commit identity not allowed: $email"
-          echo "         rewrite history (git filter-repo) or list it in .privacy-allow"
-          status=1
-        fi
+        echo "privacy: commit identity not allowed: $email"
+        echo "         rewrite history (git filter-repo) or list it in .privacy-allow"
+        status=1
         ;;
     esac
   done < <(git log --format='%ae' | sort -u)

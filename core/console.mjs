@@ -205,13 +205,14 @@ export function renderWorkbench(state = {}) {
   <button type="button" class="btn primary" id="wb-compile-btn">Compile Plan</button>
   <button type="button" class="btn" id="wb-probe-btn">Run Static Probe (${PROBES.length})</button>
   <button type="button" class="btn ok" id="wb-apply-btn">Preview &amp; Apply Plan</button>
+  <button type="button" class="btn" id="wb-copy-btn">Copy Prompt</button>
   <button type="button" class="btn" id="wb-snapshot-btn">Save Snapshot</button>
 </div>
 <div class="hint mono" id="wb-meta" style="margin-top:10px;color:var(--dim)">Select a profile and compile.</div>
 <div class="hint mono" id="wb-probe-out" style="margin-top:4px;color:var(--green)"></div>
 </div>`;
 
-  const actionSec = section("compiled target actions", `<div class="scroll"><table><thead><tr><th>op</th><th>kind</th><th>target path</th></tr></thead><tbody id="wb-actions"></tbody></table></div>`);
+  const actionSec = section("compiled target actions", `<div class="scroll"><table><thead><tr><th>op</th><th>kind</th><th>change</th><th>target path</th></tr></thead><tbody id="wb-actions"></tbody></table></div>`);
   const promptSec = section("compiled prompt", `<pre class="codebox" id="wb-prompt-out"></pre>`);
   return layout("workbench", [section("prompt & plan compiler", controls), actionSec, promptSec].join("\n"), {
     route: "/workbench",
@@ -570,6 +571,7 @@ export function createConsole({ state = () => ({}), env = {}, handlers = null, p
             refusalSignal: refusal.signal,
             turns: resLive.turns,
             latencyMs: resLive.latencyMs,
+            usage: resLive.usage || null,
             reply: resLive.reply || null,
             error: resLive.error || null,
           });

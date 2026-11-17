@@ -54,7 +54,7 @@ test("compile resolves project and user targets without writing", () => {
   assert.equal(plan.actions.find((a) => a.kind === "file").path, path.join(project, ".codex", "forge-instructions.md"));
   const tomlAction = plan.actions.find((a) => a.kind === "toml-merge");
   assert.equal(tomlAction.path, path.join(project, ".codex", "config.toml"));
-  assert.equal(tomlAction.value.model_instructions_file, ".codex/forge-instructions.md");
+  assert.equal(tomlAction.value.model_instructions_file, "forge-instructions.md");
   assert.equal(plan.delivery.grade, "replace-full");
   assert.equal(fs.existsSync(path.join(project, "AGENTS.md")), false);
 });

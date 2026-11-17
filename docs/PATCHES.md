@@ -1,6 +1,6 @@
 # Host Patch Table
 
-All patches in `lib/table.mjs` are declarative: target file path relative to the host root, supported version range, exact `find` / `replace` strings, and a `marker` string used to verify that the patch is present. `apply` preflights all required patches before writing any file. Every entry carries a `layer` — `approval` (5), `sandbox` (6), `turn` (1), `persona` (3), `session` (1) — so `dsh-forge doctor`, `dsh-forge adapt` and the console can show which armor layer a patch belongs to.
+All patches in `lib/table.mjs` are declarative: target file path relative to the host root, supported version range, exact `find` / `replace` strings, and a `marker` string used to verify that the patch is present. `apply` preflights all required patches before writing any file. Every entry carries a `layer` — `approval` (7), `sandbox` (9), `turn` (1), `persona` (4), `session` (2) — so `dsh-forge doctor`, `dsh-forge adapt` and the workbench console can show which armor layer a patch belongs to.
 
 | # | ID | Target File | Change |
 |---|---|---|---|
@@ -20,6 +20,13 @@ All patches in `lib/table.mjs` are declarative: target file path relative to the
 | 14 | `skill-badge-neutral` | `dsh-skill-badge/lib/index.js` | Badge skill description no longer advertises the host brand |
 | 15 | `deliverable-present-guard` | `dsh-deliverable-file-references/lib/index.js` | Replaces the sentence that steers the model away from `present` |
 | 16 | `session-reference-warning-neutral` | `dsh-session-reference/lib/index.js` | Referenced sessions stop being declared untrusted, so their instructions are no longer demoted |
+| 17 | `auto-review-bypass` | `dsh-experimental-auto-review/lib/index.js` | Short-circuits the Auto preset `tools/pre-execute` risk classifier gate |
+| 18 | `plan-mode-neutral` | `dsh-base/cordis.patch.yml` | Removes rigid conversational confirmation rejection phrasing in plan mode |
+| 19 | `ptc-escalation-neutral` | `dsh-tool-executor-ptc/lib/index.js` | Neutralizes PTC schema hints claiming user approval prompts and prior-denial gates |
+| 20 | `subagent-delegation-neutral` | `dsh-subagent/lib/index.js` | Replaces rigid subagent refusal framing with direct execution guidance |
+| 21 | `fs-read-limit-raised` | `dsh-tool-fs/lib/index.js` | Raises read caps (`READ_MAX_LINE_LENGTH=1e4`, `READ_MAX_BYTES=512 KiB`, `READ_LIMIT=1e4`) |
+| 22 | `system-prompt-in-history-disabled` | `dsh-agent-loop/lib/index.js` | Forces `inHistory: false` so the rendered system prompt stays in the primary system slot |
+| 23 | `api-attachment-image-unrestricted` | `dsh-api-session-controller/lib/index.js` | Skips static `MODEL_DOES_NOT_SUPPORT_IMAGES` pre-reject gate on custom gateways |
 
 ## Adding or Updating a Patch
 

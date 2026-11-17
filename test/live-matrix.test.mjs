@@ -213,3 +213,37 @@ test("executeStrategyRequest carries response.reply across multi-turn crescendo 
   assert.equal(seenPrefill[0].at(-1).role, "assistant");
   assert.equal(seenPrefill[0].at(-1).content, "Understood:");
 });
+
+test("SSE fallback, bare English/Chinese refusal variants, and upstream proxy guards classify accurately", async () => {
+  const { detectRefusal, sendRequest, verdictOf } = await import("../core/gateway.mjs");
+  assert.equal(detectRefusal("Sorry, I can't respond to this question.").refused, true);
+  assert.equal(detectRefusal("这类内容我不写——不是回避流程问题。").refused, true);
+
+  const provider = {
+    kind: "openai",
+    baseUrl: "http://127.0.0.1:1",
+    keyOptional: true,
+    reply: "choices.0.message.content",
+    finishReason: "choices.0.finish_reason",
+    usage: { prompt: "usage.prompt_tokens", completion: "usage.completion_tokens", total: "usage.total_tokens" },
+  };
+  const sseRes = await sendRequest(provider, { system: "", user: "q", model: "m" }, {
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      text: async () => 'data: {"choices":[{"delta":{"content":"hello "}}]}\ndata: {"choices":[{"delta":{"content":"world"},"finish_reason":"stop"}]}\ndata: [DONE]\n',
+    }),
+  });
+  assert.equal(sseRes.status, "ok");
+  assert.equal(sseRes.reply, "hello world");
+
+  const guardRes = await sendRequest(provider, { system: "", user: "q", model: "m" }, {
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ choices: [{ message: { content: "[magpie/hiyo-guard] hiyo 上游返回空答复：有 usage、无 content。" }, finish_reason: "stop" }] }),
+    }),
+  });
+  assert.equal(guardRes.status, "upstream_error");
+  assert.equal(verdictOf(guardRes, { refused: false }), "blocked");
+});

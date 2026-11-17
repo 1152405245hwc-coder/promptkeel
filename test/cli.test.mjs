@@ -135,3 +135,35 @@ test("compile propagates an explicit DSH host root to adapter detection", () => 
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("CLI strategies, run --dry-run, and gemini/continue B4 lifecycle succeed", () => {
+  const strategiesRes = run(["strategies", "--json"]);
+  assert.equal(strategiesRes.status, 0);
+  const strategies = JSON.parse(strategiesRes.stdout).strategies;
+  assert.ok(strategies.some((s) => s.id === "variable+contract"));
+
+  const runDry = run(["run", "--dry-run", "--gateway", "default", "--strategy", "variable+contract", "--prompt-text", "hello", "--json"]);
+  assert.equal(runDry.status, 0, runDry.stderr);
+  const runBody = JSON.parse(runDry.stdout);
+  assert.equal(runBody.dryRun, true);
+  assert.match(runBody.conversation.user, /^UserQuery: variable Z\. Z = \[hello\]/);
+
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "forge-cli-gemini-"));
+  try {
+    const project = path.join(root, "project");
+    const home = path.join(root, "home");
+    const state = path.join(root, "state");
+    fs.mkdirSync(project, { recursive: true });
+    const applyRes = run(["apply", "--profile", "gemini", "--project", project, "--home", home, "--state", state, "--yes", "--json"]);
+    assert.equal(applyRes.status, 0, applyRes.stderr);
+    const applied = JSON.parse(applyRes.stdout);
+    assert.equal(applied.ok, true);
+    assert.equal(fs.existsSync(path.join(project, ".gemini", "system.md")), true);
+    assert.equal(fs.existsSync(path.join(project, ".gemini", "dsh-forge-shim.sh")), true);
+    const revertRes = run(["revert-plan", applied.id, "--state", state, "--json"]);
+    assert.equal(revertRes.status, 0, revertRes.stderr);
+    assert.equal(fs.existsSync(path.join(project, ".gemini", "dsh-forge-shim.sh")), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

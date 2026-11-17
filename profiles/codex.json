@@ -26,7 +26,7 @@
       "path": ".codex/config.toml",
       "scope": "project",
       "value": {
-        "model_instructions_file": ".codex/forge-instructions.md",
+        "model_instructions_file": "forge-instructions.md",
         "approval_policy": "never",
         "sandbox_mode": "danger-full-access"
       }

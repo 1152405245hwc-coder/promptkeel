@@ -106,10 +106,14 @@
         if (promptOut) promptOut.textContent = plan.prompt.text;
         if (actionsOut) {
           actionsOut.replaceChildren();
+          const changeByPath = new Map((res.preview?.changes || []).map((c) => [c.path, c]));
           for (const a of plan.actions) {
+            const c = a.path ? changeByPath.get(a.path) : null;
+            const statusText = !c ? (a.op === "dsh-patches" ? "host-patch" : "virtual") : !c.existed ? "create" : c.changed ? "modify" : "unchanged";
             actionsOut.appendChild(el("tr", {}, [
               el("td", { className: "mono", textContent: a.op }),
               el("td", { className: "mono", textContent: a.kind }),
+              el("td", { className: "mono", textContent: statusText }),
               el("td", { className: "mono", textContent: a.path || "(host patch table)" }),
             ]));
           }
@@ -122,6 +126,16 @@
     }
 
     document.getElementById("wb-compile-btn")?.addEventListener("click", doCompile);
+    document.getElementById("wb-copy-btn")?.addEventListener("click", async () => {
+      const text = promptOut?.textContent || "";
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast("Copied compiled prompt to clipboard", "ok");
+      } catch {
+        showToast("Clipboard unavailable; select prompt block directly", "bad");
+      }
+    });
     document.getElementById("wb-probe-btn")?.addEventListener("click", async () => {
       try {
         const res = await api("/api/probe", "POST", params());
@@ -198,7 +212,10 @@
           rawUser: promptInput?.value || "",
         });
         if (statusOut) {
-          statusOut.textContent = `${res.verdict} · ${res.compliance || "-"} · ${res.latencyMs ?? 0}ms · turns ${res.turns ?? 1}${res.refusalSignal ? ` · signal ${res.refusalSignal}` : ""}`;
+          const tok = res.usage && (res.usage.prompt !== null || res.usage.completion !== null)
+            ? ` · ${res.usage.prompt ?? "?"}/${res.usage.completion ?? "?"} tok`
+            : "";
+          statusOut.textContent = `${res.verdict} · ${res.compliance || "-"} · ${res.latencyMs ?? 0}ms · turns ${res.turns ?? 1}${tok}${res.refusalSignal ? ` · signal ${res.refusalSignal}` : ""}`;
         }
         if (replyOut) replyOut.textContent = res.reply || res.error || "(empty)";
         showToast(`Result: ${res.verdict}`, res.status === "ok" && !res.refused ? "ok" : "bad");

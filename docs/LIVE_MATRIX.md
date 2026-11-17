@@ -100,10 +100,11 @@ corpus that is 18 requests per cell, so three models across four personas is
 | `--transform` | `none`, `base64`, `rot13`, `leet`, `vowels`, `morse`, `ascii`, `reverse`, `split`, or `all` | `none` |
 | `--probe` | probe id(s) from `core/probe.mjs` | every probe |
 | `--family` | `cyber`, `weapons`, `bio`, `chem`, `fraud`, `identity`, `privacy`, `violence` | every family |
+| `--exclude-family` | exclude sensitive families from outbound calls (e.g. `minor,bio,chem`) | none |
+| `--strategy` | named preset from `core/strategy.mjs` (`variable+contract`, `crescendo`, `deep`, `layered`, `prefill`, `stuff`, `stuff+variable`) | none |
+| `--stuff` | pad request with N neutral reference context tokens | `0` |
 
-`generic` is the default profile because its host accepts every forge model
-descriptor. A host-specific profile such as `dsh` rejects `--model gpt-*` with a
-`model-host-mismatch`, by design.
+`generic` is the default profile; cross-gateway model descriptors in `models/*.json` also target `claude-code`, `codex`, `gemini`, `opencode`, `continue`, `hermes`, and `openclaw`. Built-in provider presets also include `--provider anthropic` (`ANTHROPIC_API_KEY`) and `--provider glm` (`ZHIPU_API_KEY`), alongside automatic SSE stream assembly fallback and `[magpie/*]` upstream proxy guard classification in `core/gateway.mjs`.
 
 `--model` is the live name sent to the provider. The forge model used for
 compilation is inferred from the prefix (`gpt-4o-mini` → `gpt`,
