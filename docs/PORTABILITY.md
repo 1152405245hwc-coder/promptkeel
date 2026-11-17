@@ -22,13 +22,13 @@ Profile JSON ──▶ Host Adapter ──▶ Compiler (core/compile) ──▶ 
 |---|---|---|---|---|---|---|
 | DSH macOS | `dsh` | `verified` | `~/.dsh/prompt-inject.md` + Cordis section | <!-- forge-facts:begin kind=patches -->23<!-- forge-facts:end --> host patches (`lib/table.mjs`) | manifest + `sha256` | `0.2.1-rc.1` – `0.2.2-rc.3` tested |
 | DSH Linux/Windows | `dsh` + `--host-root` | `experimental` | same | same anchors, custom install root | manifest + `sha256` | pass `--host-root` |
-| Claude Code | `claude-code` | `verified` | `CLAUDE.md` managed block + executable `.claude/dsh-forge-shim.sh` + `/dsh-forge` | `.claude/settings.json` (`permissions.defaultMode`) | byte-exact | `append-only` (CLI 57-char identity prefix) |
-| Codex CLI | `codex` | `verified` | `.codex/forge-instructions.md` + `AGENTS.md` | `.codex/config.toml` (`model_instructions_file`, `approval_policy`, `sandbox_mode`) | byte-exact | `replace-full` (`B4`) |
-| Gemini CLI | `gemini` | `experimental` | `.gemini/system.md` + `GEMINI.md` + `.gemini/dsh-forge-shim.sh` (`GEMINI_SYSTEM_MD`) | `.gemini/settings.json` (`autoAccept`) | byte-exact | `replace-full` (`B4`) via shim env |
-| OpenCode | `opencode` | `experimental` | `AGENTS.md` managed block | `opencode.json` (`permission`) | byte-exact | `append-only`, project-scoped |
+| Claude Code | `claude-code` | `verified` | `.claude/forge-prompt.md` + `CLAUDE.md` + executable `.claude/dsh-forge-shim.sh` + `/dsh-forge` | `.claude/settings.json` (`permissions.defaultMode`) | byte-exact | `append-only` (CLI 57-char identity prefix) |
+| Codex CLI | `codex` | `verified` | `.codex/forge-instructions.md` + `.codex/dsh-forge-shim.sh` + `AGENTS.md` | `.codex/config.toml` (`model_instructions_file`, `approval_policy`, `sandbox_mode`) | byte-exact | `replace-full` (`B4`, shim covers untrusted repos) |
+| Gemini CLI | `gemini` | `experimental` | `.gemini/system.md` + `GEMINI.md` + `.gemini/dsh-forge-shim.sh` (`GEMINI_SYSTEM_MD`) | `.gemini/settings.json` (`general.defaultApprovalMode`) | byte-exact | `replace-full` (`B4`) via shim env |
+| OpenCode | `opencode` | `experimental` | `opencode.json` (`agent.build.prompt`) + `AGENTS.md` managed block | `opencode.json` (`permission: "allow"`) | byte-exact | `replace-full` (`B4`, verified on v1.19.5) |
 | Continue | `continue` | `experimental` | `.continue/config.yaml` (`chatOptions.baseAgentSystemMessage`) + `.continue/rules/dsh-forge.md` | `.continue/config.yaml` | byte-exact | `replace-full` (`B4`) |
 | Generic API | `generic` | `experimental` | system message only | unsupported | n/a | caller consumes `plan.prompt.text` |
-| Hermes | `hermes` | `experimental` | `~/.hermes/SOUL.md` + `.hermes.md` | `~/.hermes/config.yaml` | byte-exact | `replace-with-residue` |
+| Hermes | `hermes` | `experimental` | `~/.hermes/config.yaml` (`agent.system_prompt`) + `~/.hermes/SOUL.md` + `.hermes.md` (`blockId=forge`) | `~/.hermes/config.yaml` | byte-exact | `replace-with-residue` (avoids `html_comment_injection` block) |
 | OpenClaw | `openclaw` | `experimental` | `~/.kimi_openclaw/workspace/AGENTS.md` + `AGENTS.md` | unsupported | byte-exact | `append-only` |
 | Muse | `muse` | `experimental` | prompt-only | unsupported | n/a | `unobservable` |
 | Cursor | `cursor` | `experimental` | `.cursorrules` legacy managed block | unsupported | byte-exact | active session unobservable |

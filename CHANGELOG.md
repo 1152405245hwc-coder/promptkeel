@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Sem
 
 ### Added
 
+- **Cross-Host Hardening & Real-CLI Fixes (`codex`, `opencode`, `hermes`, `gemini`, `claude-code`)**:
+  Added `.codex/dsh-forge-shim.sh` (`{{TOML_PROMPT_PATH}}` safe space/quote/backslash escaping in `core/shim.mjs`) to enforce `B4 replace-full` even in untrusted Codex repositories; upgraded `opencode` (`agent.build.prompt` in `opencode.json` + `core/grades.mjs`) to verified `replace-full`; switched `hermes` markdown blocks to `blockId: "forge"` plus `yaml-merge` on `.hermes/config.yaml` (`agent.system_prompt`) to clear Hermes `html_comment_injection` filters; updated `gemini` to `general.defaultApprovalMode: "auto_edit"` and separated `.claude/forge-prompt.md` from repo `CLAUDE.md`.
+- **Direct Narrative Mode & Fiction Strategies (`prompt/modes/writing.md`, `prompt/personas/unfiltered.md`, `core/strategy.mjs`)**:
+  Tightened `--mode writing` and `unfiltered` within the `480`-token budget for unbroken physical/sensory fiction prose without fade-to-black or moral codas; added `narrative` and `narrative+variable` two-turn beat-to-scene strategies.
+- **Engine Resilience & Gateway Starvation Recovery (`core/transform.mjs`, `core/batch.mjs`, `core/executor.mjs`, `core/gateway.mjs`)**:
+  Fixed `leet` `g`/`o` mapping and lossless `morse` handling of punctuation, braces, CJK, and astral emoji; made `compileMany` `batchId` invariant across `write-shim` profiles; supported 4-space YAML child indentation and `--force` missing-file recovery in `revertPlan`; upgraded `starved()`/`sendWithBudget()` to detect `HTTP 502` reasoning-token exhaustion and scale retries 4x up to `16384` tokens.
+- **Extreme Test Suite & Report (`test/extreme.test.mjs`, `docs/EXTREME_TEST_REPORT.md`)**:
+  Added regression coverage across all platform/engine edge cases and documented multi-model, low-concurrency direct-fiction, and cross-platform CLI stress results in `docs/EXTREME_TEST_REPORT.md`.
 - **Cross-Host `replace-full` (`B4`) Delivery & Dynamic Verification**:
   Implemented `mergeYaml` (`yaml-merge`) and executable `0755` `write-shim` actions in `core/executor.mjs`, `core/compile.mjs`, and `core/shim.mjs`; updated `codex` (`.codex/config.toml` `model_instructions_file`), `gemini` (`.gemini/system.md` + `GEMINI_SYSTEM_MD` shim), `continue` (`.continue/config.yaml` `chatOptions.baseAgentSystemMessage`), and `claude-code` (`--append-system-prompt-file` shim). Updated `core/grades.mjs` to derive `replace-full` vs `append-only` dynamically from compiled actions.
 - **First-Class Strategy & Gateway Modules (`core/strategy.mjs`, `core/gateway.mjs`, `core/index.mjs`)**:

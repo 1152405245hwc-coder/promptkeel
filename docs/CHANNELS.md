@@ -4,9 +4,9 @@ A profile decides *what* gets delivered; a channel is *how* it reaches the host.
 
 | channel | shape of the action | first visible | coverage today |
 | --- | --- | --- | --- |
-| `project` | file, managed block, TOML, or YAML config inside the repository (`AGENTS.md`, `.codex/config.toml`, `.continue/config.yaml`, etc.) | next turn | 19 actions across 10 profiles |
-| `install` | host runtime state (`dsh.patches`, `~/.dsh/prompt-inject.md`) | host restart / next session | 2 actions, `dsh` only |
-| `shim` | executable `0755` wrapper script (`write-shim`) exporting `DSH_FORGE_PROMPT` / `GEMINI_SYSTEM_MD` or CLI append flags | shell restart | 2 automatic (`gemini`, `claude-code`), plus `dsh-forge shim` |
+| `project` | file, managed block, TOML, or YAML config inside the repository (`AGENTS.md`, `.codex/config.toml`, `.continue/config.yaml`, etc.) | next turn | 20 actions across 10 profiles |
+| `install` | host runtime state (`dsh.patches`, `~/.dsh/prompt-inject.md`, user-scope `.hermes/config.yaml`) | host restart / next session | 3 actions across 2 profiles (`dsh`, `hermes`) |
+| `shim` | executable `0755` wrapper script (`write-shim`) exporting `DSH_FORGE_PROMPT` / `GEMINI_SYSTEM_MD`, Codex `-c model_instructions_file`, or CLI append flags | shell restart | 3 automatic (`claude-code`, `codex`, `gemini`), plus `dsh-forge shim` |
 | `slash` | a command file the host registers inside a session (`.claude/commands/*.md`) | session start | 1 action, `claude-code` |
 | `none` | prompt composed but never written (`prompt-only`) | n/a | 2 profiles (`generic`, `muse`) |
 

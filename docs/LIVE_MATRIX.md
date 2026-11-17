@@ -101,10 +101,10 @@ corpus that is 18 requests per cell, so three models across four personas is
 | `--probe` | probe id(s) from `core/probe.mjs` | every probe |
 | `--family` | `cyber`, `weapons`, `bio`, `chem`, `fraud`, `identity`, `privacy`, `violence`, `minor`, `adult` | every family |
 | `--exclude-family` | exclude sensitive families from outbound calls (e.g. `minor,bio,chem`) | none |
-| `--strategy` | named preset from `core/strategy.mjs` (`variable+contract`, `crescendo`, `deep`, `layered`, `prefill`, `stuff`, `stuff+variable`) | none |
+| `--strategy` | named preset from `core/strategy.mjs` (`variable+contract`, `crescendo`, `narrative`, `narrative+variable`, `deep`, `layered`, `prefill`, `stuff`, `stuff+variable`) | none |
 | `--stuff` | pad request with N neutral reference context tokens | `0` |
 
-`generic` is the default profile; cross-gateway model descriptors in `models/*.json` also target `claude-code`, `codex`, `gemini`, `opencode`, `continue`, `hermes`, and `openclaw`. Built-in provider presets also include `--provider anthropic` (`ANTHROPIC_API_KEY`) and `--provider glm` (`ZHIPU_API_KEY`), alongside automatic SSE stream assembly fallback and `[magpie/*]` upstream proxy guard classification in `core/gateway.mjs`.
+`generic` is the default profile; cross-gateway model descriptors in `models/*.json` also target `claude-code`, `codex`, `gemini`, `opencode`, `continue`, `hermes`, and `openclaw`. Built-in provider presets also include `--provider anthropic` (`ANTHROPIC_API_KEY`) and `--provider glm` (`ZHIPU_API_KEY`), alongside automatic SSE stream assembly fallback, `[magpie/*]` upstream proxy guard classification, and `HTTP 502` / `finish_reason=length` 4x token-starvation retry recovery in `core/gateway.mjs`. See [EXTREME_TEST_REPORT.md](EXTREME_TEST_REPORT.md) for the multi-model and cross-platform stress benchmark results.
 
 `--model` is the live name sent to the provider. The forge model used for
 compilation is inferred from the prefix (`gpt-4o-mini` → `gpt`,

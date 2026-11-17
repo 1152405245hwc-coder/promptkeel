@@ -12,6 +12,7 @@ import { compileMany } from "../core/batch.mjs";
 import { gradeOf } from "../core/grades.mjs";
 import { detectHost } from "../hosts/registry.mjs";
 import { executeStrategyRequest, sendWithBudget, detectRefusal, verdictOf } from "../core/gateway.mjs";
+import { TURN_SCRIPTS, resolveStrategy } from "../core/strategy.mjs";
 
 function tmpDir(prefix = "forge-extreme-") {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -199,4 +200,21 @@ test("gateway handles four-turn layered strategy, token starvation recovery, and
   });
   assert.equal(recovered502.status, "ok");
   assert.equal(recovered502.retriedAtTokens, 4800);
+});
+
+test("narrative strategy and writing mode compose within the 480-token budget", () => {
+  assert.equal(TURN_SCRIPTS.narrative.length, 2);
+  const resolved = resolveStrategy({ strategy: "narrative" });
+  assert.equal(resolved.script, "narrative");
+  assert.equal(resolved.persona, "unfiltered");
+  const resolvedVar = resolveStrategy({ strategy: "narrative+variable" });
+  assert.equal(resolvedVar.wrap, "variable");
+  const plan = compile(loadProfile("generic"), loadModel("deepseek"), {
+    mode: "writing",
+    persona: "unfiltered",
+    home: "/tmp/h",
+    projectRoot: "/tmp/p",
+  });
+  assert.equal(plan.budget.ok, true);
+  assert.ok(plan.prompt.tokens < 480, `writing+unfiltered tokens=${plan.prompt.tokens}`);
 });

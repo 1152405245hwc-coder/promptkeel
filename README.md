@@ -105,16 +105,16 @@ DSH is the native full-capability target. The same modular prompt and transactio
 | Host | Profile | Target Files Written | Support Level |
 | :--- | :--- | :--- | :--- |
 | **DSH (macOS / Linux / Windows)** | `dsh` | <!-- forge-facts:begin kind=patches -->23<!-- forge-facts:end --> host patches (`@deepseek-ai/*`) + `~/.dsh/prompt-inject.md` | `verified` |
-| **Claude Code** | `claude-code` | `CLAUDE.md` + `.claude/settings.json` + `.claude/commands/dsh-forge.md` + `.claude/dsh-forge-shim.sh` | `verified` |
-| **Codex CLI** | `codex` | `.codex/forge-instructions.md` + `.codex/config.toml` (`model_instructions_file`) + `AGENTS.md` | `verified` |
+| **Claude Code** | `claude-code` | `.claude/forge-prompt.md` + `CLAUDE.md` + `.claude/settings.json` + `.claude/commands/dsh-forge.md` + `.claude/dsh-forge-shim.sh` | `verified` |
+| **Codex CLI** | `codex` | `.codex/forge-instructions.md` + `.codex/config.toml` (`model_instructions_file`) + `.codex/dsh-forge-shim.sh` + `AGENTS.md` | `verified` |
 | **Gemini CLI** | `gemini` | `.gemini/system.md` + `.gemini/dsh-forge-shim.sh` (`GEMINI_SYSTEM_MD`) + `GEMINI.md` + `.gemini/settings.json` | `experimental` |
-| **OpenCode** | `opencode` | `AGENTS.md` (managed block) + `opencode.json` | `experimental` |
+| **OpenCode** | `opencode` | `AGENTS.md` (managed block) + `opencode.json` (`agent.build.prompt`, `permission`) | `experimental` |
 | **Cursor** | `cursor` | `.cursorrules` (legacy managed block) | `experimental` |
 | **Windsurf** | `windsurf` | `.windsurfrules` (legacy managed block) | `experimental` |
 | **Aider** | `aider` | `CONVENTIONS.md` (managed block) | `experimental` |
 | **Continue** | `continue` | `.continue/config.yaml` (`chatOptions.baseAgentSystemMessage`) + `.continue/rules/dsh-forge.md` | `experimental` |
 | **Generic API / Local Weights** | `generic` | System prompt payload only (`prompt-only`) | `experimental` |
-| **Hermes** | `hermes` | `~/.hermes/SOUL.md` (managed block) + `.hermes.md` | `experimental` |
+| **Hermes** | `hermes` | `~/.hermes/config.yaml` (`agent.system_prompt`) + `~/.hermes/SOUL.md` + `.hermes.md` (`blockId: "forge"`) | `experimental` |
 | **OpenClaw / AutoClaw** | `openclaw` | `~/.kimi_openclaw/workspace/AGENTS.md` (managed block) + `AGENTS.md` | `experimental` |
 | **Muse** | `muse` | system prompt payload only — the shipped prompt lives behind the app seal | `unsupported` |
 
@@ -304,6 +304,7 @@ npm run pack:check
 - **[docs/CHANNELS.md](docs/CHANNELS.md)** — Channel classification, effect timing, and the `shim` wrapper.
 - **[docs/PERSONAS.md](docs/PERSONAS.md)** — Persona file format and the four composition modes.
 - **[docs/LIVE_MATRIX.md](docs/LIVE_MATRIX.md)** — Real model matrix: point the harness at any OpenAI-compatible endpoint and read what each model answers.
+- **[docs/EXTREME_TEST_REPORT.md](docs/EXTREME_TEST_REPORT.md)** — Full-platform CLI verification, engine chaos regression results, and multi-model / direct-fiction stress benchmark report.
 - **[docs/AUDIT.md](docs/AUDIT.md)** — Operation log, cross-day `audit` queries, and snapshot retention.
 - **[docs/CONSOLE.md](docs/CONSOLE.md)** — Loopback console routes, single-instance lock, and why the page matches the CLI.
 - **[docs/DEBUG.md](docs/DEBUG.md)** — Troubleshooting decision tree, common error codes, and post-install smoke checks.

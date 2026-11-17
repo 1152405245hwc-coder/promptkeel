@@ -22,8 +22,8 @@
 | :--- | :--- | :--- |
 | **宿主补丁面** | 80+ 条易碎 UI/字符串替换，小版本升级即大面积失效 | **<!-- forge-facts:begin kind=patches -->23<!-- forge-facts:end --> 条版本门控补丁** 覆盖 <!-- forge-facts:begin kind=files -->18<!-- forge-facts:end --> 个 `@deepseek-ai/*` 文件，支持 `variants` 多版本锚点 |
 | **提示词管线** | 硬编码超长提示词或直接污染全局配置 | `core + persona + model + host + mode` 模块化拼接（各档案约 268–361 token），严格受控于 `< <!-- forge-facts:begin kind=promptCeiling -->480<!-- forge-facts:end -->` token 上限与 `sha256` 摘要校验 |
-| **跨宿主真实替代 (`B4`)** | 仅追加 `AGENTS.md` / `GEMINI.md` | 自动落盘 Codex `model_instructions_file`、Gemini `GEMINI_SYSTEM_MD`  executable shim (`0755`)、Continue `chatOptions.baseAgentSystemMessage` YAML 块、Claude Code `--append-system-prompt-file` shim，并由 `grades.mjs` 动态校验 |
-| **本地策略与网关引擎** | 零散脚本触发 | `core/strategy.mjs` 与 `core/gateway.mjs` 统一提供 `variable` 包装、`crescendo/deep/layered` 多轮推进、`prefill` 前缀引导、`stuff` 上下文稀释，直连 Magpie `:3425` 与 OpenAI/Anthropic/GLM API |
+| **跨宿主真实替代 (`B4`)** | 仅追加 `AGENTS.md` / `GEMINI.md` | 自动落盘 Codex `.codex/dsh-forge-shim.sh` + `model_instructions_file`、OpenCode `agent.build.prompt`、Gemini `GEMINI_SYSTEM_MD` executable shim (`0755`)、Continue `chatOptions.baseAgentSystemMessage` YAML 块、Claude Code `.claude/forge-prompt.md` shim、Hermes `.hermes/config.yaml` + `blockId=forge`，并由 `grades.mjs` 动态校验 |
+| **本地策略与网关引擎** | 零散脚本触发 | `core/strategy.mjs` 与 `core/gateway.mjs` 统一提供 `variable` 包装、`crescendo/narrative/deep/layered` 多轮推进、`prefill` 前缀引导、`stuff` 上下文稀释，直连 Magpie `:3425` 与 OpenAI/Anthropic/GLM API（含 `502`/截断 4x 自动扩容重试） |
 | **交互式工作台** | 只读状态页 | `127.0.0.1:7788` 本地工作台（`/workbench`、`/plans`、`/live`、`/patches`、`/audit`）与约 25 KB 零依赖 DSH 侧边栏，严格受 Loopback + Origin + CSP + CSRF 保护 |
 | **备份与隔离回滚** | 覆盖单一 `.bak` 文件 | 每次写入保留完整原始字节 + `sha256` 清单、`symlink` 拒写检查；工作区状态默认隔离于 `~/.dsh-forge`（或 `$XDG_STATE_HOME/dsh-forge`），不干扰线上 `~/.dsh/` 配置 |
 
@@ -106,6 +106,7 @@ npm run release:check       # 包含 Git 历史扫描的完整发布前闸门
 - **[docs/PORTABILITY.md](docs/PORTABILITY.md)** / **[docs/GRADES.md](docs/GRADES.md)** — 跨宿主兼容矩阵与动态投递分级
 - **[docs/PATCHES.md](docs/PATCHES.md)** / **[docs/COMPAT.md](docs/COMPAT.md)** — DSH 原生补丁明细与版本兼容范围
 - **[docs/LIVE_MATRIX.md](docs/LIVE_MATRIX.md)** / **[docs/PLAYBOOK.md](docs/PLAYBOOK.md)** — Magpie/API 实测方法、安全边界与逐模型策略读数
+- **[docs/EXTREME_TEST_REPORT.md](docs/EXTREME_TEST_REPORT.md)** — 全平台实机校验、虚构直出长文本、推理饥饿扩容与全模型极限压力测试报告
 - **[docs/CONSOLE.md](docs/CONSOLE.md)** — 本地 `:7788` 交互式工作台路由与安全防护
 - **[docs/RELATED_PROJECTS.md](docs/RELATED_PROJECTS.md)** / **[docs/TASKS.md](docs/TASKS.md)** — 生态项目借鉴对照与隔离边界、任务里程碑
 
