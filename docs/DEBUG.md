@@ -5,7 +5,9 @@
 ```
 dsh-forge doctor FAIL / WARN
 ├─ host-root fail
-│  └─ Set DSH_FORGE_HOST_ROOT=/Applications/DeepSeek Harness.app/Contents/Resources/app/dsh
+│  └─ Set DSH_FORGE_HOST_ROOT=<HOST_ROOT> (macOS: /Applications/DeepSeek Harness.app/Contents/Resources/app/dsh;
+│     Linux: /opt/DeepSeek Harness/resources/app/dsh or /usr/lib/deepseek-harness/resources/app/dsh;
+│     Windows: %LOCALAPPDATA%\\Programs\\DeepSeek Harness\\resources\\app\\dsh)
 ├─ host-version warn
 │  └─ Run `dsh-forge adapt`; update HOST_VERSION_RANGE or patch variants in lib/table.mjs
 ├─ patches fail (miss / partial / ambiguous)

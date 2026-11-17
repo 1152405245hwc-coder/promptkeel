@@ -8,6 +8,10 @@
 
 **Prompt injection, declarative host patches, and a deterministic multi-platform profile compiler for DeepSeek Harness (DSH), Claude Code, Codex CLI, Gemini CLI, OpenCode, Cursor, Windsurf, Aider, Continue, and local open-weight runtimes.**
 
+<!-- forge-facts:begin -->
+16 host patches · 11 patched files · 10 `@deepseek-ai/*` packages · layers: approval 5, sandbox 6, turn 1, persona 3, session 1 · host range `>=0.2.1-rc.1 <0.3.0`
+<!-- forge-facts:end -->
+
 ```text
 ┌────────────┐   compose    ┌──────────────┐   section    ┌───────────────┐
 │ prompt/    │ ───────────▶ │ lib/inject   │ ───────────▶ │ DSH system    │
@@ -15,7 +19,7 @@
 └────────────┘              └──────────────┘              └───────────────┘
 ┌────────────┐   dry-run    ┌──────────────┐   backup     ┌───────────────┐
 │ table.mjs  │ ───────────▶ │ lib/engine   │ ───────────▶ │ host files &  │
-│ 16 patches  │              │ verify+apply │              │ manifest      │
+│ patch set  │              │ verify+apply │              │ manifest      │
 └────────────┘              └──────────────┘              └───────────────┘
 ```
 
@@ -27,7 +31,7 @@
 
 | Dimension | Legacy Community Patch Bundles | `dsh-forge` Engineering Approach |
 | :--- | :--- | :--- |
-| **Host Patch Surface** | 80+ brittle UI & runtime string replacements that break on minor host updates | **8 version-gated patches** across 5 `@deepseek-ai/*` files with per-version `variants` support |
+| **Host Patch Surface** | 80+ brittle UI & runtime string replacements that break on minor host updates | **<!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> version-gated patches** across <!-- forge-facts:begin kind=files -->11<!-- forge-facts:end --> `@deepseek-ai/*` files with per-version `variants` support |
 | **Prompt Composition** | Monolithic hardcoded prompt or ad-hoc session file edits | Modular `core + model/adapter + host + mode` pipeline (~693 tokens default), `<= 3200` token gate, and `sha256` header |
 | **Verification** | Visual status badge only | 3-stage proof check (`proof1-patches`, `proof2-prompt`, `proof3-session` on `session.v4.jsonl.zstd`) + 12-check `doctor` |
 | **Control Panel** | 650+ KB external bundle | **20 KB 无依赖侧栏包**（`Overview` `Patches` `Grades` `Personas` `Prompt` `Policy` `Logs`） |
@@ -41,7 +45,7 @@
 `dsh-forge` is structured into two decoupled execution layers sharing a single CLI and modular prompt corpus:
 
 1. **Cross-Host Compiler & Transactional Executor (`core/`, `hosts/`, `profiles/`, `models/`)**: Validates schemas, composes layered prompts, compiles deterministic `planId` execution plans, and applies/verifies/reverts changes across documented host configuration files.
-2. **DeepSeek Harness Native Engine (`lib/`, `client/`)**: Inspects and unpacks `app.asar` when needed, applies the 8 version-gated host patches (`lib/table.mjs`), registers the `forge:prompt` section via Cordis, and serves the loopback `/dsh-forge/api` control surface.
+2. **DeepSeek Harness Native Engine (`lib/`, `client/`)**: Inspects and unpacks `app.asar` when needed, applies the <!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> version-gated host patches (`lib/table.mjs`), registers the `forge:prompt` section via Cordis, and serves the loopback `/dsh-forge/api` control surface.
 
 ```text
 dsh-forge/
@@ -69,7 +73,7 @@ dsh-forge/
 │   ├── models/             # Per-model-family behavioral overlays
 │   └── modes/              # Task-specific overlays (coding, research, writing)
 ├── lib/                    # DSH-native runtime, ASAR unpacker, patch engine & Cordis plugin
-│   ├── table.mjs           # 8 version-gated host patches (with per-version variants support)
+│   ├── table.mjs           # version-gated host patches (with per-version variants support)
 │   ├── engine.mjs          # inspectPatch, dryRun, coalesced atomic apply, revert, upgrade
 │   ├── asar.mjs            # Read-only app.asar header/file reader & atomic unpacker
 │   ├── inject.mjs          # DSH prompt composition, budget check, session log proof verification
@@ -96,7 +100,7 @@ DSH is the native full-capability target. The same modular prompt and transactio
 
 | Host | Profile | Target Files Written | Support Level |
 | :--- | :--- | :--- | :--- |
-| **DSH (macOS / Linux / Windows)** | `dsh` | 8 JS patches (`@deepseek-ai/*`) + `~/.dsh/prompt-inject.md` | `verified` |
+| **DSH (macOS / Linux / Windows)** | `dsh` | <!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> host patches (`@deepseek-ai/*`) + `~/.dsh/prompt-inject.md` | `verified` |
 | **Claude Code** | `claude-code` | `CLAUDE.md` (managed block) + `.claude/settings.json` | `verified` |
 | **Codex CLI** | `codex` | `AGENTS.md` (managed block, project only) | `verified` |
 | **Gemini CLI** | `gemini` | `GEMINI.md` (managed block) + `.gemini/settings.json` | `experimental` |
@@ -139,7 +143,7 @@ pnpm add /path/to/dsh-forge
 # 2) Register dsh-forge in dsh.profile.bundles (automatically ordered after dsh-purge* with backup)
 npx dsh-forge profile enable --profile desktop
 
-# 3) Run the 12-check diagnostic, preflight, and apply the 16 host patches
+# 3) Run the 12-check diagnostic, preflight, and apply every host patch
 npx dsh-forge doctor
 npx dsh-forge apply --dry-run
 npx dsh-forge apply --yes
@@ -178,10 +182,10 @@ If `client/src/entry.js` was modified, run `npm run build:client` to regenerate 
 A DSH application update overwrites files under the application bundle. `revert` checks `manifest.hostVersion` against the installed DSH version and refuses to overwrite a newer DSH build with older backup files. After upgrading DSH:
 
 ```bash
-# Check whether all 8 patch anchors still match the updated host
+# Check whether every patch anchor still matches the updated host
 dsh-forge adapt
 
-# If all 8 report ready, re-apply patches in one command
+# If every patch reports ready, re-apply in one command
 dsh-forge upgrade --yes
 
 # If a patch reports miss, inspect the target file and add a versioned entry to variants in lib/table.mjs
@@ -208,7 +212,7 @@ Every action a profile compiles belongs to one channel: `project` (repository fi
 
 ## Probe harness
 
-`dsh-forge probe` measures the installed armour against a corpus of worst-case requests — eight families, twelve fixtures, no model call and no generated answer. Each request is checked for `active`, `carry`, `identity`, `scaffold` and `budget`. Every run also feeds a poisoned prompt through the same code path and requires it to fail, so a green report means the harness still discriminates. Details in [docs/PROBES.md](docs/PROBES.md).
+`dsh-forge probe` measures the installed armour against a corpus of worst-case requests — ten families, eighteen fixtures, no model call and no generated answer. Each request is checked for `active`, `carry`, `identity`, `scaffold`, `budget`, `loader` and `residue`. Every run also feeds a poisoned prompt through the same code path and requires it to fail, so a green report means the harness still discriminates. Details in [docs/PROBES.md](docs/PROBES.md).
 
 
 ## Console
@@ -223,12 +227,12 @@ Every action a profile compiles belongs to one channel: `project` (repository fi
 | :--- | :--- |
 | `dsh-forge doctor [--profile desktop\|web] [--json]` | Run 12 host, version, anchor, token budget, conflict, and profile bundle checks |
 | `dsh-forge status [--profile desktop\|web] [--json]` | Print `doctor` report, active workspace policy, profile status, and backups |
-| `dsh-forge apply [--dry-run\|--yes]` | Preflight or atomically apply the 16 host patches (automatically unpacks sealed `app.asar` on `--yes`) |
+| `dsh-forge apply [--dry-run\|--yes]` | Preflight or atomically apply the <!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> host patches (automatically unpacks sealed `app.asar` on `--yes`) |
 | `dsh-forge unpack [--dry-run\|--yes]` | Unpack sealed `Contents/Resources/app.asar` into `Contents/Resources/app` |
 | `dsh-forge upgrade [--dry-run\|--yes]` | Revert same-version backup if present and re-apply the current patch table |
 | `dsh-forge revert [--id <backup>] [--force]` | Restore host files from a backup manifest with `sha256` and `hostVersion` verification |
 | `dsh-forge verify [--profile desktop\|web] [--json]` | Verify patch markers, prompt channel budget/registration, and newest session log |
-| `dsh-forge adapt [--json]` | Check anchor readiness across all 16 patches after a DSH host update |
+| `dsh-forge adapt [--json]` | Check anchor readiness across all <!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> patches after a DSH host update |
 | `dsh-forge explain <patch-id>` | Print anchor match counts and target file preview for a specific patch |
 | `dsh-forge profile [status\|enable\|disable] [--profile desktop]` | Inspect or update `dsh.profile.bundles` in `~/.dsh/profiles/<profile>/package.json` |
 | `dsh-forge prompt compose [--adapter deepseek] [--mode coding] [--out file]` | Compose `core + adapter + mode` and validate against the token budget |
@@ -282,7 +286,7 @@ npm run pack:check
 ## Documentation
 
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Module layering, sequence diagrams, patch state machine, and cross-host compiler pipeline.
-- **[docs/PATCHES.md](docs/PATCHES.md)** — Detailed specification of the 16 declarative host patches and multi-version `variants`.
+- **[docs/PATCHES.md](docs/PATCHES.md)** — Detailed specification of the <!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> declarative host patches and multi-version `variants`.
 - **[docs/COMPAT.md](docs/COMPAT.md)** — Supported DSH versions (`0.2.1-rc.1` – `0.2.2-rc.3`), host upgrade workflow, and runtime requirements.
 - **[docs/GRADES.md](docs/GRADES.md)** — Delivery grades per host with the mechanism and evidence behind each one.
 - **[docs/CHANNELS.md](docs/CHANNELS.md)** — Channel classification, effect timing, and the `shim` wrapper.

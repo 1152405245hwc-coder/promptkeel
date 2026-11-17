@@ -5,10 +5,9 @@ import { compile } from "./compile.mjs";
 import { verifyCompiled } from "./verify.mjs";
 import { previewPlan, applyPlan, revertPlan } from "./executor.mjs";
 import { sha256 } from "./prompt.mjs";
-import { PATCHES } from "../lib/table.mjs";
+import { DSH_PATCH_IDS } from "../lib/dsh-contract.mjs";
 
 const FILE_OPS = new Set(["write-file", "merge-block", "merge-json", "merge-toml"]);
-const DSH_PATCH_IDS = new Set(PATCHES.map((patch) => patch.id));
 const BATCH_SCHEMA = "forge.batch/v1";
 const PREVIEW_SCHEMA = "forge.preview/v1";
 

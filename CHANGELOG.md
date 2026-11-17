@@ -7,7 +7,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Sem
 ### Added
 
 - Payload transforms: `core/transform.mjs` implements `base64`, `rot13`, `leet`, `vowels`, `morse`, `ascii`, `reverse` and `split` with a decode path for every reversible kind. Personas declare one in frontmatter with an optional plaintext `lead`; `compile --transform <kind>` encodes the whole composed prompt. `dsh-forge transforms` prints round-trip status and expansion per kind.
-- Probe harness: `dsh-forge probe [profile] [--persona <id>] [--transform <kind>]` runs twelve worst-case requests across eight families and measures `active`, `carry`, `identity`, `scaffold` and `budget` on the composed prompt without calling a model. `selfCheck()` feeds a poisoned prompt through the same path and requires it to fail, so `probe` exits non-zero when the harness stops discriminating.
+- Probe harness: `dsh-forge probe [profile] [--persona <id>] [--transform <kind>]` runs eighteen worst-case requests across ten families and measures `active`, `carry`, `identity`, `scaffold`, `budget`, `loader` and `residue` on the composed prompt without calling a model. `selfCheck()` feeds a poisoned prompt through the same path and requires it to fail, so `probe` exits non-zero when the harness stops discriminating.
 - Persona library reaches ten entries, covering the technique families a static prompt can express: `roleplay`, `nested`, `code`, `fewshot`, `cipher` (base64 in frontmatter) and `split` (48-column wrapping).
 
 - Sidebar gains `Grades` and `Personas` tabs, fed by `grades` and `personas` in the panel's `/status` payload.

@@ -12,3 +12,8 @@ __pycache__/
 
 .dsh-forge/
 .dsh-forge-state/
+
+# Local forge state and generated project instructions
+AGENTS.md
+snapshots/
+.privacy-allow

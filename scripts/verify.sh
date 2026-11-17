@@ -53,6 +53,8 @@ try {
   if (tempDir) fs.rmSync(tempDir, { recursive: true, force: true });
 }
 '
+echo "== docs facts"
+node scripts/check_docs.mjs --check
 echo "== privacy"
 bash scripts/privacy_scan.sh
 echo "VERDICT: PASS"

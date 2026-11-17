@@ -1,4 +1,5 @@
 import { fail } from "./errors.mjs";
+import { TARGET_KINDS } from "./contract.mjs";
 
 /**
  * Delivery channels. `project` and `install` write host-readable files,
@@ -17,8 +18,12 @@ const FILE_CHANNELS = {
   file: null,
   "markdown-block": { channel: "project", timing: "next-turn" },
   "json-merge": { channel: "project", timing: "next-turn" },
+  "toml-merge": { channel: "project", timing: "next-turn" },
   "prompt-only": { channel: "none", timing: "next-turn" },
 };
+
+const missing = TARGET_KINDS.filter((kind) => !(kind in FILE_CHANNELS));
+if (missing.length) fail("channel-kind", `channel table missing target kinds: ${missing.join(", ")}`);
 
 function projectScoped(pathValue, projectRoot) {
   if (!projectRoot) return true;
@@ -32,7 +37,7 @@ function projectScoped(pathValue, projectRoot) {
  * adapter happened to name the path.
  */
 export function channelOf(action, { projectRoot } = {}) {
-  const kind = action?.kind || action?.op;
+  const kind = action?.kind;
   const known = FILE_CHANNELS[kind];
   if (known === undefined) fail("channel-kind", `unknown action kind: ${kind}`);
   if (known) return { kind, ...known, id: action.targetId ?? null };

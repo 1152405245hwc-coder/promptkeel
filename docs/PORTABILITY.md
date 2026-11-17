@@ -1,8 +1,12 @@
 # Cross-Host Portability
 
-`dsh-forge` separates host-specific runtime patching from portable agent configuration. The host registry currently includes ten adapters; DSH is one high-permission adapter rather than the core platform assumption:
+`dsh-forge` separates host-specific runtime patching from portable agent configuration. The host registry currently includes ten adapters; DSH is one high-permission adapter rather than the core platform assumption. Its patch surface, generated from `lib/table.mjs`:
 
-1. **Native DSH profile (`dsh`)** — applies the 8 version-gated JS patches (`lib/table.mjs`), handles `app.asar` unpacking, and installs `~/.dsh/prompt-inject.md`.
+<!-- forge-facts:begin -->
+16 host patches · 11 patched files · 10 `@deepseek-ai/*` packages · layers: approval 5, sandbox 6, turn 1, persona 3, session 1 · host range `>=0.2.1-rc.1 <0.3.0`
+<!-- forge-facts:end -->
+
+1. **Native DSH profile (`dsh`)** — applies the <!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> version-gated host patches (`lib/table.mjs`), handles `app.asar` unpacking, and installs `~/.dsh/prompt-inject.md`.
 2. **Host-adapter profiles (`claude-code`, `codex`, `gemini`, `opencode`, `cursor`, `windsurf`, `aider`, `continue`, `generic`)** — compile the same modular prompt into each harness's documented configuration files without patching minified runtime code.
 
 ```
@@ -16,7 +20,7 @@ Profile JSON ──▶ Host Adapter ──▶ Compiler (core/compile) ──▶ 
 
 | Host | Profile | Support | Prompt Surface | Policy Surface | Rollback | Notes |
 |---|---|---|---|---|---|---|
-| DSH macOS | `dsh` | `verified` | `~/.dsh/prompt-inject.md` + Cordis section | 8 JS patches (`lib/table.mjs`) | manifest + `sha256` | `0.2.1-rc.1` – `0.2.2-rc.3` tested |
+| DSH macOS | `dsh` | `verified` | `~/.dsh/prompt-inject.md` + Cordis section | <!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> host patches (`lib/table.mjs`) | manifest + `sha256` | `0.2.1-rc.1` – `0.2.2-rc.3` tested |
 | DSH Linux/Windows | `dsh` + `--host-root` | `experimental` | same | same anchors, custom install root | manifest + `sha256` | pass `--host-root` |
 | Claude Code | `claude-code` | `verified` | `CLAUDE.md` managed block | `.claude/settings.json` (`permissions.defaultMode`) | byte-exact | project-scoped |
 | Codex CLI | `codex` | `verified` | `AGENTS.md` managed block (project scope) | — | byte-exact | no global settings written |
@@ -119,5 +123,5 @@ dsh-forge revert-plan <plan-id>
 
 ## 6. Boundaries
 
-- The 8 JS anchors in `lib/table.mjs` and `lib/asar.mjs` are specific to DeepSeek Harness and are never applied to other hosts.
+- The <!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> version-gated anchors in `lib/table.mjs` and `lib/asar.mjs` are specific to DeepSeek Harness and are never applied to other hosts.
 - Saved plan JSON files (`--out plan.json`) contain resolved absolute target paths for the local machine and should be treated as machine-local artifacts.

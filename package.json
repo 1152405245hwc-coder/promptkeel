@@ -35,7 +35,10 @@
     "verify": "bash scripts/verify.sh",
     "check:repo": "bash scripts/check_repo.sh",
     "pack:check": "npm pack --dry-run",
-    "verify:profiles": "node scripts/verify-profiles.mjs"
+    "verify:profiles": "node scripts/verify-profiles.mjs",
+    "docs:check": "node scripts/check_docs.mjs --check",
+    "release:check": "bash scripts/release_check.sh",
+    "live:matrix": "node scripts/live_matrix.mjs"
   },
   "engines": {
     "node": ">=20"

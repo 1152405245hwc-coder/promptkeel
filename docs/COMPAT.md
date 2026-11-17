@@ -2,16 +2,30 @@
 
 | DSH Version | dsh-forge | Status |
 |---|---|---|
-| `0.2.1-rc.1` – `0.2.2-rc.3` | `0.1.x` | Verified on `0.2.2-rc.2` and `0.2.2-rc.3` (16/16 anchors match across 11 files; `apply` and `revert` restore identical `sha256` hashes, including packed `app.asar` builds) |
+| `0.2.1-rc.1` – `0.2.2-rc.3` | `0.1.x` | Verified on `0.2.2-rc.2` and `0.2.2-rc.3` (all <!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> anchors match across <!-- forge-facts:begin kind=files -->11<!-- forge-facts:end --> files; `apply` and `revert` restore identical `sha256` hashes, including packed `app.asar` builds) |
 | `< 0.2.1` | — | Unsupported (`systemPrompt.section` and client slot packages unavailable) |
 | `>= 0.3.0` | — | Blocked by default version range until anchors are verified with `dsh-forge adapt` |
 
+## Patch Surface
+
+<!-- forge-facts:begin kind=table -->
+| Fact | Value |
+| :--- | :--- |
+| Host patches | 16 |
+| Patched files | 11 |
+| `@deepseek-ai/*` packages | 10 |
+| Layers | `approval` 5 · `sandbox` 6 · `turn` 1 · `persona` 3 · `session` 1 |
+| Host version range | `>=0.2.1-rc.1 <0.3.0` |
+<!-- forge-facts:end -->
+
+Generate with `node scripts/check_docs.mjs`; `--check` fails when a document disagrees with `lib/table.mjs`.
+
 ## Handling DSH Upgrades
 
-The 16 patches modify 11 files across 10 packages under `node_modules/@deepseek-ai/`. When DSH updates:
+The <!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> patches modify <!-- forge-facts:begin kind=files -->11<!-- forge-facts:end --> files across <!-- forge-facts:begin kind=packages -->10<!-- forge-facts:end --> packages under `node_modules/@deepseek-ai/`. When DSH updates:
 
-1. Run `dsh-forge adapt` to inspect all 16 patch anchors without modifying disk files.
-2. If all 16 report `ready`, run `dsh-forge upgrade --yes`.
+1. Run `dsh-forge adapt` to inspect all <!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> patch anchors without modifying disk files.
+2. If all <!-- forge-facts:begin kind=patches -->16<!-- forge-facts:end --> report `ready`, run `dsh-forge upgrade --yes`.
 3. If any patch reports `miss` or `partial`, run `dsh-forge explain <patch-id>` to inspect the target file and add a versioned entry to `variants` in `lib/table.mjs`.
 4. `dsh-forge revert` checks `manifest.hostVersion` against the current DSH version and refuses to write older backups over a newer host unless `--force` is specified.
 

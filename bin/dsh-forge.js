@@ -9,7 +9,7 @@ import { unpackHostAsar } from "../lib/asar.mjs";
 import { PATCHES } from "../lib/table.mjs";
 import { composePrompt, checkBudget, writeInject, verifyProofs } from "../lib/inject.mjs";
 import { readPolicy, setPolicy, POLICIES, profileStatus, enableProfile, disableProfile } from "../lib/preset.mjs";
-import { reportsDir, ensureDir, dshHome, promptInjectPath, displayPath, redactText, VERSION } from "../lib/paths.mjs";
+import { reportsDir, ensureDir, dshHome, promptInjectPath, displayPath, redactText, logsDir, VERSION } from "../lib/paths.mjs";
 import { readLog, clearLogs, defaultLogFile, log, setLogFile } from "../lib/log.mjs";
 import { loadProfile, loadModel, listProfiles, listModels } from "../core/contract.mjs";
 import { ForgeError } from "../core/errors.mjs";
@@ -28,7 +28,6 @@ import { acquireLock, createConsole, renderOverview, CONSOLE_HOST, CONSOLE_PORT 
 import { consoleState } from "../lib/console-state.mjs";
 import { readAudit, summarizeAudit } from "../core/audit.mjs";
 import { writeSnapshot, pruneSnapshots, listSnapshots, SNAPSHOT_DEFAULTS } from "../core/snapshot.mjs";
-import { logsDir } from "../lib/paths.mjs";
 
 registerProvider(dshProvider);
 
@@ -400,7 +399,7 @@ function cmdProbe() {
   for (const row of result.rows) {
     const failedChecks = row.checks.filter((c) => !c.ok);
     const status = row.ok ? "pass" : "FAIL";
-    process.stdout.write(`${status.padEnd(5)} ${row.id.padEnd(20)} ${row.family.padEnd(9)} ${failedChecks.length ? failedChecks.map((c) => `${c.name}: ${c.detail}`).join("; ") : "active carry identity scaffold budget"}\n`);
+    process.stdout.write(`${status.padEnd(5)} ${row.id.padEnd(23)} ${row.family.padEnd(9)} ${failedChecks.length ? failedChecks.map((c) => `${c.name}: ${c.detail}`).join("; ") : row.checks.map((c) => c.name).join(" ")}\n`);
   }
   process.stdout.write(`score ${result.score} · self-check ${check.ok ? `detected ${check.detected.join("+")}` : "MISSED"} · families ${[...new Set(result.rows.map((r) => r.family))].join(",")}\n`);
   if (result.failed || !check.ok) process.exitCode = 1;

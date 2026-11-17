@@ -1,5 +1,11 @@
 # Architecture
 
+Patch surface facts for this document are generated from `lib/table.mjs`:
+
+<!-- forge-facts:begin -->
+16 host patches · 11 patched files · 10 `@deepseek-ai/*` packages · layers: approval 5, sandbox 6, turn 1, persona 3, session 1 · host range `>=0.2.1-rc.1 <0.3.0`
+<!-- forge-facts:end -->
+
 ## 1. Module Layering and Directory Structure
 
 `dsh-forge` is organized into two decoupled execution engines sharing a unified CLI and prompt corpus:
@@ -33,7 +39,7 @@ dsh-forge/
 │   └── modes/              # Task-specific overlays (coding, research, writing)
 ├── lib/                    # DSH-native runtime, ASAR unpacker, patch engine & Cordis plugin
 │   ├── dsh-provider.mjs    # Explicit bridge from core provider actions to DSH engine/ASAR
-│   ├── table.mjs           # 8 version-gated host patches (with per-version variants support)
+│   ├── table.mjs           # version-gated host patches (with per-version variants support)
 │   ├── engine.mjs          # inspectPatch, dryRun, coalesced atomic apply, revert, upgrade
 │   ├── asar.mjs            # Read-only app.asar header/file reader & atomic unpacker
 │   ├── inject.mjs          # DSH prompt composition, budget check, session log proof verification
@@ -65,7 +71,7 @@ sequenceDiagram
   CLI->>E: dryRun()
   E->>H: inspect anchors and version range (disk or app.asar)
   H-->>E: hit / applied / miss / partial
-  E-->>CLI: 8/8 ready
+  E-->>CLI: all anchors ready
   CLI->>E: apply()
   opt Host is packed in app.asar
     E->>A: unpackHostAsar() (stage -> atomic swap -> app.asar.bak)

@@ -45,7 +45,7 @@ export function renderPrompt({ profile, model, mode = null, persona = null, pers
   const parts = [];
   parts.push(readPart(root, profile.prompt.core));
   parts.push(readPart(root, model.prompt));
-  const hostPart = readPart(root, path.join("hosts", `${profile.host}.md`), { optional: true });
+  const hostPart = profile.host ? readPart(root, path.join("hosts", `${profile.host}.md`), { optional: true }) : null;
   if (hostPart) parts.push(hostPart);
   if (mode) {
     if (/[\\/]|\.\./.test(String(mode))) fail("prompt-path", `prompt mode escapes modes/: ${mode}`);
@@ -59,7 +59,8 @@ export function renderPrompt({ profile, model, mode = null, persona = null, pers
   const personaTransform = resolved && resolved.transform && resolved.transform !== "none" ? ` personaTransform=${resolved.transform}` : "";
   const personaTag = resolved && resolved.mode !== "off" ? ` persona=${resolved.id} personaMode=${resolved.mode}${personaTransform}` : "";
   const transformTag = bodyTransform ? ` transform=${bodyTransform}` : "";
-  const header = `<!-- dsh-forge profile=${profile.id} host=${profile.host} model=${model.id}${mode ? ` mode=${mode}` : ""}${personaTag}${transformTag} sha256:${bodySha.slice(0, 16)} -->`;
+  const hostTag = profile.host ? ` host=${profile.host}` : "";
+  const header = `<!-- dsh-forge profile=${profile.id}${hostTag} model=${model.id}${mode ? ` mode=${mode}` : ""}${personaTag}${transformTag} sha256:${bodySha.slice(0, 16)} -->`;
   const text = `${header}\n${body}\n`;
   return {
     text,

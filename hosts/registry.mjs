@@ -11,7 +11,7 @@ import * as continuation from "./continue.mjs";
 import { detectWithAdapter, normalizeAdapter } from "./adapter.mjs";
 import { fail } from "../core/errors.mjs";
 
-export { detectWithAdapter, normalizeAdapter } from "./adapter.mjs";
+export { detectWithAdapter, normalizeAdapter };
 
 export const HOSTS = {
   dsh,
