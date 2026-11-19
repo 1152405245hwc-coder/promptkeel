@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { loadProfile, loadModel, validateProfile, PROFILE_SCHEMA } from "../core/contract.mjs";
 import { compile } from "../core/compile.mjs";
-import { applyPlan, previewPlan, checkPreview, revertPlan, verifyPlan, verifyCompiled, mergeBlock, mergeJson, mergeToml, mergeYaml } from "../core/executor.mjs";
+import { applyPlan, previewPlan, checkPreview, revertPlan, verifyPlan, verifyCompiled, mergeBlock, mergeJson, mergeToml, mergeYaml, defaultStateRoot } from "../core/executor.mjs";
 import { renderPrompt } from "../core/prompt.mjs";
 import { PATCHES } from "../lib/table.mjs";
 import { normalizeFiles, replacementsOf } from "../lib/engine.mjs";
@@ -282,4 +282,9 @@ test("dsh profile applyPlan, verifyPlan, and revertPlan track patch state accura
   const reverted = revertPlan(applied.id, { env: { stateRoot: state } });
   assert.equal(reverted.ok, true);
   assert.equal(verifyPlan(applied.id, { stateRoot: state }).ok, false);
+});
+
+test("defaultStateRoot uses .dsh-forge-kit under home", () => {
+  const home = tmp();
+  assert.equal(defaultStateRoot({ home }), path.join(home, ".dsh-forge-kit"));
 });

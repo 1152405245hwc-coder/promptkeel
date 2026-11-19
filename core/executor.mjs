@@ -8,10 +8,11 @@ import { getProvider } from "./provider.mjs";
 
 export function defaultStateRoot(env = {}) {
   if (env.stateRoot) return path.resolve(env.stateRoot);
+  if (process.env.DSH_FORGE_KIT_STATE) return path.resolve(process.env.DSH_FORGE_KIT_STATE);
   if (process.env.DSH_FORGE_STATE) return path.resolve(process.env.DSH_FORGE_STATE);
-  if (env.home) return path.resolve(env.home, ".dsh-forge");
-  if (process.env.XDG_STATE_HOME) return path.resolve(process.env.XDG_STATE_HOME, "dsh-forge");
-  return path.resolve(os.homedir(), ".dsh-forge");
+  if (env.home) return path.resolve(env.home, ".dsh-forge-kit");
+  if (process.env.XDG_STATE_HOME) return path.resolve(process.env.XDG_STATE_HOME, "dsh-forge-kit");
+  return path.resolve(os.homedir(), ".dsh-forge-kit");
 }
 
 export function stateRoot(env = {}) {

@@ -78,7 +78,7 @@ test("dsh, hermes, and muse detection avoid market false positives and keep CI p
     const dshHome = path.join(root, "dsh-home");
     fs.mkdirSync(path.join(dshHost, "node_modules", "@deepseek-ai"), { recursive: true });
     fs.mkdirSync(path.join(dshHome, "profiles", "desktop", ".dsh-market"), { recursive: true });
-    fs.writeFileSync(path.join(dshHome, "profiles", "desktop", ".dsh-market", "discovery.json"), '{"packages":["dsh-forge"]}\n');
+    fs.writeFileSync(path.join(dshHome, "profiles", "desktop", ".dsh-market", "discovery.json"), '{"packages":["dsh-forge-kit"]}\n');
     const dshInstalled = detectHost("dsh", { home: root, env: { hostRoot: dshHost, dshHome } });
     assert.equal(dshInstalled.ok, true);
     assert.equal(dshInstalled.status, "installed");

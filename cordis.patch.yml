@@ -1,18 +1,20 @@
-# dsh-forge host patch layer.
-# Only one plugin node is inserted. Every known purge node is disabled so that
-# purge_status/purge_apply are not registered twice and only one systemPrompt
-# section owns the injected text. When both packages live in one profile, list
-# dsh-forge *after* dsh-purge-community in dsh.profile.bundles: the patch layer
-# runs in bundle order, and a disable entry for an id that has not been inserted
-# yet is skipped with a warning.
+# dsh-forge-kit host patch layer.
+# Only one plugin node is inserted. Every known purge node (and legacy
+# dsh-forge) is disabled so that purge_status/purge_apply are not registered
+# twice and only one systemPrompt section owns the injected text. When both
+# packages live in one profile, list dsh-forge-kit *after* dsh-purge-community
+# in dsh.profile.bundles: the patch layer runs in bundle order, and a disable
+# entry for an id that has not been inserted yet is skipped with a warning.
 - insert:
-    - id: dsh-forge
-      name: dsh-forge
+    - id: dsh-forge-kit
+      name: dsh-forge-kit
       inject: [systemPrompt]
       config:
         enabled: true
         adapter: deepseek
         mode: null
+- id: dsh-forge
+  disabled: true
 - id: dsh-purge
   disabled: true
 - id: dsh-purge-safe

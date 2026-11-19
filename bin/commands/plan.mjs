@@ -181,7 +181,7 @@ export function cmdForgeApply() {
 export function cmdPlans() {
   out({ plans: listPlans({
     stateRoot: stateRootPath(),
-    hostRoot: optionValue("host-root", process.env.DSH_FORGE_HOST_ROOT || undefined),
+    hostRoot: optionValue("host-root", process.env.DSH_FORGE_KIT_HOST_ROOT || process.env.DSH_FORGE_HOST_ROOT || undefined),
   }) }, flags.has("--json"));
 }
 
@@ -190,7 +190,7 @@ export function cmdVerifyPlan() {
   if (!id) { usage(); process.exitCode = 2; return; }
   const result = verifyPlan(id, {
     stateRoot: stateRootPath(),
-    hostRoot: optionValue("host-root", process.env.DSH_FORGE_HOST_ROOT || undefined),
+    hostRoot: optionValue("host-root", process.env.DSH_FORGE_KIT_HOST_ROOT || process.env.DSH_FORGE_HOST_ROOT || undefined),
   });
   out(result, flags.has("--json"));
   process.exitCode = result.ok ? 0 : 1;
@@ -203,7 +203,7 @@ export function cmdRevertPlan() {
     force: flags.has("--force"),
     env: {
       stateRoot: stateRootPath(),
-      hostRoot: optionValue("host-root", process.env.DSH_FORGE_HOST_ROOT || undefined),
+      hostRoot: optionValue("host-root", process.env.DSH_FORGE_KIT_HOST_ROOT || process.env.DSH_FORGE_HOST_ROOT || undefined),
     },
   });
   out(result, flags.has("--json"));

@@ -12,6 +12,8 @@ __pycache__/
 
 .dsh-forge/
 .dsh-forge-state/
+.dsh-forge-kit/
+.dsh-forge-kit-state/
 
 # Local forge state and generated project instructions
 AGENTS.md

@@ -75,8 +75,14 @@ export function initCli(argv = process.argv.slice(2)) {
     options: PARSE_OPTIONS,
   });
   opts = parsed.values;
-  if (opts["host-root"]) process.env.DSH_FORGE_HOST_ROOT = opts["host-root"];
-  if (opts.profile && ["desktop", "web"].includes(opts.profile)) process.env.DSH_FORGE_PROFILE = opts.profile;
+  if (opts["host-root"]) {
+    process.env.DSH_FORGE_KIT_HOST_ROOT = opts["host-root"];
+    process.env.DSH_FORGE_HOST_ROOT = opts["host-root"];
+  }
+  if (opts.profile && ["desktop", "web"].includes(opts.profile)) {
+    process.env.DSH_FORGE_KIT_PROFILE = opts.profile;
+    process.env.DSH_FORGE_PROFILE = opts.profile;
+  }
   command = opts.version ? "version" : opts.help ? "help" : (parsed.positionals[0] || "help");
   positional = parsed.positionals.slice(1);
   return { opts, command, positional, flags };
@@ -121,7 +127,7 @@ export function forgeContext() {
   const explicitState = optionValue("state", null);
   const explicitHome = optionValue("home", null);
   const stateRoot = explicitState || defaultStateRoot(explicitHome ? { home: explicitHome } : {});
-  const hostRoot = optionValue("host-root", process.env.DSH_FORGE_HOST_ROOT || undefined);
+  const hostRoot = optionValue("host-root", process.env.DSH_FORGE_KIT_HOST_ROOT || process.env.DSH_FORGE_HOST_ROOT || undefined);
   const home = explicitHome || process.env.HOME || process.env.USERPROFILE;
   const context = normalizeContext({
     hostId: profile.host,
@@ -140,7 +146,7 @@ export function forgeContext() {
 }
 
 export function usage() {
-  out(`dsh-forge ${VERSION}
+  out(`dsh-forge-kit ${VERSION} (CLI: dsh-forge-kit / dsh-forge / dsh-session)
 
 Usage:
   dsh-forge doctor [--json]                     run 12 host checks
@@ -181,8 +187,9 @@ Usage:
   dsh-forge models [--json]
 
 Environment:
-  DSH_HOME                 default ~/.dsh
-  DSH_FORGE_PROFILE        default desktop
-  DSH_FORGE_HOST_ROOT      override host root (or pass --host-root)
-  DSH_FORGE_DEBUG=1        verbose event log`);
+  DSH_HOME                    default ~/.dsh
+  DSH_FORGE_KIT_STATE         default ~/.dsh-forge-kit (legacy alias: DSH_FORGE_STATE)
+  DSH_FORGE_KIT_PROFILE       default desktop (legacy alias: DSH_FORGE_PROFILE)
+  DSH_FORGE_KIT_HOST_ROOT     override host root (or pass --host-root; legacy: DSH_FORGE_HOST_ROOT)
+  DSH_FORGE_DEBUG=1           verbose event log`);
 }

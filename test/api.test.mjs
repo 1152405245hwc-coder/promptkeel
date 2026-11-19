@@ -89,14 +89,14 @@ test("API route handler serves prompt, rejects invalid JSON/policy/content-type,
   assert.ok(route && typeof route.handler === "function");
 
   const promptRes = fake();
-  await route.handler(makeReq("GET", "/dsh-forge/api/prompt"), promptRes);
+  await route.handler(makeReq("GET", "/dsh-forge-kit/api/prompt"), promptRes);
   assert.equal(promptRes.code, 200);
   const promptBody = JSON.parse(promptRes.body);
   assert.equal(promptBody.ok, true);
   assert.ok(promptBody.tokens < 480, `tokens=${promptBody.tokens}`);
 
   const statusRes = fake();
-  await route.handler(makeReq("GET", "/dsh-forge/api/status"), statusRes);
+  await route.handler(makeReq("GET", "/dsh-forge-kit/api/status"), statusRes);
   assert.equal(statusRes.code, 200);
   const statusBody = JSON.parse(statusRes.body);
   assert.ok(statusBody.grades.length >= 10);
@@ -107,7 +107,7 @@ test("API route handler serves prompt, rejects invalid JSON/policy/content-type,
 
   const compileRes = fake();
   await route.handler(
-    makeReq("POST", "/dsh-forge/api/compile", {
+    makeReq("POST", "/dsh-forge-kit/api/compile", {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ profile: "generic", model: "glm-5.3-flash", mode: "writing", persona: "none" }),
     }),
@@ -132,7 +132,7 @@ test("API route handler serves prompt, rejects invalid JSON/policy/content-type,
     const gwPort = mockGateway.address().port;
     const liveRes = fake();
     await route.handler(
-      makeReq("POST", "/dsh-forge/api/live-run", {
+      makeReq("POST", "/dsh-forge-kit/api/live-run", {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           gateway: `http://127.0.0.1:${gwPort}/v1`,
@@ -158,7 +158,7 @@ test("API route handler serves prompt, rejects invalid JSON/policy/content-type,
 
   const badJsonRes = fake();
   await route.handler(
-    makeReq("POST", "/dsh-forge/api/policy", {
+    makeReq("POST", "/dsh-forge-kit/api/policy", {
       headers: { "content-type": "application/json" },
       body: "{bad",
     }),
@@ -168,7 +168,7 @@ test("API route handler serves prompt, rejects invalid JSON/policy/content-type,
 
   const badPolicyRes = fake();
   await route.handler(
-    makeReq("POST", "/dsh-forge/api/policy", {
+    makeReq("POST", "/dsh-forge-kit/api/policy", {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ policy: "invalid-policy" }),
     }),
@@ -178,7 +178,7 @@ test("API route handler serves prompt, rejects invalid JSON/policy/content-type,
 
   const badTypeRes = fake();
   await route.handler(
-    makeReq("POST", "/dsh-forge/api/policy", {
+    makeReq("POST", "/dsh-forge-kit/api/policy", {
       headers: { "content-type": "text/plain" },
       body: "strict",
     }),
@@ -187,6 +187,6 @@ test("API route handler serves prompt, rejects invalid JSON/policy/content-type,
   assert.equal(badTypeRes.code, 415);
 
   const notFoundRes = fake();
-  await route.handler(makeReq("GET", "/dsh-forge/api/no-such-op"), notFoundRes);
+  await route.handler(makeReq("GET", "/dsh-forge-kit/api/no-such-op"), notFoundRes);
   assert.equal(notFoundRes.code, 404);
 });

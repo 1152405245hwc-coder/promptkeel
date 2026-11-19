@@ -1,11 +1,13 @@
 {
-  "name": "dsh-forge",
-  "version": "0.1.0",
+  "name": "dsh-forge-kit",
+  "version": "0.2.0",
   "description": "Prompt injection, declarative host adapters, and deterministic multi-platform profiles for DSH, Claude Code, Codex CLI, Gemini CLI, OpenCode, Cursor, Windsurf, Aider, and Continue",
   "type": "module",
   "license": "MIT",
   "bin": {
-    "dsh-forge": "bin/dsh-forge.js"
+    "dsh-forge-kit": "bin/dsh-forge.js",
+    "dsh-forge": "bin/dsh-forge.js",
+    "dsh-session": "bin/dsh-session.js"
   },
   "files": [
     "bin/",
@@ -39,7 +41,9 @@
     "verify:profiles": "node scripts/verify-profiles.mjs",
     "docs:check": "node scripts/check_docs.mjs --check",
     "release:check": "bash scripts/release_check.sh",
-    "live:matrix": "node scripts/live_matrix.mjs"
+    "live:matrix": "node scripts/live_matrix.mjs",
+    "session": "node scripts/session.mjs",
+    "version:bump": "node scripts/bump_version.mjs"
   },
   "engines": {
     "node": ">=20"

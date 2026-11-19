@@ -2,7 +2,7 @@ const React = require("react");
 const h = React.createElement;
 const { useState, useEffect, useCallback } = React;
 
-const NS = "dsh-forge";
+const NS = "dsh-forge-kit";
 const TABS = [
   { id: "overview", label: "总览" },
   { id: "patches", label: "补丁" },
@@ -15,7 +15,7 @@ const TABS = [
 ];
 
 function api(path, options) {
-  return fetch("/dsh-forge/api" + path, {
+  return fetch("/dsh-forge-kit/api" + path, {
     headers: { "content-type": "application/json" },
     ...options,
   }).then(async (res) => {
@@ -357,6 +357,6 @@ export const name = NS;
 export const inject = ["slots", "locale", "connection"];
 
 export function apply(ctx) {
-  ctx.slots.inject("sidebar.panellist", () => ctx.slots.register({ name: "sidebar.panellist", id: "dsh-forge", order: 40, label: "Forge" }, ForgeIcon));
-  ctx.slots.inject("main", () => ctx.slots.register({ name: "main", key: "dsh-forge" }, Shell));
+  ctx.slots.inject("sidebar.panellist", () => ctx.slots.register({ name: "sidebar.panellist", id: "dsh-forge-kit", order: 40, label: "Forge" }, ForgeIcon));
+  ctx.slots.inject("main", () => ctx.slots.register({ name: "main", key: "dsh-forge-kit" }, Shell));
 }

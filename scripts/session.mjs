@@ -386,7 +386,7 @@ usage:
   dsh-session matrix --models a,b,c --task <text> [--turns N] [--send] [--state <dir>]
 
 notes:
-  - sessions persist under <state-root>/sessions; state root defaults to ~/.dsh-forge (overridden by --state or DSH_FORGE_STATE)
+  - sessions persist under <state-root>/sessions; state root defaults to ~/.dsh-forge-kit (overridden by --state, DSH_FORGE_KIT_STATE, or DSH_FORGE_STATE)
   - every turn re-asserts the task frame; a withheld/blocked turn escalates to the next arm in the model family ladder
   - --send requires the provider API key in its environment variable (e.g. OPENAI_API_KEY)
   - a turn degrades on its own: message shape history -> single -> bare, and system placement
