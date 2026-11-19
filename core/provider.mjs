@@ -16,12 +16,3 @@ export function getProvider(id) {
   if (!provider) fail("provider-unsupported", `provider ${id || "(missing)"} is not registered`, { provider: id || null });
   return provider;
 }
-
-export function providerForAction(action) {
-  if (action?.op === "dsh-patches") return getProvider(action.provider || "dsh.patches");
-  return null;
-}
-
-export function listProviders() {
-  return [...PROVIDERS.values()].map(({ id, version }) => ({ id, version: version || null }));
-}

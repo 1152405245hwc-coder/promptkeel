@@ -47,8 +47,3 @@ export function preflight(profile, { host, model }) {
     risk: profile.risk || "medium",
   };
 }
-
-export function requireSupport(profile, minimum = "experimental") {
-  const rank = RANK[profile.support || weakest(profile)] || 0;
-  assert(rank >= RANK[minimum], "support-level", `profile ${profile.id} is below required support level ${minimum}`);
-}

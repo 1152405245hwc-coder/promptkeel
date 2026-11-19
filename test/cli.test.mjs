@@ -167,3 +167,23 @@ test("CLI strategies, run --dry-run, and gemini/continue B4 lifecycle succeed", 
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("CLI run infers forge model from live model id and compile accepts persona=none", () => {
+  const runDry = run(["run", "--dry-run", "--gateway", "default", "--profile", "generic", "--model", "glm-5.3-flash", "--mode", "writing", "--strategy", "narrative", "--prompt-text", "scene", "--json"]);
+  assert.equal(runDry.status, 0, runDry.stderr);
+  const body = JSON.parse(runDry.stdout);
+  assert.equal(body.forgeModel, "glm");
+  assert.equal(body.mode, "writing");
+  assert.equal(body.strategy.script, "narrative");
+
+  const compileNone = run(["compile", "generic", "--persona", "none", "--json"]);
+  assert.equal(compileNone.status, 0, compileNone.stderr);
+  assert.equal(JSON.parse(compileNone.stdout).persona, null);
+});
+
+test("dsh-forge session forwards to dsh-session CLI", () => {
+  const res = run(["session", "--help"]);
+  assert.equal(res.status, 0, res.stderr);
+  assert.match(res.stdout, /dsh-session — persistent/);
+  assert.match(res.stdout, /dsh-session matrix/);
+});
