@@ -1,6 +1,6 @@
 # NOTICE
 
-`dsh-forge` is an independent implementation of declarative host patching, modular prompt composition, and deterministic cross-host profile compilation.
+`PromptKeel` (`promptkeel`, formerly `dsh-forge` / `dsh-forge-kit`) is an independent implementation of declarative host patching, modular prompt composition, and deterministic cross-host profile compilation.
 
 ## Acknowledgements and Prior Art
 

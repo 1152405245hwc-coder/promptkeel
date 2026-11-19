@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" width="1200" height="420" role="img" aria-label="PromptKeel (龙骨) — Zero-drift prompt compiler &amp; transactional rollback for coding agents">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0B0E13"/>
+      <stop offset="55%" stop-color="#111822"/>
+      <stop offset="100%" stop-color="#16202C"/>
+    </linearGradient>
+    <radialGradient id="amberGlow" cx="14%" cy="10%" r="55%">
+      <stop offset="0%" stop-color="#F0B35B" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#F0B35B" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="keelBadge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F5C374"/>
+      <stop offset="100%" stop-color="#C9872B"/>
+    </linearGradient>
+    <linearGradient id="cardBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#18212C"/>
+      <stop offset="100%" stop-color="#121821"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-5%" y="-6%" width="110%" height="116%">
+      <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- Canvas -->
+  <rect width="1200" height="420" rx="20" fill="url(#bg)"/>
+  <rect width="1200" height="420" rx="20" fill="url(#amberGlow)"/>
+  <rect x="0.75" y="0.75" width="1198.5" height="418.5" rx="19.5" fill="none" stroke="#253140" stroke-width="1.5"/>
+
+  <!-- Subtle spine structural rule -->
+  <line x1="68" y1="36" x2="68" y2="384" stroke="#232D3A" stroke-width="1.5"/>
+  <circle cx="68" cy="76" r="3.5" fill="#F0B35B"/>
+
+  <!-- Monogram & Eyebrow -->
+  <rect x="92" y="54" width="44" height="44" rx="10" fill="url(#keelBadge)"/>
+  <text x="114" y="84" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="24" font-weight="800" fill="#120E07">K</text>
+
+  <text x="150" y="73" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif" font-size="13" font-weight="700" letter-spacing="1.6" fill="#F0B35B">ZERO-DRIFT AGENT COMPILER · NODE 20+</text>
+  <text x="150" y="94" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11.5" fill="#8A97A6">0 RUNTIME DEPS · SHA-256 LOCKED PLANS · BYTE-EXACT ROLLBACK</text>
+
+  <!-- Brand & Tagline -->
+  <text x="92" y="166" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif" font-size="54" font-weight="800" letter-spacing="-0.8" fill="#E7EEF6">PromptKeel</text>
+  <text x="412" y="164" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Sans CJK SC', sans-serif" font-size="26" font-weight="600" fill="#9AA7B6">龙骨</text>
+
+  <text x="92" y="210" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="19" font-weight="500" fill="#D5DFE9">Deterministic prompt &amp; policy compiler for coding agents —</text>
+  <text x="92" y="238" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="19" font-weight="400" fill="#98A5B3">compiled under budget, verified by hash, reversible to the byte.</text>
+
+  <!-- Metric Pills -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12.5" font-weight="700">
+    <rect x="92" y="278" width="136" height="34" rx="8" fill="#19222E" stroke="#2B3848"/>
+    <text x="160" y="300" text-anchor="middle" fill="#5FD39B">0 Runtime Deps</text>
+
+    <rect x="240" y="278" width="146" height="34" rx="8" fill="#19222E" stroke="#2B3848"/>
+    <text x="313" y="300" text-anchor="middle" fill="#F0B35B">4 Verified Hosts</text>
+
+    <rect x="398" y="278" width="128" height="34" rx="8" fill="#19222E" stroke="#2B3848"/>
+    <text x="462" y="300" text-anchor="middle" fill="#E7EEF6">224+ Tests</text>
+  </g>
+
+  <text x="92" y="358" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="13.5" fill="#7D8B9B">Claude Code · Codex CLI · OpenCode · DSH · 127.0.0.1:7788 Studio</text>
+
+  <!-- Right Preview Card: Compile, Verify & Adaptive Session Loop -->
+  <g filter="url(#cardShadow)">
+    <rect x="636" y="46" width="492" height="328" rx="14" fill="url(#cardBg)" stroke="#293545" stroke-width="1.2"/>
+  </g>
+
+  <!-- Terminal Bar -->
+  <rect x="660" y="70" width="444" height="40" rx="9" fill="#0B0E13" stroke="#24303F"/>
+  <circle cx="680" cy="90" r="4.5" fill="#5FD39B"/>
+  <text x="696" y="95" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" fill="#E7EEF6">$ promptkeel apply --profile codex --yes</text>
+
+  <!-- Verification Block -->
+  <rect x="660" y="126" width="444" height="140" rx="10" fill="#0E131B" stroke="#24303F"/>
+  <rect x="660" y="126" width="5" height="140" rx="2.5" fill="#F0B35B"/>
+  <text x="680" y="152" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11.5" font-weight="700" fill="#F0B35B">PLAN VERIFIED · 319 / 480 TOKENS · GRADE: REPLACE-FULL</text>
+  <text x="680" y="180" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12.5" fill="#D4DEE8">beforeSha -&gt; afterSha · symlink guard PASS</text>
+  <text x="680" y="206" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12.5" fill="#9BB0C4">session: full -&gt; inline -&gt; lock -&gt; bare (UCB1)</text>
+  <text x="680" y="232" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12.5" fill="#5FD39B">classifierHash stamped · proxy-banner guard OK</text>
+  <text x="680" y="254" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" fill="#6F7E8E">manifest stored under ~/.promptkeel/plans/&lt;planId&gt;/</text>
+
+  <!-- Action Pills -->
+  <rect x="660" y="282" width="214" height="42" rx="8" fill="#F0B35B"/>
+  <text x="767" y="308" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="13" font-weight="700" fill="#140F05">Zero-Drift Revert Plan</text>
+
+  <rect x="886" y="282" width="218" height="42" rx="8" fill="#1E2835" stroke="#2F3D4F"/>
+  <text x="995" y="308" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="13" font-weight="600" fill="#E7EEF6">23 Gated DSH Patches</text>
+
+  <text x="662" y="352" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11.5" fill="#7D8B9B">Loopback 127.0.0.1:7788 Studio · MIT License · Offline-First</text>
+</svg>

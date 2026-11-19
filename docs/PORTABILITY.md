@@ -1,6 +1,6 @@
 # Cross-Host Portability
 
-`dsh-forge-kit` separates host-specific runtime patching from portable agent configuration. The host registry includes <!-- forge-facts:begin kind=profiles -->13<!-- forge-facts:end --> adapters divided into **4 verified primary hosts** (`dsh`, `claude-code`, `codex`, `opencode`) backed by golden detection fixtures (`test/fixtures/hosts/`) and **9 frozen / experimental profiles**. Its DSH patch surface, generated from `lib/table.mjs`:
+`promptkeel` separates host-specific runtime patching from portable agent configuration. The host registry includes <!-- forge-facts:begin kind=profiles -->13<!-- forge-facts:end --> adapters divided into **4 verified primary hosts** (`dsh`, `claude-code`, `codex`, `opencode`) backed by golden detection fixtures (`test/fixtures/hosts/`) and **9 frozen / experimental profiles**. Its DSH patch surface, generated from `lib/table.mjs`:
 
 <!-- forge-facts:begin -->
 23 host patches · 18 patched files · 17 `@deepseek-ai/*` packages · layers: approval 7, sandbox 9, turn 1, persona 4, session 2 · host range `>=0.2.1-rc.1 <0.3.0`
@@ -62,7 +62,7 @@ core.md ──▶ models/<model>.md ──▶ hosts/<host>.md ──▶ modes/<m
 | Guarantee | Mechanism |
 |---|---|
 | **Deterministic compilation** | Same `(profile, model, mode)` produces the exact same `planId` and prompt `sha256` across machines; absolute local paths are excluded from the `planId` digest (`core/compile.mjs`). |
-| **Byte-exact rollback** | Every existing file is backed up under `~/.dsh-forge-kit/plans/<id>/files/` with `beforeSha` and `afterSha` before the first write (`core/executor.mjs`). |
+| **Byte-exact rollback** | Every existing file is backed up under `~/.promptkeel/plans/<id>/files/` with `beforeSha` and `afterSha` before the first write (`core/executor.mjs`). |
 | **Explicit capability reporting** | Every profile declares `verified`, `experimental`, or `unsupported` across `prompt`, `approval`, `sandbox`, `tools`, and `rollback` (`core/capabilities.mjs`). |
 | **Drift protection** | `revert-plan` re-hashes every target file and refuses to overwrite files edited after apply unless `--force` is passed. |
 | **Scope containment** | Target paths are resolved strictly inside their declared `project` or `user` root; `..` traversal and symlinks (including dangling symlinks) are rejected before any write. |

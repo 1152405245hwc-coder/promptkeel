@@ -1,12 +1,12 @@
 # Engineer Onboarding (30-Minute Ramp-Up)
 
-`dsh-forge-kit` is a **deterministic prompt/policy compiler + transactional executor + persistent adaptive session runtime** (`Node >= 20`, zero runtime npm dependencies).
+`promptkeel` (**PromptKeel / 龙骨**) is a **deterministic prompt/policy compiler + transactional executor + persistent adaptive session runtime** (`Node >= 20`, zero runtime npm dependencies).
 
 ## 1. Mental Model & Layering (5 min)
 
 ```text
-bin/dsh-forge.js + bin/commands/{shared,dsh,plan,runtime}.mjs   ──▶ CLI dispatch (+ `session` -> scripts/session.mjs)
-bin/dsh-session.js                                              ──▶ Persistent session CLI (`dsh-session`)
+bin/dsh-forge.js + bin/commands/{shared,dsh,plan,runtime}.mjs   ──▶ CLI dispatch (`promptkeel` / `dsh-forge` + `session`)
+bin/dsh-session.js                                              ──▶ Persistent session CLI (`promptkeel-session` / `dsh-session`)
 core/                                                           ──▶ Host-neutral public API (`core/index.mjs`)
   ├── contract, prompt, compile, persona, transform, probe      ──▶ Pure policy compiler (< 480 tok ceiling)
   ├── executor, batch, channels, grades, shim, audit, snapshot  ──▶ Transactional file writer & rollback
@@ -24,13 +24,13 @@ Runtime files are split cleanly by ownership so testing never pollutes your live
 
 ```text
 ~/.dsh/
-  ├── prompt-inject.md                  # DSH prompt channel (`dsh-forge prompt install`)
-  └── dsh-forge-kit/                    # DSH-native state (`DSH_HOME`)
+  ├── prompt-inject.md                  # DSH prompt channel (`promptkeel prompt install`)
+  └── promptkeel/                       # DSH-native state (`DSH_HOME`)
       ├── backups/<id>/manifest.json    # DSH patch backups + sha256
       ├── logs/forge-YYYYMMDD.jsonl
       └── preset.json
 
-~/.dsh-forge-kit/                       # Cross-host & session state (`--state` or `DSH_FORGE_KIT_STATE`)
+~/.promptkeel/                          # Cross-host & session state (`--state` or `PROMPTKEEL_STATE`)
   ├── plans/<id>/manifest.json          # Cross-host transactional backups & revert manifests
   ├── snapshots/                        # Pruned prompt snapshots
   └── sessions/

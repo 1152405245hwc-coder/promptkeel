@@ -24,13 +24,13 @@
 
 ## 0.2.0 Release State
 
-Shipped in this cut (`dsh-forge-kit`):
+Shipped in this cut (**PromptKeel** / `promptkeel`):
 
-- **Distribution rename (`dsh-forge-kit`)**: renamed package, Cordis plugin node, loopback API `/dsh-forge-kit/api`, client module ID, and default state roots (`~/.dsh-forge-kit/`, `~/.dsh/dsh-forge-kit/`) with legacy `DSH_FORGE_*` fallbacks and bundle auto-migration; trimmed `docs/research/` and `tools/` out of published npm tarballs.
+- **Distribution rebrand (`promptkeel`)**: rebranded from `dsh-forge` / `dsh-forge-kit` to `promptkeel`, updated Cordis plugin node, loopback API `/promptkeel/api`, client module ID, and default state roots (`~/.promptkeel/`, `~/.dsh/promptkeel/`) with legacy `dsh-forge` / `dsh-session` CLI aliases, `DSH_FORGE_*` fallbacks, and bundle auto-migration; trimmed `docs/research/` and `tools/` out of published npm tarballs.
 - **Verified 4-host core + golden fixtures**: promoted `opencode` to `verified` alongside `dsh`, `claude-code`, and `codex`; added synthetic golden detection fixtures (`test/fixtures/hosts/`, `test/host-fixtures.test.mjs`) and expanded CI (`ubuntu-latest` + `macos-latest` × Node `20`/`22`).
-- **`dsh-session` + transport & matrix fixes**: fixed `bare` system-leak in `systemVariants()`, `variantRejected()` `httpStatus` reading, replay/continuity filtering (`REPLAYABLE_VERDICTS`), `thin` arm escalation, `consecutiveFailures` off-by-one & transport-error exclusion, concurrent `recordFamilyDelta()` merging, `matrix` dry-run isolation, in-process `live_matrix.mjs` compile parity, `chatcmpl-freeipblk*` proxy-block detection, `classifierHash()` stamping, and added `test/session-e2e.test.mjs` HTTP fixture suite.
-- **CLI & core API curation**: split `bin/dsh-forge.js` into `bin/commands/{shared,dsh,plan,runtime}.mjs` (+ `dsh-forge session` forwarding), tightened `core/index.mjs` to explicit named exports (`test/public-api.test.mjs`), and removed unreferenced exports & `live_matrix.mjs` re-export shim.
-- **Onboarding, engineering rules & skill**: added `docs/ONBOARDING.md`, `lib/README.md`, `docs/ENGINEERING_RULES.md`, `.agent/skills/dsh-forge-kit-workflow/SKILL.md`, and snapshot banners on `docs/research/*.md`.
+- **`promptkeel session` (`dsh-session`) + transport & matrix fixes**: fixed `bare` system-leak in `systemVariants()`, `variantRejected()` `httpStatus` reading, replay/continuity filtering (`REPLAYABLE_VERDICTS`), `thin` arm escalation, `consecutiveFailures` off-by-one & transport-error exclusion, concurrent `recordFamilyDelta()` merging, `matrix` dry-run isolation, in-process `live_matrix.mjs` compile parity, `chatcmpl-freeipblk*` proxy-block detection, `classifierHash()` stamping, and added `test/session-e2e.test.mjs` HTTP fixture suite.
+- **CLI & core API curation**: split `bin/dsh-forge.js` into `bin/commands/{shared,dsh,plan,runtime}.mjs` (+ `session` forwarding), tightened `core/index.mjs` to explicit named exports (`test/public-api.test.mjs`), and removed unreferenced exports & `live_matrix.mjs` re-export shim.
+- **Onboarding, launch kit, engineering rules & skill**: added `docs/ONBOARDING.md`, `lib/README.md`, `docs/ENGINEERING_RULES.md`, `docs/LAUNCH-KIT.md`, `docs/assets/hero.svg`, `CONTRIBUTING.md`, `SECURITY.md`, `.agent/skills/promptkeel-workflow/SKILL.md`, and snapshot banners on `docs/research/*.md`.
 - **Shared Host-header guard & release tooling**: extracted `core/net.mjs`, codified `docs/MEASUREMENT_RULES.md`, added `scripts/bump_version.mjs` and `scripts/release_check.sh`.
 
 Open before a public publish:

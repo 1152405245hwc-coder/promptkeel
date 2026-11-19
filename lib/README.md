@@ -6,7 +6,7 @@
 - `asar.mjs` — read-only `app.asar` inspection and atomic unpacker.
 - `inject.mjs` & `preset.mjs` — `~/.dsh/prompt-inject.md` and `dsh.profile.bundles` integration.
 - `doctor.mjs` & `console-state.mjs` — 12-point DSH host diagnostic checks.
-- `index.js` — Cordis plugin (`dsh-forge-kit`), `/forge` slash command, and `/dsh-forge-kit/api` handler.
+- `index.js` — Cordis plugin (`promptkeel`), `/forge` slash command, and `/promptkeel/api` handler.
 - `dsh-provider.mjs` & `dsh-contract.mjs` — synchronous bridge exposed to `core/`.
 
-All host-neutral public APIs (prompt compiler, transactional executor, strategy engine, gateway client, and persistent `dsh-session` runtime) live in [`../core/`](../core/index.mjs). `core/` is strictly forbidden from importing `lib/` (enforced by `scripts/check_repo.sh`).
+All host-neutral public APIs (prompt compiler, transactional executor, strategy engine, gateway client, and persistent `promptkeel-session` runtime) live in [`../core/`](../core/index.mjs). `core/` is strictly forbidden from importing `lib/` (enforced by `scripts/check_repo.sh`).

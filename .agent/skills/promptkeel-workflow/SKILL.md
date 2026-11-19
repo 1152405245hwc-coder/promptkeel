@@ -1,11 +1,11 @@
 ---
-name: dsh-forge-kit-workflow
-description: Pre-commit slicing, HTTP fixture E2E verification, anti-contamination live-evaluation, and 5-gate release workflow for dsh-forge-kit.
+name: promptkeel-workflow
+description: Pre-commit slicing, HTTP fixture E2E verification, anti-contamination live-evaluation, and 5-gate release workflow for PromptKeel (promptkeel).
 ---
 
-# `dsh-forge-kit` Engineering & Release Workflow
+# `promptkeel` Engineering & Release Workflow
 
-Follow this checklist for every feature, fix, live evaluation, or release in `dsh-forge-kit`.
+Follow this checklist for every feature, fix, live evaluation, or release in `promptkeel`.
 
 ## 1. Change & Commit Slicing
 
@@ -21,7 +21,7 @@ Follow this checklist for every feature, fix, live evaluation, or release in `ds
   - Multi-message / lock rejections degrading `history -> single -> bare` (exact bare payload on the wire)
   - Proxy block payloads (`chatcmpl-freeipblk*`, `[magpie/*]`) classified as `upstream_error` / `blocked`
   - Parity between `live_matrix.mjs --dry-run --dump-request` and live requests
-- **Primary Host (`dsh`, `claude-code`, `codex`, `opencode`) changes:** Update `test/fixtures/hosts/<host>/` and verify `test/host-fixtures.test.mjs` distinguishes `missing`, `installed`, `configured`, `active`, and false positives.
+- **Primary Host (`dsh`, `claude-code`, `codex`, `opencode`) changes:** Update `test/fixtures/hosts/<host>/` and verify `test/host-fixtures.test.mjs` distinguishes `missing`, `configured`, `active`, and false positives.
 
 ## 3. Anti-Contamination Live Evaluation Checklist
 

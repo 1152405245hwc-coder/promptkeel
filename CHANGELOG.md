@@ -4,19 +4,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Sem
 
 ## [0.2.0] - 2026-11-19
 
-First release of `dsh-forge-kit` (renamed from `dsh-forge`) with a verified 4-host core (`dsh`, `claude-code`, `codex`, `opencode`) backed by golden fixtures, a hardened persistent delivery session loop (`dsh-session` / `dsh-forge session`), and strict anti-regression / measurement guardrails.
+First release of **PromptKeel (`promptkeel`)** (rebranded from `dsh-forge` / `dsh-forge-kit`) with a verified 4-host core (`dsh`, `claude-code`, `codex`, `opencode`) backed by golden fixtures, a hardened persistent delivery session loop (`promptkeel session` / `promptkeel-session`), and strict anti-regression / measurement guardrails.
 
 **Upgrade & migration notes**
 
-- **Package, plugin ID, route & state root rename (`dsh-forge-kit`)**:
-  - Package name, Cordis plugin node, and DSH client module ID moved from `dsh-forge` to `dsh-forge-kit`; `cordis.patch.yml` disables any legacy `dsh-forge` node alongside `dsh-purge*`, and `dsh-forge profile enable` migrates legacy `dsh-forge` bundle entries automatically.
-  - Loopback API prefix moved from `/dsh-forge/api` to `/dsh-forge-kit/api`.
-  - Default state roots moved to `~/.dsh-forge-kit/` (`$XDG_STATE_HOME/dsh-forge-kit`, env `DSH_FORGE_KIT_STATE` with legacy fallback `DSH_FORGE_STATE`) and `~/.dsh/dsh-forge-kit/`. Environment overrides `DSH_FORGE_KIT_PROFILE` and `DSH_FORGE_KIT_HOST_ROOT` retain fallbacks to `DSH_FORGE_*`.
-  - Binaries: `dsh-forge-kit`, `dsh-forge`, and `dsh-session` (`dsh-forge session` also forwards to `dsh-session`). Managed block markers (`<!-- dsh-forge ... -->`) stay unchanged so existing host blocks remain idempotent.
+- **Package, plugin ID, route & state root rebrand (`promptkeel`)**:
+  - Package name, Cordis plugin node, and DSH client module ID moved from `dsh-forge` / `dsh-forge-kit` to `promptkeel`; `cordis.patch.yml` disables any legacy `dsh-forge-kit` and `dsh-forge` nodes alongside `dsh-purge*`, and `promptkeel profile enable` migrates legacy bundle entries automatically.
+  - Loopback API prefix moved from `/dsh-forge/api` (`/dsh-forge-kit/api`) to `/promptkeel/api`.
+  - Default state roots moved to `~/.promptkeel/` (`$XDG_STATE_HOME/promptkeel`, env `PROMPTKEEL_STATE` with legacy fallbacks `DSH_FORGE_KIT_STATE` and `DSH_FORGE_STATE`) and `~/.dsh/promptkeel/`. Environment overrides `PROMPTKEEL_PROFILE` and `PROMPTKEEL_HOST_ROOT` retain fallbacks to `DSH_FORGE_KIT_*` and `DSH_FORGE_*`.
+  - Binaries: `promptkeel` and `promptkeel-session` alongside backwards-compatible aliases `dsh-forge` and `dsh-session` (`promptkeel session` also forwards to `promptkeel-session`). Managed block markers (`<!-- dsh-forge ... -->`) stay unchanged so existing host blocks remain idempotent.
 - **Removed & tightened exports (SemVer)**:
   - Removed unreferenced exports `requireSupport` (`core/capabilities.mjs`) and `listProviders` / `providerForAction` (`core/provider.mjs`).
   - Replaced blanket `export *` in `core/index.mjs` with explicit curated named exports (`test/public-api.test.mjs`).
-  - Removed the 38-symbol legacy re-export shim from `scripts/live_matrix.mjs`; import strategy and gateway APIs from `core/strategy.mjs` / `core/gateway.mjs` (or `dsh-forge-kit/core`).
+  - Removed the 38-symbol legacy re-export shim from `scripts/live_matrix.mjs`; import strategy and gateway APIs from `core/strategy.mjs` / `core/gateway.mjs` (or `promptkeel/core`).
   - Removed `inlineTurn()` from `core/session.mjs` before release; `systemVariants()` and `repackTurn()` cover placement and packing decisions cleanly.
 - **Primary vs. frozen hosts & trimmed package**:
   - Promoted `opencode` to `verified` alongside `dsh`, `claude-code`, and `codex`, all guarded by golden detection fixtures (`test/fixtures/hosts/`). Remaining 9 profiles are labeled frozen/experimental.

@@ -28,6 +28,6 @@ False-positive host detection (`b0daf96`, where `.dsh-market/discovery.json` tri
 Giant mixed commits (`c12f0d3`: 64 files; un-sliced worktrees) slow review and break `git bisect`.
 
 - **Requirement:**
-  - Commit by coherent concern (security/gateway fixes vs. session engine vs. CLI refactoring vs. package rename vs. docs/tests).
+  - Commit by coherent concern (security/gateway fixes vs. session engine vs. CLI refactoring vs. brand rename vs. docs/tests).
   - Run all release gates (`npm test`, `npm run check:repo`, `npm run docs:check`, `npm run verify:profiles`, `npm run verify`, `npm run release:check`) on a clean index before tagging.
   - Never record personal home paths, email addresses other than the repo identity (`forge@local`), UUIDs, or credential prefixes anywhere in tracked or untracked files (`scripts/privacy_scan.sh --history` enforces this).

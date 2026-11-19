@@ -1,6 +1,6 @@
 # 项目结构
 
-`dsh-forge-kit` 按职责分为四层，由上而下贴近具体宿主（快速上手见 [ONBOARDING.md](ONBOARDING.md)，防回归约束见 [ENGINEERING_RULES.md](ENGINEERING_RULES.md)）：
+`promptkeel` (**PromptKeel / 龙骨**) 按职责分为四层，由上而下贴近具体宿主（快速上手见 [ONBOARDING.md](ONBOARDING.md)，防回归约束见 [ENGINEERING_RULES.md](ENGINEERING_RULES.md)）：
 
 ```
 bin/dsh-forge.js       命令行统一分发入口（含 `session` 子命令转发）
@@ -40,5 +40,5 @@ test/fixtures/hosts/   4 个主力宿主的黄金探测目录快照（test/host-
 2. 每个 profile 编译产出的系统提示词必须 **< 480 token**，单个片段 **< 1400 字节**（由 `test/budget.test.mjs` 强制拦截）。
 3. 文档中的补丁、档案、模型、人设及运行环境指标由 `scripts/check_docs.mjs` 自动同步与校验。
 4. 版本号只有三处权威：`package.json`、`package-lock.json` 根元数据、`lib/paths.mjs` 回退串，由 `scripts/bump_version.mjs` 一次改齐、`scripts/check_repo.sh` 反向校验（并校验 `CHANGELOG.md` 有对应版本小节）。
-5. 默认运行与测试状态落盘于 `$XDG_STATE_HOME/dsh-forge-kit` 或 `~/.dsh-forge-kit`（可通过 `--state` / `DSH_FORGE_KIT_STATE` 或兼容变量 `DSH_FORGE_STATE` 指定），DSH 原生备份位于 `~/.dsh/dsh-forge-kit/`，不污染真实工作区。
+5. 默认运行与测试状态落盘于 `$XDG_STATE_HOME/promptkeel` 或 `~/.promptkeel`（可通过 `--state` / `PROMPTKEEL_STATE` 或兼容变量 `DSH_FORGE_KIT_STATE`、`DSH_FORGE_STATE` 指定），DSH 原生备份位于 `~/.dsh/promptkeel/`，不污染真实工作区。
 6. 任何传输/会话改动、主力宿主变更与提交切片规则遵守 [ENGINEERING_RULES.md](ENGINEERING_RULES.md)。

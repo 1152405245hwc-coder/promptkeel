@@ -69,7 +69,7 @@ node --input-type=module - "$tmp_dir/pack.json" <<'NODE'
 import fs from "node:fs";
 const report = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const files = new Set(report[0]?.files?.map((entry) => entry.path) || []);
-for (const required of ["package.json", "bin/dsh-forge.js", "bin/dsh-session.js", "client/client.js", "scripts/verify.sh"]) {
+for (const required of ["package.json", "bin/dsh-forge.js", "bin/dsh-session.js", "client/client.js", "docs/assets/hero.svg", "scripts/verify.sh"]) {
   if (!files.has(required)) throw new Error(`package is missing ${required}`);
 }
 for (const forbidden of [".dsh-forge-state/", ".dsh-forge-kit-state/", ".dsh-forge-kit/", ".promptkeel-state/", ".promptkeel/", "docs/research/", "tools/", "node_modules/", ".git/"]) {

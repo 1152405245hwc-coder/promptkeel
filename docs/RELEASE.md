@@ -40,18 +40,18 @@ version, so a bump that forgets the changelog cannot be tagged.
 
 ## Publication name
 
-`dsh-forge` was taken on the public npm registry (`0.0.1` by an unrelated account) and on GitHub, so this package ships as **`dsh-forge-kit`**:
+`dsh-forge` was taken on the public npm registry (`0.0.1` by an unrelated account) and on GitHub, and the project now ships under the brand **PromptKeel (`promptkeel`)**:
 
-- Package name (`package.json` & `package-lock.json`): `dsh-forge-kit`
-- Cordis plugin ID (`cordis.patch.yml`, `lib/preset.mjs`, `lib/index.js`, `client/src/entry.js`): `dsh-forge-kit` (legacy `dsh-forge` node is disabled in `cordis.patch.yml` and auto-migrated by `dsh-forge profile enable`)
-- Loopback API route: `/dsh-forge-kit/api`
-- State roots: `~/.dsh-forge-kit/` (`$XDG_STATE_HOME/dsh-forge-kit`, `DSH_FORGE_KIT_STATE` with `DSH_FORGE_STATE` fallback) and `~/.dsh/dsh-forge-kit/`
-- Binaries: `dsh-forge-kit`, `dsh-forge`, `dsh-session`
+- Package name (`package.json` & `package-lock.json`): `promptkeel`
+- Cordis plugin ID (`cordis.patch.yml`, `lib/preset.mjs`, `lib/index.js`, `client/src/entry.js`): `promptkeel` (legacy `dsh-forge-kit` and `dsh-forge` nodes are disabled in `cordis.patch.yml` and auto-migrated by `promptkeel profile enable`)
+- Loopback API route: `/promptkeel/api`
+- State roots: `~/.promptkeel/` (`$XDG_STATE_HOME/promptkeel`, `PROMPTKEEL_STATE` with `DSH_FORGE_KIT_STATE` / `DSH_FORGE_STATE` fallback) and `~/.dsh/promptkeel/`
+- Binaries: `promptkeel`, `promptkeel-session` (with backwards-compatible aliases `dsh-forge`, `dsh-session`)
 - Included files: `docs/research/` snapshots and offline Python `tools/` stay in Git for local/CI verification (`npm run verify`) and are excluded from the published npm tarball.
 
 ## What must not ship
 
-- Anything under `.dsh-forge-state/`, `node_modules/`, or a packed `.tgz`.
+- Anything under `.promptkeel-state/`, `.dsh-forge-kit-state/`, `.dsh-forge-state/`, `node_modules/`, or a packed `.tgz`.
 - Local absolute paths, home directories, or noreply identities — `release:check` scans every
   packed text file for these.
 - Generated client bundles that no longer match `client/src/`: run `npm run build:client` and
