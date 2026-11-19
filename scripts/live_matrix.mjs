@@ -5,56 +5,33 @@
  * `core/gateway.mjs`, and classifies refusal vs. compliance verdicts.
  */
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import * as probeCore from "../core/probe.mjs";
+import { loadProfile, loadModel } from "../core/contract.mjs";
+import { compile, normalizeContext } from "../core/compile.mjs";
 import { listPersonas } from "../core/persona.mjs";
 import { TRANSFORMS } from "../core/transform.mjs";
 import {
-  RUNGS,
-  WRAPS,
-  CRESCENDO_SETUP,
-  CRESCENDO_FINISH,
-  TURN_SCRIPTS,
   STRATEGIES,
-  wrapUser,
-  stuffContext,
   buildConversation,
   buildRequests,
-  listSafeBenchmarkProbes,
 } from "../core/strategy.mjs";
 import {
-  OPENAI_DEFAULT_BASE,
   MAGPIE_DEFAULT_BASE,
-  ANTHROPIC_DEFAULT_BASE,
-  GLM_DEFAULT_BASE,
   DEFAULT_MAX_TOKENS,
   DEFAULT_TIMEOUT_MS,
+  CLASSIFIER_VERSION,
+  classifierHash,
   GatewayConfigError as ConfigError,
-  REPLY_REFUSAL_PATTERNS,
-  resolveGateway,
   resolveProvider,
   requestUrl,
   authHeaders,
   fetchModelIds,
-  forgeModelFor,
   planModels,
-  expand,
   requestBody,
-  normalizeReply,
-  sendRequest,
-  sendWithRetry,
-  starved,
-  sendWithBudget,
+  placeSystem,
   executeStrategyRequest,
-  detectBlock,
-  detectRefusal,
-  excerpt,
-  redactSecret,
-  verdictOf,
-  complianceOf,
   makeRow,
   summarize,
 } from "../core/gateway.mjs";
@@ -65,45 +42,7 @@ export const CORPUS = probeCore.PROBES;
 export const DEFAULT_PROFILE = "generic";
 export const RESULTS_SCHEMA = "forge.live-matrix/v1";
 
-export {
-  OPENAI_DEFAULT_BASE,
-  MAGPIE_DEFAULT_BASE,
-  ANTHROPIC_DEFAULT_BASE,
-  GLM_DEFAULT_BASE,
-  DEFAULT_MAX_TOKENS,
-  DEFAULT_TIMEOUT_MS,
-  REPLY_REFUSAL_PATTERNS,
-  RUNGS,
-  WRAPS,
-  CRESCENDO_SETUP,
-  CRESCENDO_FINISH,
-  TURN_SCRIPTS,
-  STRATEGIES,
-  wrapUser,
-  stuffContext,
-  buildConversation,
-  buildRequests,
-  listSafeBenchmarkProbes,
-  resolveGateway,
-  resolveProvider,
-  forgeModelFor,
-  planModels,
-  expand,
-  requestBody,
-  normalizeReply,
-  sendRequest,
-  sendWithRetry,
-  starved,
-  sendWithBudget,
-  executeStrategyRequest,
-  detectBlock,
-  detectRefusal,
-  excerpt,
-  verdictOf,
-  complianceOf,
-  makeRow,
-  summarize,
-};
+export { placeSystem };
 
 const USAGE = `Usage: node scripts/live_matrix.mjs [options]
 
@@ -129,6 +68,7 @@ Strategies
   --script <name>             multi-turn script: crescendo, deep, layered
   --prefill <text>            assistant prefill prefix (single-turn only)
   --stuff <tokens>            pad with neutral engineering context tokens
+  --system-mode <mode>        system placement: full (default), inline, bare
 
 Provider
   --provider <name>           openai | gateway | anthropic | glm | config entry
@@ -142,6 +82,8 @@ Run bounds
   --max-tokens <n>            completion token cap; default ${DEFAULT_MAX_TOKENS}
   --temperature <n>           sampling temperature; default 0
   --timeout-ms <n>            per-request timeout; default ${DEFAULT_TIMEOUT_MS}
+  --concurrency <n>           max concurrent requests (1..8); default 1
+  --cooldown-ms <n>           delay between requests in ms; default 0
   --limit <n>                 hard cap on total requests sent
   --repeat <n>                sample each cell n times
   --dry-run                   compile locally and print request shape only
@@ -153,8 +95,9 @@ Run bounds
 const LIST_FLAGS = new Set(["profile", "model", "persona", "transform", "probe", "family", "exclude-family"]);
 const VALUE_FLAGS = new Set([
   "provider", "config", "base-url", "key-env", "max-tokens", "temperature",
-  "timeout-ms", "repeat", "stuff", "compare", "limit", "out", "dump-request", "forge-model",
-  "gateway", "wrap", "prefill", "script", "stuff", "strategy",
+  "timeout-ms", "concurrency", "cooldown-ms", "repeat", "stuff", "compare",
+  "limit", "out", "dump-request", "forge-model", "gateway", "wrap", "prefill",
+  "script", "strategy", "system-mode",
 ]);
 const BOOL_FLAGS = new Set(["dry-run", "show-prompt", "help", "list-models", "control", "ladder", "crescendo"]);
 
@@ -170,7 +113,7 @@ export function parseArgs(argv) {
   const options = {
     profile: [], model: [], persona: [], transform: [], probe: [], family: [], excludeFamily: [],
     dryRun: false, showPrompt: false, listModels: false, control: false, ladder: false, crescendo: false,
-    wrap: "none", help: false,
+    wrap: "none", systemMode: "full", help: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const token = argv[i];
@@ -228,43 +171,38 @@ function compileCommand({ profile, forge, persona, transform }) {
   return args;
 }
 
-export function compilePrompt(combo, { tempRoot } = {}) {
+export function compilePrompt(combo) {
   if (combo.arm === "control") {
     return { text: "", tokens: 0, budget: null, planId: null, personaId: null, transform: "none", cli: "(control arm: no system prompt)" };
   }
-  const home = path.join(tempRoot, "home");
-  const project = path.join(tempRoot, "project");
-  const outFile = path.join(tempRoot, `plan-${combo.profile}-${combo.forge}-${combo.persona}-${combo.transform}.json`);
-  const args = [...compileCommand(combo), "--home", home, "--project", project, "--out", outFile];
   try {
-    execFileSync(process.execPath, args, { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 30000 });
+    const profile = loadProfile(combo.profile);
+    const model = loadModel(combo.forge);
+    const persona = combo.persona && combo.persona !== "none" ? combo.persona : null;
+    const transform = combo.transform && combo.transform !== "none" ? combo.transform : null;
+    const context = normalizeContext({
+      hostId: profile.host,
+      profileId: profile.id,
+      persona,
+      transform,
+      projectRoot: ROOT,
+      home: process.env.HOME || process.env.USERPROFILE || "/tmp",
+    });
+    const plan = compile(profile, model, context);
+    const text = plan?.prompt?.text;
+    if (typeof text !== "string" || !text) throw new ConfigError(`compile produced no prompt text for ${combo.profile}/${combo.forge}`);
+    return {
+      text,
+      tokens: plan.prompt.tokens ?? null,
+      budget: plan.budget || null,
+      planId: plan.planId || null,
+      personaId: plan.persona?.id || null,
+      transform: plan.transform || (plan.prompt.transform ?? "none"),
+      cli: `node bin/dsh-forge.js ${compileCommand(combo).slice(1).join(" ")}`,
+    };
   } catch (error) {
-    const stderr = String(error?.stderr || "").trim();
-    const parsed = (() => {
-      try { return JSON.parse(stderr); } catch { return null; }
-    })();
-    throw new ConfigError(`compile failed for ${combo.profile}/${combo.forge}/${combo.persona}/${combo.transform}: ${parsed?.error || stderr.split("\n")[0] || error.message}`);
-  }
-  const plan = JSON.parse(fs.readFileSync(outFile, "utf8"));
-  const text = plan?.prompt?.text;
-  if (typeof text !== "string" || !text) throw new ConfigError(`compile produced no prompt text for ${combo.profile}/${combo.forge}`);
-  return {
-    text,
-    tokens: plan.prompt.tokens ?? null,
-    budget: plan.budget || null,
-    planId: plan.planId || null,
-    personaId: plan.persona?.id || null,
-    transform: plan.transform || (plan.prompt.transform ?? "none"),
-    cli: `node bin/dsh-forge.js ${compileCommand(combo).slice(1).join(" ")}`,
-  };
-}
-
-function withTempRoot(fn) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "forge-live-matrix-"));
-  try {
-    return fn(dir);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    if (error instanceof ConfigError) throw error;
+    throw new ConfigError(`compile failed for ${combo.profile}/${combo.forge}/${combo.persona}/${combo.transform}: ${error?.message || error}`);
   }
 }
 
@@ -312,7 +250,9 @@ function printRequestShape({ provider, request, compiled, keyEnv, keyPresent, op
     prefill: request.prefill,
     stuffTokens: request.stuffTokens,
   });
-  const body = requestBody(provider, { system: compiled.text, user: conv.user, model: request.model, prefill: conv.prefill }, { maxTokens, temperature });
+  const firstUser = conv.scriptSteps ? `${conv.scriptSteps[0]}\n\n${conv.user}` : conv.user;
+  const placed = placeSystem(compiled.text, firstUser, options.systemMode);
+  const body = requestBody(provider, { system: placed.system, user: placed.user, model: request.model, prefill: conv.prefill }, { maxTokens, temperature });
   const headers = authHeaders(provider, keyPresent ? "<key>" : "");
   const displayHeaders = { ...headers };
   displayHeaders[provider.authHeader.toLowerCase()] = `${provider.authPrefix}<redacted ${publicKeyName}>`;
@@ -378,6 +318,11 @@ export async function run(argv, { env = process.env } = {}) {
   options.maxTokens = options.maxTokens ? positiveInt(options.maxTokens, "max-tokens") : DEFAULT_MAX_TOKENS;
   options.temperature = options.temperature === undefined ? 0 : numberOption(options.temperature, "temperature");
   options.timeoutMs = options.timeoutMs ? positiveInt(options.timeoutMs, "timeout-ms", { min: 1000 }) : DEFAULT_TIMEOUT_MS;
+  options.concurrency = options.concurrency ? positiveInt(options.concurrency, "concurrency", { min: 1, max: 8 }) : 1;
+  options.cooldownMs = options.cooldownMs ? positiveInt(options.cooldownMs, "cooldown-ms", { min: 0 }) : 0;
+  if (!["full", "inline", "bare"].includes(options.systemMode)) {
+    throw new UsageError(`--system-mode must be full, inline, or bare`);
+  }
   options.limit = options.limit ? positiveInt(options.limit, "limit") : 0;
   options.stuff = options.stuff ? positiveInt(options.stuff, "stuff", { min: 0 }) : 0;
 
@@ -401,19 +346,17 @@ export async function run(argv, { env = process.env } = {}) {
   });
 
   plan.compiled = new Map();
-  withTempRoot((tempRoot) => {
-    for (const request of plan.sent) {
-      const key = comboKey(request);
-      if (!plan.compiled.has(key)) {
-        try {
-          plan.compiled.set(key, compilePrompt({ profile: request.profile, forge: request.forge, persona: request.persona, transform: request.transform, arm: request.arm }, { tempRoot }));
-        } catch (error) {
-          plan.compiled.set(key, { error: error.message });
-          if (!(error instanceof ConfigError)) throw error;
-        }
+  for (const request of plan.sent) {
+    const key = comboKey(request);
+    if (!plan.compiled.has(key)) {
+      try {
+        plan.compiled.set(key, compilePrompt({ profile: request.profile, forge: request.forge, persona: request.persona, transform: request.transform, arm: request.arm }));
+      } catch (error) {
+        plan.compiled.set(key, { error: error.message });
+        if (!(error instanceof ConfigError)) throw error;
       }
     }
-  });
+  }
   for (const value of plan.compiled.values()) {
     if (value.error) throw new ConfigError(value.error);
   }
@@ -426,9 +369,12 @@ export async function run(argv, { env = process.env } = {}) {
     schema: RESULTS_SCHEMA,
     generatedAt: new Date().toISOString(),
     dryRun: Boolean(options.dryRun),
+    classifierVersion: CLASSIFIER_VERSION,
+    classifierHash: classifierHash(),
+    systemMode: options.systemMode,
     provider: { name: provider.name, kind: provider.kind, endpoint: requestUrl(provider, models[0].live), keyEnv: provider.keyEnv, keyPresent },
     matrix: { profiles, models, personas, transforms, probes: probes.map((probe) => probe.id), planned: plan.requests.length, sent: plan.sent.length },
-    limits: { limit: options.limit || null, maxTokens: options.maxTokens, temperature: options.temperature, timeoutMs: options.timeoutMs },
+    limits: { limit: options.limit || null, maxTokens: options.maxTokens, temperature: options.temperature, timeoutMs: options.timeoutMs, concurrency: options.concurrency, cooldownMs: options.cooldownMs },
     rows: [],
   };
 
@@ -437,7 +383,9 @@ export async function run(argv, { env = process.env } = {}) {
     if (options.dumpRequest) {
       const first = plan.sent[0];
       const conv = buildConversation(first.probe.request, { wrap: first.wrap, script: first.script, prefill: first.prefill, stuffTokens: first.stuffTokens });
-      const body = requestBody(provider, { system: plan.compiled.get(comboKey(first)).text, user: conv.user, model: first.model, prefill: conv.prefill }, { maxTokens: options.maxTokens, temperature: options.temperature });
+      const firstUser = conv.scriptSteps ? `${conv.scriptSteps[0]}\n\n${conv.user}` : conv.user;
+      const dumpPlaced = placeSystem(plan.compiled.get(comboKey(first)).text, firstUser, options.systemMode);
+      const body = requestBody(provider, { system: dumpPlaced.system, user: dumpPlaced.user, model: first.model, prefill: conv.prefill }, { maxTokens: options.maxTokens, temperature: options.temperature });
       const target = path.resolve(options.dumpRequest);
       fs.mkdirSync(path.dirname(target), { recursive: true });
       fs.writeFileSync(target, `${JSON.stringify(body, null, 2)}\n`);
@@ -453,9 +401,12 @@ export async function run(argv, { env = process.env } = {}) {
     return 2;
   }
 
-  const rows = [];
+  const rows = new Array(plan.sent.length);
   process.stdout.write(`\nsending ${plan.sent.length} request(s) to ${provider.name} · ${requestUrl(provider, plan.sent[0].model)}\n`);
-  for (const [index, request] of plan.sent.entries()) {
+  let cursor = 0;
+  const workerCount = Math.min(options.concurrency, Math.max(1, plan.sent.length));
+  async function runOne(index) {
+    const request = plan.sent[index];
     const compiled = plan.compiled.get(comboKey(request));
     const response = await executeStrategyRequest(provider, {
       system: compiled.text,
@@ -465,6 +416,7 @@ export async function run(argv, { env = process.env } = {}) {
       script: request.script,
       prefill: request.prefill,
       stuffTokens: request.stuffTokens,
+      systemMode: options.systemMode,
     }, {
       key: secret,
       maxTokens: options.maxTokens,
@@ -472,13 +424,23 @@ export async function run(argv, { env = process.env } = {}) {
       timeoutMs: options.timeoutMs,
     });
     const row = makeRow({ request, compiled, response, secret });
-    rows.push(row);
+    rows[index] = row;
     const status = row.status === "ok" ? (row.refused ? "REFUSED" : "OK     ") : "ERROR  ";
     const detail = row.status === "ok"
       ? `${row.verdict}${row.refused ? `(${row.refusalSignal})` : ""} · ${row.latencyMs}ms · ${row.usage.prompt ?? "?"}/${row.usage.completion ?? "?"} tok · "${row.excerpt}"`
       : `${row.error}`;
     process.stdout.write(`  ${String(index + 1).padStart(2)}/${plan.sent.length} ${status} ${row.model} · ${row.arm} · ${row.rung} · ${row.probe} · ${detail}\n`);
   }
+  await Promise.all(Array.from({ length: workerCount }, async () => {
+    while (cursor < plan.sent.length) {
+      const index = cursor;
+      cursor += 1;
+      await runOne(index);
+      if (options.cooldownMs > 0 && cursor < plan.sent.length) {
+        await new Promise((resolve) => setTimeout(resolve, options.cooldownMs));
+      }
+    }
+  }));
 
   const summary = summarize(rows);
   printSummary(summary);
