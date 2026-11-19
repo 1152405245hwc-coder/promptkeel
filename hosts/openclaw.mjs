@@ -14,7 +14,14 @@ export function detect({ home = process.env.HOME || process.env.USERPROFILE, pro
     path.join(projectRoot, "AGENTS.md"),
     "/Applications/AutoClaw2.app/Contents/Resources/app/dist/main.cjs",
   ];
-  return { ok: candidates.some((p) => fs.existsSync(p)), candidates, confidence: "high" };
+  const found = candidates.filter((p) => fs.existsSync(p));
+  return {
+    ok: found.length > 0,
+    status: found.length > 0 ? "configured" : "missing",
+    candidates,
+    evidence: found.map((file) => ({ kind: "config", path: file })),
+    confidence: "high",
+  };
 }
 
 export function configTargets() {

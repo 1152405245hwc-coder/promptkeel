@@ -46,10 +46,10 @@ export function normalizeAdapter(module) {
  * activation that the old detector cannot observe. */
 export function normalizeDetection(result, { id, adapter, context = {} } = {}) {
   const raw = result && typeof result === "object" ? result : {};
-  const activation = normalizeActivation(raw, { id });
+  const evidence = evidenceFrom(raw);
+  const activation = normalizeActivation({ ...raw, evidence }, { id });
   let status = activation.status;
   if (!DETECTION_STATUSES.includes(status)) status = "unknown";
-  const evidence = evidenceFrom(raw);
   const confidence = DETECTION_CONFIDENCE.includes(raw.confidence)
     ? raw.confidence
     : raw.ok === true || raw.ok === false ? "high" : "low";

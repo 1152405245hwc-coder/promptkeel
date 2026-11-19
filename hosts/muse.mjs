@@ -13,7 +13,20 @@ export function detect({ home = process.env.HOME || process.env.USERPROFILE } = 
     "/Applications/Muse.app/Contents/Resources/hatch/index.html",
     ...(home ? [path.join(home, "Library", "Application Support", "Muse")] : []),
   ];
-  return { ok: candidates.some((p) => fs.existsSync(p)), candidates, confidence: "medium" };
+  const found = candidates.filter((p) => fs.existsSync(p));
+  return {
+    ok: true,
+    installed: found.length > 0,
+    status: "unobservable",
+    candidates,
+    evidence: found.map((file) => ({ kind: "config", path: file })),
+    activation: {
+      status: "unobservable",
+      reason: "Muse assembles its system prompt server-side behind an app seal; local profile is prompt-only.",
+    },
+    warnings: ["Muse system prompt is server-side; local profile compiles prompt text only."],
+    confidence: "medium",
+  };
 }
 
 export function configTargets() {

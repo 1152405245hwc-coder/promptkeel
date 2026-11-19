@@ -20,6 +20,17 @@ export function sha256(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 
+/** List available task mode overlays from `prompt/modes/*.md`. */
+export function listModes(root = promptsDir()) {
+  const dir = path.join(root, "modes");
+  if (!fs.existsSync(dir)) return [];
+  return fs
+    .readdirSync(dir)
+    .filter((name) => name.endsWith(".md"))
+    .sort()
+    .map((name) => name.slice(0, -3));
+}
+
 function readPart(root, rel, { optional = false } = {}) {
   const abs = path.resolve(root, rel);
   const rootAbs = path.resolve(root) + path.sep;
@@ -51,7 +62,8 @@ export function renderPrompt({ profile, model, mode = null, persona = null, pers
     if (/[\\/]|\.\./.test(String(mode))) fail("prompt-path", `prompt mode escapes modes/: ${mode}`);
     parts.push(readPart(root, path.join("modes", `${mode}.md`)));
   }
-  const resolved = persona ? loadPersona(persona, { root, mode: personaMode }) : null;
+  const personaId = persona && persona !== "none" ? String(persona) : null;
+  const resolved = personaId ? loadPersona(personaId, { root, mode: personaMode }) : null;
   const layered = applyPersona(parts.filter((p) => p.text), resolved);
   const raw = layered.map((p) => p.text).filter(Boolean).join("\n\n");
   const body = bodyTransform ? encode(raw, bodyTransform) : raw;

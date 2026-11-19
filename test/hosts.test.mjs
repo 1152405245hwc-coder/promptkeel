@@ -66,3 +66,42 @@ test("fixture-backed session evidence detectors distinguish config-only from act
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("dsh, hermes, and muse detection avoid market false positives and keep CI portability", async () => {
+  const os = await import("node:os");
+  const fs = await import("node:fs");
+  const path = await import("node:path");
+  const { detectHost } = await import("../hosts/registry.mjs");
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "forge-host-detect-"));
+  try {
+    const dshHost = path.join(root, "dsh-app");
+    const dshHome = path.join(root, "dsh-home");
+    fs.mkdirSync(path.join(dshHost, "node_modules", "@deepseek-ai"), { recursive: true });
+    fs.mkdirSync(path.join(dshHome, "profiles", "desktop", ".dsh-market"), { recursive: true });
+    fs.writeFileSync(path.join(dshHome, "profiles", "desktop", ".dsh-market", "discovery.json"), '{"packages":["dsh-forge"]}\n');
+    const dshInstalled = detectHost("dsh", { home: root, env: { hostRoot: dshHost, dshHome } });
+    assert.equal(dshInstalled.ok, true);
+    assert.equal(dshInstalled.status, "installed");
+
+    fs.writeFileSync(path.join(dshHome, "prompt-inject.md"), "<!-- dsh-forge profile=dsh -->\n# core\n");
+    const dshConfigured = detectHost("dsh", { home: root, env: { hostRoot: dshHost, dshHome } });
+    assert.equal(dshConfigured.status, "configured");
+
+    const hermesDir = path.join(root, ".hermes");
+    fs.mkdirSync(path.join(hermesDir, "sessions"), { recursive: true });
+    fs.writeFileSync(path.join(hermesDir, "SOUL.md"), "<!-- dsh-forge:begin forge -->\nhi\n<!-- dsh-forge:end forge -->\n");
+    const hermesCfg = detectHost("hermes", { home: root, projectRoot: root });
+    assert.equal(hermesCfg.status, "configured");
+    assert.ok(hermesCfg.evidence.some((e) => e.kind === "config"));
+
+    fs.writeFileSync(path.join(hermesDir, "sessions", "run.jsonl"), '{"content":"<!-- dsh-forge profile=hermes -->"}\n');
+    const hermesActive = detectHost("hermes", { home: root, projectRoot: root });
+    assert.equal(hermesActive.status, "active");
+
+    const muse = detectHost("muse", { home: root, projectRoot: root });
+    assert.equal(muse.ok, true);
+    assert.equal(muse.status, "unobservable");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

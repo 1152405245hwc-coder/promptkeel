@@ -90,8 +90,9 @@ export const HOST_TABLE = [
     label: "Windsurf",
     support: "experimental",
     evidence: {
-      documentation: "https://docs.windsurf.com/windsurf/cascade/memories",
-      targets: [".windsurf/rules/*.md", ".windsurfrules (legacy)", "~/.codeium/windsurf/memories/global_rules.md"],
+      documentation: "https://docs.devin.ai/desktop/devin-local/customizations.md",
+      legacyDocumentation: "https://docs.windsurf.com/windsurf/cascade/memories",
+      targets: [".devin/rules/*.md", ".windsurf/rules/*.md", ".windsurfrules (legacy)", "~/.codeium/windsurf/memories/global_rules.md"],
       note: "Workspace/global rule files are configuration evidence only; active Cascade/Devin Local loading is not observable here.",
     },
     candidates: ({ home, projectRoot }) => [

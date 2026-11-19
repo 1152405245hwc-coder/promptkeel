@@ -1,7 +1,20 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const SHARED_MARKER = "dsh-forge";
+const FORGE_SESSION_MARKERS = [
+  /<!--\s*dsh-forge\b/,
+  /# dsh-forge:(?:begin config|shim)/,
+  /prompt-inject\.md/,
+  /forge-instructions\.md/,
+  /forge-prompt\.md/,
+  /model_instructions_file/,
+  /GEMINI_SYSTEM_MD/,
+  /baseAgentSystemMessage/,
+];
+
+function hasForgeMarker(content) {
+  return FORGE_SESSION_MARKERS.some((pattern) => pattern.test(content));
+}
 
 function walkFiles(dir, { maxFiles = 24, extensions = [".jsonl", ".json", ".log"] } = {}) {
   if (!dir || !fs.existsSync(dir)) return [];
@@ -11,7 +24,8 @@ function walkFiles(dir, { maxFiles = 24, extensions = [".jsonl", ".json", ".log"
     const current = queue.shift();
     let entries;
     try { entries = fs.readdirSync(current, { withFileTypes: true }); } catch { continue; }
-    entries.sort((a, b) => a.name.localeCompare(b.name));
+    // Scan newest date-partitioned folders and session logs first.
+    entries.sort((a, b) => b.name.localeCompare(a.name));
     for (const entry of entries) {
       if (out.length >= maxFiles) break;
       const full = path.join(current, entry.name);
@@ -63,11 +77,15 @@ export function inspectHostSession(hostId, { home, projectRoot, dshHome, session
   if (sessionDir) dirs.push(path.resolve(sessionDir));
   if (hostId === "dsh") {
     const base = dshHome || (home ? path.join(home, ".dsh") : null);
-    if (base) dirs.push(path.join(base, "sessions"), path.join(base, "logs"), path.join(base, "profiles"));
+    if (base) dirs.push(path.join(base, "sessions"), path.join(base, "logs"));
   } else if (hostId === "codex" && home) {
     dirs.push(path.join(home, ".codex", "sessions"));
   } else if (hostId === "claude-code" && home) {
-    dirs.push(path.join(home, ".claude", "projects"));
+    const projectsDir = path.join(home, ".claude", "projects");
+    const slug = projectRoot ? path.resolve(projectRoot).replace(/[^a-zA-Z0-9-]/g, "-") : null;
+    const projectScoped = slug ? path.join(projectsDir, slug) : null;
+    if (projectScoped && fs.existsSync(projectScoped)) dirs.push(projectScoped);
+    else dirs.push(projectsDir);
   } else if (hostId === "gemini" && home) {
     dirs.push(path.join(home, ".gemini", "tmp"));
   } else if (hostId === "opencode" && home) {
@@ -78,7 +96,7 @@ export function inspectHostSession(hostId, { home, projectRoot, dshHome, session
     dirs.push(path.join(home, ".continue", "sessions"));
   }
 
-  const files = dirs.flatMap((dir) => walkFiles(dir, { maxFiles: 12 }));
+  const files = [...new Set(dirs.flatMap((dir) => walkFiles(dir, { maxFiles: 12 })))];
   if (files.length === 0) return { found: false, active: false, evidence: [], note: null };
 
   const evidence = [];
@@ -87,7 +105,7 @@ export function inspectHostSession(hostId, { home, projectRoot, dshHome, session
 
   for (const file of files) {
     const content = `${readHead(file)}\n${readTail(file)}`;
-    const hasMarker = content.includes(SHARED_MARKER) || content.includes("prompt-inject.md") || content.includes("model_instructions_file") || content.includes("GEMINI_SYSTEM_MD");
+    const hasMarker = hasForgeMarker(content);
     if (hostId === "claude-code") {
       if (content.includes("You are Claude Code, Anthropic's official CLI for Claude.")) identityPrefixPresent = true;
     }

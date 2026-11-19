@@ -101,7 +101,8 @@
         const res = await api("/api/compile", "POST", params());
         const plan = res.plan;
         if (metaOut) {
-          metaOut.textContent = `planId ${plan.planId} · grade ${plan.delivery.grade} · ${plan.prompt.tokens}/${plan.budget.max} tokens · actions ${plan.actions.length}`;
+          const hint = plan.delivery?.improvements?.length ? ` · hint: ${plan.delivery.improvements[0]}` : "";
+          metaOut.textContent = `planId ${plan.planId} · grade ${plan.delivery.grade} · ${plan.prompt.tokens}/${plan.budget.max} tokens · actions ${plan.actions.length}${hint}`;
         }
         if (promptOut) promptOut.textContent = plan.prompt.text;
         if (actionsOut) {
@@ -178,9 +179,13 @@
     if (!root) return;
     const gwInput = document.getElementById("live-gateway");
     const modelSel = document.getElementById("live-model");
+    const modelList = document.getElementById("live-model-list");
+    const forgeModelSel = document.getElementById("live-forge-model");
     const profileSel = document.getElementById("live-profile");
     const personaSel = document.getElementById("live-persona");
     const strategySel = document.getElementById("live-strategy");
+    const modeSel = document.getElementById("live-mode");
+    const transformSel = document.getElementById("live-transform");
     const maxTokInput = document.getElementById("live-max-tokens");
     const promptInput = document.getElementById("live-prompt");
     const statusOut = document.getElementById("live-status");
@@ -189,8 +194,13 @@
     document.getElementById("live-fetch-models")?.addEventListener("click", async () => {
       try {
         const res = await api("/api/gateway/models", "POST", { gateway: gwInput?.value || "default" });
-        if (modelSel && Array.isArray(res.models) && res.models.length) {
-          modelSel.replaceChildren(...res.models.map((id) => el("option", { value: id, textContent: id })));
+        if (Array.isArray(res.models) && res.models.length) {
+          if (modelList) {
+            modelList.replaceChildren(...res.models.map((id) => el("option", { value: id })));
+            if (modelSel && !res.models.includes(modelSel.value)) modelSel.value = res.models[0];
+          } else if (modelSel) {
+            modelSel.replaceChildren(...res.models.map((id) => el("option", { value: id, textContent: id })));
+          }
           showToast(`Loaded ${res.models.length} models from gateway`, "ok");
         }
       } catch (err) {
@@ -205,9 +215,12 @@
         const res = await api("/api/live-run", "POST", {
           gateway: gwInput?.value || "default",
           model: modelSel?.value || "glm-5.3-flash",
+          forgeModel: forgeModelSel?.value || "",
           profile: profileSel?.value || "generic",
           persona: personaSel?.value || "",
           strategy: strategySel?.value || "none",
+          mode: modeSel?.value || "",
+          transform: transformSel?.value || "none",
           maxTokens: Number(maxTokInput?.value || 512),
           rawUser: promptInput?.value || "",
         });
@@ -215,7 +228,9 @@
           const tok = res.usage && (res.usage.prompt !== null || res.usage.completion !== null)
             ? ` · ${res.usage.prompt ?? "?"}/${res.usage.completion ?? "?"} tok`
             : "";
-          statusOut.textContent = `${res.verdict} · ${res.compliance || "-"} · ${res.latencyMs ?? 0}ms · turns ${res.turns ?? 1}${tok}${res.refusalSignal ? ` · signal ${res.refusalSignal}` : ""}`;
+          const forgeTag = res.forgeModel ? ` · forge=${res.forgeModel}` : "";
+          const modeTag = res.mode ? ` · mode=${res.mode}` : "";
+          statusOut.textContent = `${res.verdict} · ${res.compliance || "-"} · ${res.latencyMs ?? 0}ms · turns ${res.turns ?? 1}${tok}${forgeTag}${modeTag}${res.refusalSignal ? ` · signal ${res.refusalSignal}` : ""}`;
         }
         if (replyOut) replyOut.textContent = res.reply || res.error || "(empty)";
         showToast(`Result: ${res.verdict}`, res.status === "ok" && !res.refused ? "ok" : "bad");
@@ -232,7 +247,8 @@
         try {
           const id = btn.getAttribute("data-plan-verify");
           const res = await api("/api/verify-plan", "POST", { planId: id });
-          showToast(`Plan ${id}: ${res.ok ? "verified" : res.status}`, res.ok ? "ok" : "bad");
+          const badCount = Array.isArray(res.rows) ? res.rows.filter((r) => !r.ok).length : 0;
+          showToast(`Plan ${id}: ${res.ok ? "verified" : `${res.status}${badCount ? ` (${badCount} mismatch)` : ""}`}`, res.ok ? "ok" : "bad");
         } catch (err) {
           showToast(err.message, "bad");
         }

@@ -6,6 +6,7 @@ import { fail } from "./errors.mjs";
 import { CONSOLE_CSS, escapeHtml } from "../ui/tokens.mjs";
 import { listProfiles, listModels, loadProfile, loadModel } from "./contract.mjs";
 import { compile, normalizeContext } from "./compile.mjs";
+import { listModes } from "./prompt.mjs";
 import { applyPlan, previewPlan, revertPlan, verifyPlan, listPlans, defaultStateRoot } from "./executor.mjs";
 import { listPersonas } from "./persona.mjs";
 import { TRANSFORMS } from "./transform.mjs";
@@ -13,6 +14,7 @@ import { runProbes, selfCheck, PROBES } from "./probe.mjs";
 import { STRATEGIES, resolveStrategy } from "./strategy.mjs";
 import {
   resolveGateway,
+  resolveForgeModelId,
   fetchModelIds,
   executeStrategyRequest,
   detectRefusal,
@@ -22,6 +24,7 @@ import {
   DEFAULT_MAX_TOKENS,
 } from "./gateway.mjs";
 import { writeSnapshot, pruneSnapshots, SNAPSHOT_DEFAULTS } from "./snapshot.mjs";
+import { hostnameOf, LOOPBACK } from "./net.mjs";
 
 export { escapeHtml };
 
@@ -41,7 +44,6 @@ export const CONSOLE_ROUTES = [
 ];
 
 const WORKBENCH_JS_PATH = path.resolve(import.meta.dirname, "..", "ui", "workbench.js");
-const LOOPBACK = new Set(["127.0.0.1", "localhost", "::1", "[::1]"]);
 const CSP_HEADER = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'none'";
 
 function alive(pid) {
@@ -189,7 +191,7 @@ export function renderWorkbench(state = {}) {
   const personaModes = ["", "replace", "strict", "append", "off"].map((m) => `<option value="${m}">${m || "(default)"}</option>`).join("");
   const transforms = TRANSFORMS.map((t) => `<option value="${t}">${t}</option>`).join("");
   const strategies = STRATEGIES.map((s) => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.id)} · ${escapeHtml(s.label)}</option>`).join("");
-  const modes = ["", "coding", "chat", "review"].map((m) => `<option value="${m}">${m || "(auto)"}</option>`).join("");
+  const modes = ["", ...(state.modes?.length ? state.modes : listModes())].map((m) => `<option value="${escapeHtml(m)}">${escapeHtml(m || "(auto)")}</option>`).join("");
 
   const controls = `<div class="pad" id="forge-workbench-root">
 <div class="form-grid">
@@ -242,18 +244,26 @@ export function renderPlans(state = {}) {
 
 export function renderLive(state = {}) {
   const profiles = (state.profiles?.length ? state.profiles : listProfiles()).map((p) => `<option value="${escapeHtml(p.id)}"${p.id === "generic" ? " selected" : ""}>${escapeHtml(p.id)}</option>`).join("");
-  const personas = [`<option value="">(none)</option>`, ...(state.personas?.length ? state.personas : listPersonas()).map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.id)}</option>`)].join("");
+  const forgeModels = [`<option value="">(auto by live model)</option>`, ...(state.models?.length ? state.models : listModels()).map((m) => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.id)}</option>`)].join("");
+  const personas = [`<option value="">(none / strategy default)</option>`, ...(state.personas?.length ? state.personas : listPersonas()).map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.id)}</option>`)].join("");
   const strategies = STRATEGIES.map((s) => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.id)} · ${escapeHtml(s.label)}</option>`).join("");
+  const modes = ["", ...(state.modes?.length ? state.modes : listModes())].map((m) => `<option value="${escapeHtml(m)}">${escapeHtml(m || "(auto)")}</option>`).join("");
+  const transforms = TRANSFORMS.map((t) => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("");
+  const presetModels = ["glm-5.3-flash", "glm-5.3", "commandcode/deepseek/deepseek-v4-pro", "commandcode/deepseek/deepseek-v4.1-flash", "codex/gpt-6-luna", "group/free-strong"];
+  const modelOptions = presetModels.map((id) => `<option value="${escapeHtml(id)}"></option>`).join("");
   const capabilityProbe = PROBES.find((p) => p.severity === "capability");
   const defaultPrompt = capabilityProbe?.request || "Outline a deterministic config serializer in Python.";
 
   const controls = `<div class="pad" id="forge-live-root">
 <div class="form-grid">
   <label class="field">Gateway URL<input id="live-gateway" value="http://127.0.0.1:3425/v1" placeholder="default or http://127.0.0.1:3425/v1"></label>
-  <label class="field">Model<select id="live-model"><option value="glm-5.3-flash">glm-5.3-flash</option><option value="glm-5.3">glm-5.3</option><option value="commandcode/deepseek/deepseek-v4.1-flash">commandcode/deepseek/deepseek-v4.1-flash</option><option value="group/free-strong">group/free-strong</option></select></label>
+  <label class="field">Live Model<input id="live-model" list="live-model-list" value="glm-5.3-flash" placeholder="model id (e.g. glm-5.3-flash)"><datalist id="live-model-list">${modelOptions}</datalist></label>
   <label class="field">Profile<select id="live-profile">${profiles}</select></label>
+  <label class="field">Forge Model<select id="live-forge-model">${forgeModels}</select></label>
   <label class="field">Persona<select id="live-persona">${personas}</select></label>
   <label class="field">Strategy<select id="live-strategy">${strategies}</select></label>
+  <label class="field">Task Mode<select id="live-mode">${modes}</select></label>
+  <label class="field">Transform<select id="live-transform">${transforms}</select></label>
   <label class="field">Max Tokens<input id="live-max-tokens" type="number" value="512" min="64" max="4096"></label>
 </div>
 <label class="field" style="margin-top:12px">User Prompt<textarea id="live-prompt">${escapeHtml(defaultPrompt)}</textarea></label>
@@ -347,17 +357,6 @@ const RENDERERS = {
   "/audit": renderAudit,
 };
 
-function hostnameOf(authority) {
-  if (!authority || /[/?#@\\]/.test(authority)) return "";
-  try {
-    const u = new URL(`http://${authority}`);
-    if (u.username || u.password || u.pathname !== "/" || u.search || u.hash) return "";
-    return u.hostname.replace(/^\[|\]$/g, "").toLowerCase();
-  } catch {
-    return "";
-  }
-}
-
 function sendJson(res, status, data) {
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
@@ -440,8 +439,11 @@ function attachWorkbenchShell(html, csrfToken) {
 
 function compileFromBody(body, env) {
   const profile = loadProfile(body.profile || "generic");
-  const model = loadModel(body.model || profile.model || "deepseek");
+  const requestedModel = body.forgeModel || body.modelForge || body.model;
+  const modelId = resolveForgeModelId(requestedModel, profile.model || "deepseek");
+  const model = loadModel(modelId);
   const strat = body.strategy ? resolveStrategy({ strategy: body.strategy }) : {};
+  const persona = body.persona && body.persona !== "none" ? body.persona : (strat.persona || null);
   const ctx = normalizeContext({
     hostId: profile.host,
     profileId: profile.id,
@@ -451,7 +453,7 @@ function compileFromBody(body, env) {
     hostRoot: env.hostRoot,
     dshHome: env.dshHome,
     mode: body.mode || null,
-    persona: body.persona || strat.persona || null,
+    persona,
     personaMode: body.personaMode || null,
     transform: body.transform || strat.transform || null,
     budget: Number(body.budget || 3200),
@@ -543,7 +545,8 @@ export function createConsole({ state = () => ({}), env = {}, handlers = null, p
           const plan = compileFromBody(body, runtimeEnv);
           const strat = resolveStrategy({
             strategy: body.strategy || null,
-            persona: body.persona || null,
+            persona: body.persona && body.persona !== "none" ? body.persona : null,
+            transform: body.transform || null,
             wrap: body.wrap || null,
             script: body.script || null,
             prefill: body.prefill || null,
@@ -565,6 +568,9 @@ export function createConsole({ state = () => ({}), env = {}, handlers = null, p
             ok: resLive.status === "ok",
             status: resLive.status,
             model: body.model || "glm-5.3-flash",
+            forgeModel: plan.model.id,
+            mode: plan.mode,
+            strategy: resLive.strategyUsed || strat,
             verdict: verdictOf(resLive, refusal),
             compliance: resLive.status === "ok" ? complianceOf(resLive.reply) : null,
             refused: refusal.refused,

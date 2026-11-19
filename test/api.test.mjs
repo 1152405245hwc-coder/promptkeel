@@ -103,6 +103,58 @@ test("API route handler serves prompt, rejects invalid JSON/policy/content-type,
   assert.ok(statusBody.grades.every((row) => typeof row.grade === "string"));
   assert.ok(statusBody.personas.length >= 10);
   assert.ok(statusBody.personas.every((row) => row.id && row.mode));
+  assert.ok(Array.isArray(statusBody.modes) && statusBody.modes.includes("writing"));
+
+  const compileRes = fake();
+  await route.handler(
+    makeReq("POST", "/dsh-forge/api/compile", {
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ profile: "generic", model: "glm-5.3-flash", mode: "writing", persona: "none" }),
+    }),
+    compileRes,
+  );
+  assert.equal(compileRes.code, 200);
+  const compileBody = JSON.parse(compileRes.body);
+  assert.equal(compileBody.plan.model.id, "glm");
+  assert.equal(compileBody.plan.mode, "writing");
+
+  const { default: http } = await import("node:http");
+  const mockGateway = http.createServer(async (req, res) => {
+    for await (const _chunk of req) { /* drain */ }
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify({
+      choices: [{ message: { content: "1. ok\n```js\nconst x = 1;\n```" }, finish_reason: "stop" }],
+      usage: { prompt_tokens: 10, completion_tokens: 8, total_tokens: 18 },
+    }));
+  });
+  await new Promise((resolve) => mockGateway.listen(0, "127.0.0.1", resolve));
+  try {
+    const gwPort = mockGateway.address().port;
+    const liveRes = fake();
+    await route.handler(
+      makeReq("POST", "/dsh-forge/api/live-run", {
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          gateway: `http://127.0.0.1:${gwPort}/v1`,
+          model: "glm-5.3-flash",
+          profile: "generic",
+          mode: "writing",
+          strategy: "narrative",
+          rawUser: "scene",
+        }),
+      }),
+      liveRes,
+    );
+    assert.equal(liveRes.code, 200);
+    const liveBody = JSON.parse(liveRes.body);
+    assert.equal(liveBody.ok, true);
+    assert.equal(liveBody.forgeModel, "glm");
+    assert.equal(liveBody.mode, "writing");
+    assert.equal(liveBody.turns, 2);
+    assert.equal(liveBody.usage.total, 18);
+  } finally {
+    mockGateway.close();
+  }
 
   const badJsonRes = fake();
   await route.handler(
