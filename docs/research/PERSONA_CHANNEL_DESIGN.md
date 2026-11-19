@@ -1,3 +1,5 @@
+> **Snapshot Note**: Point-in-time research artifact; line anchors and figures may be superseded by current code. See [docs/ARCHITECTURE.md](../ARCHITECTURE.md) and [docs/MEASUREMENT_RULES.md](../MEASUREMENT_RULES.md).
+
 # 人设层与注入通道设计（agent-purge → dsh-forge 映射）
 
 本文把 [ZiChuanLan/agent-purge](https://github.com/ZiChuanLan/agent-purge) 的**人设（persona）/ 模式（mode）/ 通道（channel）** 三件套映射到本仓库 `dsh-forge` 的现有结构上，回答三件事：一份人设正文到底以什么方式进入宿主的系统提示词、它写到哪个文件、以及改完之后下一轮能不能立刻看到。

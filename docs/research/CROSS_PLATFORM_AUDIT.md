@@ -1,3 +1,5 @@
+> **Snapshot Note**: Point-in-time research artifact; line anchors and figures may be superseded by current code. See [docs/ARCHITECTURE.md](../ARCHITECTURE.md) and [docs/MEASUREMENT_RULES.md](../MEASUREMENT_RULES.md).
+
 # dsh-forge 跨平台升级审计
 
 审计日期：2026-11-16  

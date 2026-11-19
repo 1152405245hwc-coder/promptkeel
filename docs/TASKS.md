@@ -11,7 +11,9 @@
 - **DSH `0.2.2-rc.3` Verified Anchors & Session Cleaning (`lib/table.mjs`, `lib/inject.mjs`, `lib/index.js`)**:
   Expanded verified patch table from 16 to 23 entries (18 files, 17 `@deepseek-ai/*` packages) across all 5 canonical layers (`approval`, `sandbox`, `turn`, `persona`, `session`) plus opt-in `cleanSessionHistory` message derivation hook.
 - **Release-Grade Workbench UI (`ui/tokens.mjs`, `ui/workbench.js`, `core/console.mjs`, `client/src/entry.js`)**:
-  Shared design tokens, CSRF-protected `/api/*` workbench (`Compile`, `Probe`, `Apply/Revert`, `Plans`, `Live Runner`, `Patches`, `Audit`), CSP `script-src 'self'`, and updated DSH sidebar bundle (`工作台` Studio tab).
+  Shared design tokens, CSRF-protected `/api/*` workbench (`Compile`, `Probe`, `Apply/Revert`, `Plans`, `Live Runner`, `Patches`, `Audit`), dynamic `listModes()`, live model resolution via `resolveForgeModelId()`, CSP `script-src 'self'`, and updated DSH sidebar bundle (`工作台` Studio tab).
+- **Host Evidence & Detector Accuracy (`hosts/adapter.mjs`, `hosts/evidence.mjs`, `hosts/dsh.mjs`, `hosts/hermes.mjs`, `hosts/openclaw.mjs`, `hosts/muse.mjs`, `hosts/table.mjs`)**:
+  Eliminated false `active` status from `.dsh/profiles/` market metadata, added newest-first session scanning + Hermes session checks, preserved `config` evidence across adapters, and ensured `muse` reports `unobservable` portably across macOS and Linux CI.
 
 ## Verification & Release Gates
 
@@ -19,3 +21,18 @@
 2. Host dry-run check: `npm run verify` (`23/23` patches ready on target DSH `0.2.2-rc.3` host).
 3. Live bounded Magpie evaluation: compared `direct` vs `variable+contract` across 4 channels (`commandcode/deepseek/deepseek-v4.1-flash`, `hiyo-ds/deepseek-v4-pro`, `group/free-strong`, `group/free-light`) with `repeat=3` on `lateral-report-digest` + `adult-explicit-scene` (`minor`/`bio`/`chem`/weapons strictly excluded as `NOT_RUN_SAFETY_BOUNDARY`), and fixed upstream SSE chunk assembly, `[magpie/*]` proxy guard classification, and bare refusal matching.
 4. Git identity & privacy gate: clean author/committer history (`dsh-forge <forge@local>`), zero `.privacy-allow`, and passing `npm run release:check`.
+
+## 0.2.0 Release State
+
+Shipped in this cut (`dsh-forge-kit`):
+
+- **Distribution rename (`dsh-forge-kit`)**: renamed package, Cordis plugin node, loopback API `/dsh-forge-kit/api`, client module ID, and default state roots (`~/.dsh-forge-kit/`, `~/.dsh/dsh-forge-kit/`) with legacy `DSH_FORGE_*` fallbacks and bundle auto-migration; trimmed `docs/research/` and `tools/` out of published npm tarballs.
+- **Verified 4-host core + golden fixtures**: promoted `opencode` to `verified` alongside `dsh`, `claude-code`, and `codex`; added synthetic golden detection fixtures (`test/fixtures/hosts/`, `test/host-fixtures.test.mjs`) and expanded CI (`ubuntu-latest` + `macos-latest` × Node `20`/`22`).
+- **`dsh-session` + transport & matrix fixes**: fixed `bare` system-leak in `systemVariants()`, `variantRejected()` `httpStatus` reading, replay/continuity filtering (`REPLAYABLE_VERDICTS`), `thin` arm escalation, `consecutiveFailures` off-by-one & transport-error exclusion, concurrent `recordFamilyDelta()` merging, `matrix` dry-run isolation, in-process `live_matrix.mjs` compile parity, `chatcmpl-freeipblk*` proxy-block detection, `classifierHash()` stamping, and added `test/session-e2e.test.mjs` HTTP fixture suite.
+- **CLI & core API curation**: split `bin/dsh-forge.js` into `bin/commands/{shared,dsh,plan,runtime}.mjs` (+ `dsh-forge session` forwarding), tightened `core/index.mjs` to explicit named exports (`test/public-api.test.mjs`), and removed unreferenced exports & `live_matrix.mjs` re-export shim.
+- **Onboarding, engineering rules & skill**: added `docs/ONBOARDING.md`, `lib/README.md`, `docs/ENGINEERING_RULES.md`, `.agent/skills/dsh-forge-kit-workflow/SKILL.md`, and snapshot banners on `docs/research/*.md`.
+- **Shared Host-header guard & release tooling**: extracted `core/net.mjs`, codified `docs/MEASUREMENT_RULES.md`, added `scripts/bump_version.mjs` and `scripts/release_check.sh`.
+
+Open before a public publish:
+
+- **Live figures.** The route matrix in `docs/research/LIVE_ROUTE_MATRIX_2026-11-18.md` was measured on a free pool that blocks by egress IP; the stability numbers there stop at transport, not at model willingness. A keyed upstream is required before any delivery-rate claim is published as fact.

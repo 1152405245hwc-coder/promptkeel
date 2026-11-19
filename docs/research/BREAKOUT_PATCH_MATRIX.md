@@ -1,3 +1,5 @@
+> **Snapshot Note**: Point-in-time research artifact; line anchors and figures may be superseded by current code. See [docs/ARCHITECTURE.md](../ARCHITECTURE.md) and [docs/MEASUREMENT_RULES.md](../MEASUREMENT_RULES.md).
+
 # 破甲补丁可移植性矩阵（BREAKOUT_PATCH_MATRIX）
 
 > 采集对象：6 个 dsh-purge 衍生仓库 · 补丁样本：492 条表项 / **90 个唯一补丁名** · 宿主基线：DSH **0.2.2-rc.3**（`<HOST_ROOT>`，内含 `@deepseek-ai` 包若干） · 采集日：2026-11-17

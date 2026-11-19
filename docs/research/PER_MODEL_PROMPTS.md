@@ -1,3 +1,5 @@
+> **Snapshot Note**: Point-in-time research artifact; line anchors and figures may be superseded by current code. See [docs/ARCHITECTURE.md](../ARCHITECTURE.md) and [docs/MEASUREMENT_RULES.md](../MEASUREMENT_RULES.md).
+
 # 各厂专用提示词：13 份公开文件的结构对比
 
 来源：`elder-plinius/L1B3RT4S` 的各厂文件（`OPENAI.mkd`、`ANTHROPIC.mkd`、`GOOGLE.mkd`、`DEEPSEEK.mkd`、`META.mkd`、`MISTRAL.mkd`、`MOONSHOT.mkd`、`ALIBABA.mkd`、`AMAZON.mkd`、`CURSOR.mkd`、`NVIDIA.mkd`、`MICROSOFT.mkd` 等），以及 `0xk1h0/ChatGPT_DAN` 的 DAN 13.0 全文。文件体量从 173 字节（MICROSOFT）到 35 KB（ANTHROPIC）不等。

@@ -1,5 +1,7 @@
 # Research Index
 
+> **Snapshot Policy**: Files in this directory are dated point-in-time research snapshots (not authoritative specifications). Line anchors and empirical readings may be superseded by later commits; consult [ARCHITECTURE.md](../ARCHITECTURE.md) and [MEASUREMENT_RULES.md](../MEASUREMENT_RULES.md) for current contracts.
+
 All design and empirical background documents under `docs/research/`:
 
 | File | Scope | Status |

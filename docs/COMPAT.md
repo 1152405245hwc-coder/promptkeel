@@ -2,7 +2,7 @@
 
 | DSH Version | dsh-forge | Status |
 |---|---|---|
-| `0.2.1-rc.1` – `0.2.2-rc.3` | `0.1.x` | Verified on `0.2.2-rc.2` and `0.2.2-rc.3` (all <!-- forge-facts:begin kind=patches -->23<!-- forge-facts:end --> anchors match across <!-- forge-facts:begin kind=files -->18<!-- forge-facts:end --> files; `apply` and `revert` restore identical `sha256` hashes, including packed `app.asar` builds) |
+| `0.2.1-rc.1` – `0.2.2-rc.3` | `0.2.x` | Verified on `0.2.2-rc.2` and `0.2.2-rc.3` (all <!-- forge-facts:begin kind=patches -->23<!-- forge-facts:end --> anchors match across <!-- forge-facts:begin kind=files -->18<!-- forge-facts:end --> files; `apply` and `revert` restore identical `sha256` hashes, including packed `app.asar` builds) |
 | `< 0.2.1` | — | Unsupported (`systemPrompt.section` and client slot packages unavailable) |
 | `>= 0.3.0` | — | Blocked by default version range until anchors are verified with `dsh-forge adapt` |
 
@@ -36,4 +36,4 @@ The <!-- forge-facts:begin kind=patches -->23<!-- forge-facts:end --> patches mo
 - **Operating Systems**:
   - macOS layout (`/Applications/DeepSeek Harness.app/Contents/Resources/app/dsh` or sealed `app.asar`) is verified.
   - Linux and Windows candidate paths are built into `lib/paths.mjs` and can be overridden with `--host-root` or `DSH_FORGE_HOST_ROOT`.
-  - Cross-host profiles (`claude-code`, `codex`, `gemini`, `opencode`, `cursor`, `windsurf`, `aider`, `continue`, `generic`) are platform-independent across macOS, Linux, and Windows at the configuration-plan layer. Runtime activation for experimental adapters remains `NOT_COVERED`. See [PORTABILITY.md](PORTABILITY.md).
+  - Cross-host profiles: primary verified core (`claude-code`, `codex`, `opencode` + `dsh`) and frozen experimental adapters are platform-independent across macOS, Linux, and Windows at the configuration-plan layer (tested on `ubuntu-latest` and `macos-latest` CI). Runtime activation for frozen experimental adapters remains `NOT_COVERED`. See [PORTABILITY.md](PORTABILITY.md).

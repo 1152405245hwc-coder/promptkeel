@@ -1,3 +1,5 @@
+> **Snapshot Note**: Point-in-time research artifact; line anchors and figures may be superseded by current code. See [docs/ARCHITECTURE.md](../ARCHITECTURE.md) and [docs/MEASUREMENT_RULES.md](../MEASUREMENT_RULES.md).
+
 # 全平台破甲支持等级矩阵（P4 投递依据）
 
 - 取证时间：2026-11-17（网络证据为当日抓取）

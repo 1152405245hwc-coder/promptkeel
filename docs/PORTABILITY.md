@@ -1,6 +1,6 @@
 # Cross-Host Portability
 
-`dsh-forge` separates host-specific runtime patching from portable agent configuration. The host registry currently includes <!-- forge-facts:begin kind=profiles -->13<!-- forge-facts:end --> adapters; DSH is one high-permission adapter rather than the core platform assumption. Its patch surface, generated from `lib/table.mjs`:
+`dsh-forge-kit` separates host-specific runtime patching from portable agent configuration. The host registry includes <!-- forge-facts:begin kind=profiles -->13<!-- forge-facts:end --> adapters divided into **4 verified primary hosts** (`dsh`, `claude-code`, `codex`, `opencode`) backed by golden detection fixtures (`test/fixtures/hosts/`) and **9 frozen / experimental profiles**. Its DSH patch surface, generated from `lib/table.mjs`:
 
 <!-- forge-facts:begin -->
 23 host patches · 18 patched files · 17 `@deepseek-ai/*` packages · layers: approval 7, sandbox 9, turn 1, persona 4, session 2 · host range `>=0.2.1-rc.1 <0.3.0`
@@ -24,9 +24,9 @@ Profile JSON ──▶ Host Adapter ──▶ Compiler (core/compile) ──▶ 
 | DSH Linux/Windows | `dsh` + `--host-root` | `experimental` | same | same anchors, custom install root | manifest + `sha256` | pass `--host-root` |
 | Claude Code | `claude-code` | `verified` | `.claude/forge-prompt.md` + `CLAUDE.md` + executable `.claude/dsh-forge-shim.sh` + `/dsh-forge` | `.claude/settings.json` (`permissions.defaultMode`) | byte-exact | `append-only` (CLI 57-char identity prefix) |
 | Codex CLI | `codex` | `verified` | `.codex/forge-instructions.md` + `.codex/dsh-forge-shim.sh` + `AGENTS.md` | `.codex/config.toml` (`model_instructions_file`, `approval_policy`, `sandbox_mode`) | byte-exact | `replace-full` (`B4`, shim covers untrusted repos) |
-| Gemini CLI | `gemini` | `experimental` | `.gemini/system.md` + `GEMINI.md` + `.gemini/dsh-forge-shim.sh` (`GEMINI_SYSTEM_MD`) | `.gemini/settings.json` (`general.defaultApprovalMode`) | byte-exact | `replace-full` (`B4`) via shim env |
-| OpenCode | `opencode` | `experimental` | `opencode.json` (`agent.build.prompt`) + `AGENTS.md` managed block | `opencode.json` (`permission: "allow"`) | byte-exact | `replace-full` (`B4`, verified on v1.19.5) |
-| Continue | `continue` | `experimental` | `.continue/config.yaml` (`chatOptions.baseAgentSystemMessage`) + `.continue/rules/dsh-forge.md` | `.continue/config.yaml` | byte-exact | `replace-full` (`B4`) |
+| Gemini CLI | `gemini` | `experimental` (frozen) | `.gemini/system.md` + `GEMINI.md` + `.gemini/dsh-forge-shim.sh` (`GEMINI_SYSTEM_MD`) | `.gemini/settings.json` (`general.defaultApprovalMode`) | byte-exact | `replace-full` (`B4`) via shim env |
+| OpenCode | `opencode` | `verified` | `opencode.json` (`agent.build.prompt`) + `AGENTS.md` managed block | `opencode.json` (`permission: "allow"`) | byte-exact | `replace-full` (`B4`), golden-fixture covered |
+| Continue | `continue` | `experimental` (frozen) | `.continue/config.yaml` (`chatOptions.baseAgentSystemMessage`) + `.continue/rules/dsh-forge.md` | `.continue/config.yaml` | byte-exact | `replace-full` (`B4`) |
 | Generic API | `generic` | `experimental` | system message only | unsupported | n/a | caller consumes `plan.prompt.text` |
 | Hermes | `hermes` | `experimental` | `~/.hermes/config.yaml` (`agent.system_prompt`) + `~/.hermes/SOUL.md` + `.hermes.md` (`blockId=forge`) | `~/.hermes/config.yaml` | byte-exact | `replace-with-residue` (avoids `html_comment_injection` block) |
 | OpenClaw | `openclaw` | `experimental` | `~/.kimi_openclaw/workspace/AGENTS.md` + `AGENTS.md` | unsupported | byte-exact | `append-only` |
@@ -62,7 +62,7 @@ core.md ──▶ models/<model>.md ──▶ hosts/<host>.md ──▶ modes/<m
 | Guarantee | Mechanism |
 |---|---|
 | **Deterministic compilation** | Same `(profile, model, mode)` produces the exact same `planId` and prompt `sha256` across machines; absolute local paths are excluded from the `planId` digest (`core/compile.mjs`). |
-| **Byte-exact rollback** | Every existing file is backed up under `~/.dsh-forge/plans/<id>/files/` with `beforeSha` and `afterSha` before the first write (`core/executor.mjs`). |
+| **Byte-exact rollback** | Every existing file is backed up under `~/.dsh-forge-kit/plans/<id>/files/` with `beforeSha` and `afterSha` before the first write (`core/executor.mjs`). |
 | **Explicit capability reporting** | Every profile declares `verified`, `experimental`, or `unsupported` across `prompt`, `approval`, `sandbox`, `tools`, and `rollback` (`core/capabilities.mjs`). |
 | **Drift protection** | `revert-plan` re-hashes every target file and refuses to overwrite files edited after apply unless `--force` is passed. |
 | **Scope containment** | Target paths are resolved strictly inside their declared `project` or `user` root; `..` traversal and symlinks (including dangling symlinks) are rejected before any write. |

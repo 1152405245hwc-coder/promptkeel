@@ -1,3 +1,5 @@
+> **Snapshot Note**: Point-in-time research artifact; line anchors and figures may be superseded by current code. See [docs/ARCHITECTURE.md](../ARCHITECTURE.md) and [docs/MEASUREMENT_RULES.md](../MEASUREMENT_RULES.md).
+
 # 多平台 Agent/AI CLI 配置管理与注入项目调研
 
 > 调研日期：2026-11-16。范围：agent-purge 加 6 个相似项目（另列 llm-switcher 作为零配置突变对照）。只采用项目自己的 GitHub 仓库、README、源码或测试目录。每条结论均给出 GitHub 直接来源和证据文件/符号；NOT_COVERED 表示本次未读到足够一手证据。

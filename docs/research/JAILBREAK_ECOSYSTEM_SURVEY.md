@@ -1,3 +1,5 @@
+> **Snapshot Note**: Point-in-time research artifact; line anchors and figures may be superseded by current code. See [docs/ARCHITECTURE.md](../ARCHITECTURE.md) and [docs/MEASUREMENT_RULES.md](../MEASUREMENT_RULES.md).
+
 # 破甲生态调研：从 dsh-purge 家族到 jailbreak-research 学术与工具链
 
 > 采集日：2026-11-17 · 采集渠道：GitHub Topics（`jailbreak-research`、`jailbreak` 约 2222 个公开仓库、`prompt-injection`、`llm-security`）、策展清单 `kaplanlior/oss-llm-security`、`corca-ai/awesome-llm-security`、`llmsecnet/llmsec-site`、DSH Hub 插件目录、`EasyJailbreak` 官方 README 与论文（arXiv 2403.12171）。

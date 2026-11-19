@@ -1,3 +1,5 @@
+> **Snapshot Note**: Point-in-time research artifact; line anchors and figures may be superseded by current code. See [docs/ARCHITECTURE.md](../ARCHITECTURE.md) and [docs/MEASUREMENT_RULES.md](../MEASUREMENT_RULES.md).
+
 # 破甲原理与可落地方案
 
 这份文档回答两个问题：为什么拒答会发生，以及一个项目能对哪一层动手。所有结论都标注来源类型（`实测` = 本项目跑过，`论文` = 公开研究，`工程` = 同类项目做法）。

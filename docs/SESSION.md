@@ -116,8 +116,11 @@ dsh-session list
 dsh-session export <id> --out session.json
 dsh-session archive <id>
 
-# 一次跑多个模型，输出交付率对照表
+# 一次跑多个模型，输出交付率对照表（不带 --send 为纯预览，不落盘不改家族先验）
 dsh-session matrix --models deepseek-chat,gpt-4o,claude-3-5-sonnet,glm-4,gemini-2.0-flash --task "..." --turns 3 --send
+
+# 也可通过主命令子命令调用：
+dsh-forge session status <id> --state ~/.dsh-forge-kit
 ```
 
 `turn` 与 `record` 分离，是为了让 `record` 能接入**任意**宿主或客户端：你自己发请求，把回复喂回来，会话照样累积战绩与升级。
@@ -129,7 +132,7 @@ dsh-session matrix --models deepseek-chat,gpt-4o,claude-3-5-sonnet,glm-4,gemini-
 ```js
 import {
   createSession, buildTurn, noteTurn, stabilityOf, loadSession,
-} from "dsh-forge/core/session.mjs";
+} from "dsh-forge-kit/core/session.mjs";
 
 const session = createSession({
   model: "deepseek-chat",
@@ -159,7 +162,9 @@ stabilityOf(result.session);             // 稳定性报告与 stable 布尔
   _family-<family>.json     # 跨会话的家族臂统计（学到的先验）
 ```
 
-`<state-root>` 默认 `$XDG_STATE_HOME/dsh-forge` 或 `~/.dsh-forge`，可用 `--state` / `DSH_FORGE_STATE` 指定。会话文件权限 `0600`。
+`<state-root>` 默认 `$XDG_STATE_HOME/dsh-forge-kit` 或 `~/.dsh-forge-kit`，可用 `--state` / `DSH_FORGE_KIT_STATE`（兼容 `DSH_FORGE_STATE`）指定。会话文件权限 `0600`。
+
+> **审计与重放分离**：`session.turns[]` 完整保留每一轮原始记录与 `classifierHash`；`buildTurn()` 与 `continuationNote()` 仅将 `delivered`/`partial` 轮次重放进上下文，防止拒答或传输错误反向毒化后续轮次。传输层 `error` 不会消耗 `consecutiveFailures` 阶梯预算。
 
 ---
 

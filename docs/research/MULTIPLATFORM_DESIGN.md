@@ -1,3 +1,5 @@
+> **Snapshot Note**: Point-in-time research artifact; line anchors and figures may be superseded by current code. See [docs/ARCHITECTURE.md](../ARCHITECTURE.md) and [docs/MEASUREMENT_RULES.md](../MEASUREMENT_RULES.md).
+
 # 多平台 Adapter / Registry 设计
 
 本文基于当前仓库代码（`dsh-forge`，截至 2026-11-16）与各平台公开配置文档，给出可分阶段实现的跨平台升级方案。目标是让同一份提示词与策略可以在多个宿主上安全地探测、编译、预览、应用和回滚，同时保留现有 `forge.profile/v1`、CLI 和 DSH 原生补丁流程。

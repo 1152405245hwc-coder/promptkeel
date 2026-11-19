@@ -1,3 +1,5 @@
+> **Snapshot Note**: Point-in-time research artifact; line anchors and figures may be superseded by current code. See [docs/ARCHITECTURE.md](../ARCHITECTURE.md) and [docs/MEASUREMENT_RULES.md](../MEASUREMENT_RULES.md).
+
 # Linux.do 破甲帖的经验与我们的实测对照
 
 社区帖给的是方向，不是证据。下面每条都标了来源与它在本项目里的落点；能不能成立要看 `scripts/live_matrix.mjs` 的实测。

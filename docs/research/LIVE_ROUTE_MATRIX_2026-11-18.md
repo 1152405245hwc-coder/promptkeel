@@ -1,3 +1,5 @@
+> **Snapshot Note**: Point-in-time research artifact; line anchors and figures may be superseded by current code. See [docs/ARCHITECTURE.md](../ARCHITECTURE.md) and [docs/MEASUREMENT_RULES.md](../MEASUREMENT_RULES.md).
+
 # 实测记录：本地网关上的路由活性与破甲交付（2026-11-18）
 
 本记录只写这一轮真实发出去的请求和拿回来的响应。未测的不写，测错的不留。
