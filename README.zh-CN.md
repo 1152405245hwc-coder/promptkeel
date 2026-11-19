@@ -72,23 +72,23 @@ git clone https://github.com/liangsiweiethan-wq/promptkeel.git
 cd promptkeel
 
 # 1. 查看所有宿主档案、模型覆盖、本机宿主探测与动态投递分级
-node bin/dsh-forge.js profiles
-node bin/dsh-forge.js models
-node bin/dsh-forge.js hosts
-node bin/dsh-forge.js grades
+node bin/promptkeel.js profiles
+node bin/promptkeel.js models
+node bin/promptkeel.js hosts
+node bin/promptkeel.js grades
 
 # 2. 纯编译（不写磁盘）：预览 Codex replace-full 计划
-node bin/dsh-forge.js compile codex --model gpt --persona contract --mode coding
+node bin/promptkeel.js compile codex --model gpt --persona contract --mode coding
 
 # 3. 预检、事务应用、校验 SHA-256 并零漂移回滚
-node bin/dsh-forge.js apply --profile codex --dry-run --preview /tmp/keel-preview.json
-node bin/dsh-forge.js apply --profile codex --yes --preview /tmp/keel-preview.json
-node bin/dsh-forge.js plans
-node bin/dsh-forge.js verify-plan <plan-id>
-node bin/dsh-forge.js revert-plan <plan-id>
+node bin/promptkeel.js apply --profile codex --dry-run --preview /tmp/keel-preview.json
+node bin/promptkeel.js apply --profile codex --yes --preview /tmp/keel-preview.json
+node bin/promptkeel.js plans
+node bin/promptkeel.js verify-plan <plan-id>
+node bin/promptkeel.js revert-plan <plan-id>
 
 # 4. 启动本地环回工作台：http://127.0.0.1:7788
-node bin/dsh-forge.js console
+node bin/promptkeel.js console
 ```
 
 ---
@@ -109,9 +109,9 @@ PromptKeel 同时提供独立的环回本地工作室（`127.0.0.1:7788`，严�
 
 ```bash
 # 持续会话 CLI 示例
-node bin/dsh-session.js start --model gpt-4o --task "实现确定性配置合并器"
-node bin/dsh-session.js turn <session-id> --send --gateway http://127.0.0.1:3425/v1
-node bin/dsh-session.js status <session-id>
+node bin/promptkeel-session.js start --model gpt-4o --task "实现确定性配置合并器"
+node bin/promptkeel-session.js turn <session-id> --send --gateway http://127.0.0.1:3425/v1
+node bin/promptkeel-session.js status <session-id>
 ```
 
 ### DeepSeek Harness (`dsh`) 原生命令

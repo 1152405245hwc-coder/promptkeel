@@ -5,7 +5,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-const bin = path.join(import.meta.dirname, "..", "bin", "dsh-forge.js");
+const bin = path.join(import.meta.dirname, "..", "bin", "promptkeel.js");
+const legacyBin = path.join(import.meta.dirname, "..", "bin", "dsh-forge.js");
 
 function run(args, env = {}) {
   return spawnSync(process.execPath, [bin, ...args], {
@@ -186,4 +187,12 @@ test("promptkeel session forwards to promptkeel-session CLI", () => {
   assert.equal(res.status, 0, res.stderr);
   assert.match(res.stdout, /promptkeel-session \(compat: dsh-session\) — persistent/);
   assert.match(res.stdout, /promptkeel-session matrix/);
+});
+
+test("legacy dsh-forge CLI wrapper forwards --version cleanly to promptkeel", () => {
+  const primary = spawnSync(process.execPath, [bin, "--version"], { encoding: "utf8" });
+  const legacy = spawnSync(process.execPath, [legacyBin, "--version"], { encoding: "utf8" });
+  assert.equal(primary.status, 0);
+  assert.equal(legacy.status, 0);
+  assert.equal(legacy.stdout.trim(), primary.stdout.trim());
 });

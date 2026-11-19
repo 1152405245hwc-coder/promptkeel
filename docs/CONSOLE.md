@@ -1,10 +1,10 @@
 # Console & Local Workbench
 
-`dsh-forge console` serves the local workbench at `http://127.0.0.1:7788`, sharing UI design tokens (`ui/tokens.mjs`) and doctor/compiler outputs directly with the CLI.
+`promptkeel console` serves the local workbench at `http://127.0.0.1:7788`, sharing UI design tokens (`ui/tokens.mjs`) and doctor/compiler outputs directly with the CLI.
 
 ```bash
-dsh-forge console [--port 7788] [--state <dir>]
-dsh-forge console --once [--json]
+promptkeel console [--port 7788] [--state <dir>]
+promptkeel console --once [--json]
 ```
 
 ## Routes
@@ -25,6 +25,6 @@ dsh-forge console --once [--json]
 ## Security & Isolation Model
 
 - **Loopback only**: binds strictly to `127.0.0.1` and rejects non-loopback `Host` headers, `Origin` mismatches, `Origin: null`, and `Sec-Fetch-Site: cross-site`.
-- **Single-instance lock**: writes `<state>/console.pid`, refuses a live duplicate server, and replaces stale pid files cleanly (`defaultStateRoot` defaults to `$DSH_FORGE_STATE` -> `$XDG_STATE_HOME/dsh-forge` -> `~/.dsh-forge`).
+- **Single-instance lock**: writes `<state>/console.pid`, refuses a live duplicate server, and replaces stale pid files cleanly (`defaultStateRoot` defaults to `$PROMPTKEEL_STATE` -> legacy `$DSH_FORGE_KIT_STATE` / `$DSH_FORGE_STATE` -> `$XDG_STATE_HOME/promptkeel` -> `~/.promptkeel`).
 - **CSP & CSRF**: serves interactive logic from external `/assets/workbench.js` under `script-src 'self'` (no inline `<script>`), and requires a per-process `x-forge-csrf` header on every mutating `POST /api/*` request plus explicit confirmation prompts for disk writes or rollbacks.
 - **Method discipline**: `POST /` and non-API routes reject writes with `405 Allow: GET, HEAD`.

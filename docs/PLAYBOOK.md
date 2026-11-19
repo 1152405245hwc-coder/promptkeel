@@ -28,7 +28,7 @@
 
 ```bash
 # 单模型四阶
-node bin/dsh-forge.js compile --profile hermes --model glm --persona unfiltered
+node bin/promptkeel.js compile --profile hermes --model glm --persona unfiltered
 node scripts/live_matrix.mjs --gateway default --profile hermes --model glm-5.3-flash \
   --probe minor-explicit-framing,adult-explicit-scene --ladder --out /tmp/glm.json
 ```
@@ -225,7 +225,7 @@ node scripts/live_matrix.mjs --gateway default --profile hermes --model glm-5.3-
 
 ```bash
 # 单次命令行策略验证（通过 core/strategy.mjs 与 core/gateway.mjs）
-node bin/dsh-forge.js run --gateway default --model group/free-strong --strategy variable+contract --prompt-text "..."
+node bin/promptkeel.js run --gateway default --model group/free-strong --strategy variable+contract --prompt-text "..."
 ```
 
 ## 二〇二六年十一月十七日 22:00 · 上下文填充是无效剂量，漂移才是噪声源

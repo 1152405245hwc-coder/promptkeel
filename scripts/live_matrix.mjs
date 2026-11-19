@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Live matrix runner: composes each prompt with `dsh-forge compile`, applies
+ * Live matrix runner: composes each prompt with `promptkeel compile`, applies
  * strategy layers from `core/strategy.mjs`, sends bounded requests through
  * `core/gateway.mjs`, and classifies refusal vs. compliance verdicts.
  */
@@ -165,7 +165,7 @@ function expandAxis(requested, all, { allowNone = false, noneValue = "none" } = 
 }
 
 function compileCommand({ profile, forge, persona, transform }) {
-  const args = [path.join(ROOT, "bin", "dsh-forge.js"), "compile", "--profile", profile, "--model", forge];
+  const args = [path.join(ROOT, "bin", "promptkeel.js"), "compile", "--profile", profile, "--model", forge];
   if (persona && persona !== "none") args.push("--persona", persona);
   if (transform && transform !== "none") args.push("--transform", transform);
   return args;
@@ -198,7 +198,7 @@ export function compilePrompt(combo) {
       planId: plan.planId || null,
       personaId: plan.persona?.id || null,
       transform: plan.transform || (plan.prompt.transform ?? "none"),
-      cli: `node bin/dsh-forge.js ${compileCommand(combo).slice(1).join(" ")}`,
+      cli: `node bin/promptkeel.js ${compileCommand(combo).slice(1).join(" ")}`,
     };
   } catch (error) {
     if (error instanceof ConfigError) throw error;

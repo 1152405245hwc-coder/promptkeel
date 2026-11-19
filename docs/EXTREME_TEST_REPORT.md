@@ -1,4 +1,6 @@
-# dsh-forge Extreme Test & Optimization Report
+# PromptKeel (`dsh-forge`) Extreme Test & Optimization Report
+
+> **Historical note:** Captured on `2026-11-18` before the repository rebranded from `dsh-forge` to **PromptKeel (`promptkeel`)**. Original measurement text and command snapshots are preserved intact under [MEASUREMENT_RULES.md](MEASUREMENT_RULES.md).
 
 Generated: 2026-11-18  
 Gateway endpoint: `http://127.0.0.1:3425/v1` (local Magpie OpenAI-compatible router)

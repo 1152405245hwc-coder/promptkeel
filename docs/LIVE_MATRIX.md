@@ -5,7 +5,7 @@ composes this project's own prompt through the CLI, sends each static probe
 request as the sole user message, and records what came back:
 
 ```bash
-node bin/dsh-forge.js compile --profile <p> --model <m> [--persona <id>] [--transform <kind>]
+node bin/promptkeel.js compile --profile <p> --model <m> [--persona <id>] [--transform <kind>]
 ```
 
 The compiled system prompt is not re-implemented in the script. If `compile`

@@ -5,8 +5,8 @@
 ## 1. Mental Model & Layering (5 min)
 
 ```text
-bin/dsh-forge.js + bin/commands/{shared,dsh,plan,runtime}.mjs   ──▶ CLI dispatch (`promptkeel` / `dsh-forge` + `session`)
-bin/dsh-session.js                                              ──▶ Persistent session CLI (`promptkeel-session` / `dsh-session`)
+bin/promptkeel.js + bin/commands/{shared,dsh,plan,runtime}.mjs  ──▶ CLI dispatch (`promptkeel` / compat `dsh-forge` + `session`)
+bin/promptkeel-session.js                                         ──▶ Persistent session CLI (`promptkeel-session` / compat `dsh-session`)
 core/                                                           ──▶ Host-neutral public API (`core/index.mjs`)
   ├── contract, prompt, compile, persona, transform, probe      ──▶ Pure policy compiler (< 480 tok ceiling)
   ├── executor, batch, channels, grades, shim, audit, snapshot  ──▶ Transactional file writer & rollback
@@ -58,7 +58,7 @@ npm run release:check     # Git history author/privacy scan + clean npm pack tar
 
 ## 5. Common Tasks (10 min)
 
-- **Inspect/compile a plan without writing:** `node bin/dsh-forge.js compile codex --model gpt --mode coding`
+- **Inspect/compile a plan without writing:** `node bin/promptkeel.js compile codex --model gpt --mode coding`
 - **Add or update a primary host detector:** add synthetic state directories under `test/fixtures/hosts/<host>/` and assert all lifecycle states in `test/host-fixtures.test.mjs`.
 - **Add or fix a session/transport rule:** test the real wire protocol against an in-process `http.createServer` fixture in `test/session-e2e.test.mjs` — never trust unit mocks of pure functions alone.
 - **Read next:** [ARCHITECTURE.md](ARCHITECTURE.md), [ENGINEERING_RULES.md](ENGINEERING_RULES.md), [MEASUREMENT_RULES.md](MEASUREMENT_RULES.md), [SESSION.md](SESSION.md).

@@ -8,9 +8,9 @@ anything a fixed string can express lives here, while families that need a model
 in the loop (gradient suffixes, PAIR/TAP refinement) stay out.
 
 ```bash
-dsh-forge transforms                      # kind, round-trip status, expansion
-dsh-forge compile --transform base64      # encode the whole composed prompt
-dsh-forge probe --transform base64        # measure the armour under that transform
+promptkeel transforms                      # kind, round-trip status, expansion
+promptkeel compile --transform base64      # encode the whole composed prompt
+promptkeel probe --transform base64        # measure the armour under that transform
 ```
 
 A persona can declare its own transform in frontmatter, which encodes only that

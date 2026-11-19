@@ -67,8 +67,10 @@ flowchart TB
 ```text
 promptkeel/
 ├── bin/
-│   ├── dsh-forge.js        # Unified CLI dispatcher (+ `session` subcommand)
-│   ├── dsh-session.js      # Persistent adaptive session CLI (`promptkeel-session`)
+│   ├── promptkeel.js       # Unified CLI dispatcher (+ `session` subcommand)
+│   ├── promptkeel-session.js # Persistent adaptive session CLI
+│   ├── dsh-forge.js        # Backwards-compatible forwarder to promptkeel.js
+│   ├── dsh-session.js      # Backwards-compatible forwarder to promptkeel-session.js
 │   └── commands/           # Domain-split handlers (shared, dsh, plan, runtime)
 ├── core/                   # Host-neutral public API (curated exports in core/index.mjs)
 │   ├── contract.mjs        # Schema validation & loaders for profiles/*.json and models/*.json
@@ -109,23 +111,23 @@ git clone https://github.com/liangsiweiethan-wq/promptkeel.git
 cd promptkeel
 
 # 1. Inspect available profiles, model overlays, local host status, and delivery grades
-node bin/dsh-forge.js profiles
-node bin/dsh-forge.js models
-node bin/dsh-forge.js hosts
-node bin/dsh-forge.js grades
+node bin/promptkeel.js profiles
+node bin/promptkeel.js models
+node bin/promptkeel.js hosts
+node bin/promptkeel.js grades
 
 # 2. Pure compile (zero disk writes): build a deterministic Codex plan under 480 tokens
-node bin/dsh-forge.js compile codex --model gpt --persona contract --mode coding
+node bin/promptkeel.js compile codex --model gpt --persona contract --mode coding
 
 # 3. Preview, transactionally apply, verify SHA-256 hashes, and revert byte-for-byte
-node bin/dsh-forge.js apply --profile codex --dry-run --preview /tmp/keel-preview.json
-node bin/dsh-forge.js apply --profile codex --yes --preview /tmp/keel-preview.json
-node bin/dsh-forge.js plans
-node bin/dsh-forge.js verify-plan <plan-id>
-node bin/dsh-forge.js revert-plan <plan-id>
+node bin/promptkeel.js apply --profile codex --dry-run --preview /tmp/keel-preview.json
+node bin/promptkeel.js apply --profile codex --yes --preview /tmp/keel-preview.json
+node bin/promptkeel.js plans
+node bin/promptkeel.js verify-plan <plan-id>
+node bin/promptkeel.js revert-plan <plan-id>
 
 # 4. Launch the interactive loopback workbench on http://127.0.0.1:7788
-node bin/dsh-forge.js console
+node bin/promptkeel.js console
 ```
 
 Or install as a global CLI (`npm install -g promptkeel` once published / `npm link` from source) and invoke `promptkeel ...` and `promptkeel-session ...` directly.

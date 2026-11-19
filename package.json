@@ -14,8 +14,8 @@
   "type": "module",
   "license": "MIT",
   "bin": {
-    "promptkeel": "bin/dsh-forge.js",
-    "promptkeel-session": "bin/dsh-session.js",
+    "promptkeel": "bin/promptkeel.js",
+    "promptkeel-session": "bin/promptkeel-session.js",
     "dsh-forge": "bin/dsh-forge.js",
     "dsh-session": "bin/dsh-session.js"
   },

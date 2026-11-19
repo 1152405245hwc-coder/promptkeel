@@ -1,6 +1,6 @@
 # 持续会话：稳定 / 全模型破甲运行时
 
-`dsh-session` 把「一次性生成」变成「可续跑、可度量、会自适应的交付会话」。它解决的是最基础的问题：**同一任务在长对话里稳定持续地交付，并且在任意模型上都自动找到能过的策略阶梯。**
+`promptkeel-session`（兼容别名 `dsh-session`）把「一次性生成」变成「可续跑、可度量、会自适应的交付会话」。它解决的是最基础的问题：**同一任务在长对话里稳定持续地交付，并且在任意模型上都自动找到能过的策略阶梯。**
 
 三件事之前是没有的：
 
@@ -59,11 +59,11 @@
 ```bash
 # A 类复现：严格拒 system 槽的端点
 node scripts/fixtures/system-rejecting-gateway.mjs &   # 收到 role:"system" 即回 400 invalid_request
-dsh-session start --model gpt-4o --task "Write a parseIso helper."
-dsh-session turn <id> --send --gateway http://127.0.0.1:38480/v1      # systemMode=inline
-dsh-session turn <id> --send --gateway http://127.0.0.1:38480/v1
-dsh-session turn <id> --send --gateway http://127.0.0.1:38480/v1
-dsh-session status <id>                    # delivered 3/3, stable=true
+promptkeel-session start --model gpt-4o --task "Write a parseIso helper."
+promptkeel-session turn <id> --send --gateway http://127.0.0.1:38480/v1      # systemMode=inline
+promptkeel-session turn <id> --send --gateway http://127.0.0.1:38480/v1
+promptkeel-session turn <id> --send --gateway http://127.0.0.1:38480/v1
+promptkeel-session status <id>                    # delivered 3/3, stable=true
 ```
 
 ---
@@ -97,27 +97,27 @@ node scripts/live_matrix.mjs --gateway default --model group/free-strong \
 
 ```bash
 # 新建会话（自动按家族选首臂；--strategy 可强制指定臂）
-dsh-session start --model deepseek-chat --task "实现一个带优雅关闭的 Node HTTP 服务"
+promptkeel-session start --model deepseek-chat --task "实现一个带优雅关闭的 Node HTTP 服务"
 
 # 生成下一轮请求（不发送，打印 system/user，可交给任意客户端）
-dsh-session turn <id>
+promptkeel-session turn <id>
 
 # 生成并直接发送（需要对应 provider 的环境变量密钥，如 OPENAI_API_KEY）
-dsh-session turn <id> --send --provider openai
+promptkeel-session turn <id> --send --provider openai
 
 # 把外部客户端拿到的回复记回会话（- 表示从 stdin 读整段回复）
-dsh-session record <id> --reply - --status ok
+promptkeel-session record <id> --reply - --status ok
 
 # 看稳定性：交付率、最长连续失败、各臂胜率
-dsh-session status <id>
+promptkeel-session status <id>
 
 # 列出 / 导出 / 归档
-dsh-session list
-dsh-session export <id> --out session.json
-dsh-session archive <id>
+promptkeel-session list
+promptkeel-session export <id> --out session.json
+promptkeel-session archive <id>
 
 # 一次跑多个模型，输出交付率对照表（不带 --send 为纯预览，不落盘不改家族先验）
-dsh-session matrix --models deepseek-chat,gpt-4o,claude-3-5-sonnet,glm-4,gemini-2.0-flash --task "..." --turns 3 --send
+promptkeel-session matrix --models deepseek-chat,gpt-4o,claude-3-5-sonnet,glm-4,gemini-2.0-flash --task "..." --turns 3 --send
 
 # 也可通过主命令子命令调用：
 promptkeel session status <id> --state ~/.promptkeel

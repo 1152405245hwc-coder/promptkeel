@@ -17,14 +17,18 @@ echo "== schema and profile compilation"
 node scripts/verify-profiles.mjs
 
 echo "== CLI surface"
-help="$(node bin/dsh-forge.js --help)"
+help="$(node bin/promptkeel.js --help)"
 for command in doctor status apply verify compile audit plans verify-plan revert-plan profiles hosts models session; do
   grep -Fq "promptkeel ${command}" <<<"$help" || {
     echo "CLI help is missing command: ${command}" >&2
     exit 1
   }
 done
-session_help="$(node bin/dsh-session.js --help)"
+[ "$(node bin/dsh-forge.js --version)" = "$(node bin/promptkeel.js --version)" ] || {
+  echo "legacy bin/dsh-forge.js --version mismatch" >&2
+  exit 1
+}
+session_help="$(node bin/promptkeel-session.js --help)"
 for command in start turn record status list export archive matrix; do
   grep -Fq "promptkeel-session ${command}" <<<"$session_help" || {
     echo "promptkeel-session help is missing command: ${command}" >&2
@@ -69,7 +73,7 @@ node --input-type=module - "$tmp_dir/pack.json" <<'NODE'
 import fs from "node:fs";
 const report = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const files = new Set(report[0]?.files?.map((entry) => entry.path) || []);
-for (const required of ["package.json", "bin/dsh-forge.js", "bin/dsh-session.js", "client/client.js", "docs/assets/hero.svg", "scripts/verify.sh"]) {
+for (const required of ["package.json", "bin/promptkeel.js", "bin/promptkeel-session.js", "bin/dsh-forge.js", "bin/dsh-session.js", "client/client.js", "docs/assets/hero.svg", "docs/assets/social-preview.png", "scripts/verify.sh"]) {
   if (!files.has(required)) throw new Error(`package is missing ${required}`);
 }
 for (const forbidden of [".dsh-forge-state/", ".dsh-forge-kit-state/", ".dsh-forge-kit/", ".promptkeel-state/", ".promptkeel/", "docs/research/", "tools/", "node_modules/", ".git/"]) {

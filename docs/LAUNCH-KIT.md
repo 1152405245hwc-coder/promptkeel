@@ -1,6 +1,6 @@
 # PromptKeel（龙骨）v0.2.0 中英双语多社群宣发工具包
 
-适用版本：`v0.2.0` · 仓库主页：https://github.com/liangsiweiethan-wq/promptkeel · 发布页：https://github.com/liangsiweiethan-wq/promptkeel/releases/tag/v0.2.0
+适用版本：`v0.2.0` · 仓库主页：https://github.com/liangsiweiethan-wq/promptkeel · 发布页：https://github.com/liangsiweiethan-wq/promptkeel/releases/tag/v0.2.0 · 社交分享图：[docs/assets/social-preview.png](assets/social-preview.png)（`1280×640`，可在 GitHub Settings → Social preview 直接上传）
 
 ---
 
@@ -37,9 +37,9 @@
 ```bash
 git clone https://github.com/liangsiweiethan-wq/promptkeel.git
 cd promptkeel
-node bin/dsh-forge.js compile codex --model gpt --persona contract --mode coding
-node bin/dsh-forge.js console   # http://127.0.0.1:7788
-npm test                        # 224 passing, 0 dependencies
+node bin/promptkeel.js compile codex --model gpt --persona contract --mode coding
+node bin/promptkeel.js console   # http://127.0.0.1:7788
+npm test                         # 224 passing, 0 dependencies
 ```
 ```
 
@@ -69,7 +69,7 @@ npm test                        # 224 passing, 0 dependencies
 2. **SHA-256 清单留痕 + 零漂移回滚**：`apply --dry-run --preview` 生成预检清单；真正写入前检查文件是否在预览后被改动，并拒绝通过 symlink 写入；写前逐文件保存原始字节与 `beforeSha`/`afterSha` 到 `~/.promptkeel/plans/`，一旦外部改动文件，默认拒绝覆盖式 `revert-plan`。
 3. **4 大主力宿主黄金 Fixture 校验**：`dsh`（含 23 条版本门控补丁覆盖 18 个 `@deepseek-ai/*` 文件与安全 `app.asar` 拆包）、`claude-code`、`codex`、`opencode` 均配有 `missing / configured / active / 防误报` 四态合成目录测试（另附 9 份冻结/实验档案）。
 4. **`promptkeel session` 持续自适应交付会话**：落盘到 `~/.promptkeel/sessions/`，把**原始审计记录**与**重放上下文**分离（拒答轮次留盘审计但不重放毒化后续对话）；支持 `systemMode`（`full→inline→lock→bare`）与 `shape`（`history→single→bare`）两轴降级，以及跨会话 UCB1 家族臂先验，配套真实进程内 `http.createServer` E2E 测试守住线缆报文。
-5. **环回本地工作台**：`node bin/dsh-forge.js console` 直接拉起 `http://127.0.0.1:7788`，严格检验 `Host` / `Origin` / `Sec-Fetch-Site`、`script-src 'self'` CSP 与每进程 CSRF 令牌。
+5. **环回本地工作台**：`node bin/promptkeel.js console` 直接拉起 `http://127.0.0.1:7788`，严格检验 `Host` / `Origin` / `Sec-Fetch-Site`、`script-src 'self'` CSP 与每进程 CSRF 令牌。
 
 欢迎试跑体验、提 Issue 或 Star 支持！
 - 仓库主页：https://github.com/liangsiweiethan-wq/promptkeel

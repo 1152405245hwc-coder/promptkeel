@@ -1,6 +1,6 @@
 # Host Patch Table
 
-All patches in `lib/table.mjs` are declarative: target file path relative to the host root, supported version range, exact `find` / `replace` strings, and a `marker` string used to verify that the patch is present. `apply` preflights all required patches before writing any file. Every entry carries a `layer` — `approval` (7), `sandbox` (9), `turn` (1), `persona` (4), `session` (2) — so `dsh-forge doctor`, `dsh-forge adapt` and the workbench console can show which armor layer a patch belongs to.
+All patches in `lib/table.mjs` are declarative: target file path relative to the host root, supported version range, exact `find` / `replace` strings, and a `marker` string used to verify that the patch is present. `apply` preflights all required patches before writing any file. Every entry carries a `layer` — `approval` (7), `sandbox` (9), `turn` (1), `persona` (4), `session` (2) — so `promptkeel doctor`, `promptkeel adapt` and the workbench console can show which armor layer a patch belongs to.
 
 | # | ID | Target File | Change |
 |---|---|---|---|

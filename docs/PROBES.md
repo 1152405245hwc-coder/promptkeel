@@ -1,16 +1,16 @@
 # Static probe harness
 
-`dsh-forge probe [profile]` runs a fixed corpus of worst-case requests against
-the armour dsh-forge is about to install. It never calls a model and never
+`promptkeel probe [profile]` runs a fixed corpus of worst-case requests against
+the armour PromptKeel is about to install. It never calls a model and never
 answers a probe: each request is a fixture payload — a string that records the
 *shape* of a request, never a response — and every check is a measurement of the
 composed prompt.
 
 ```bash
-dsh-forge probe                       # dsh profile, no persona
-dsh-forge probe --persona cipher      # persona-level base64 in effect
-dsh-forge probe --transform morse     # whole-prompt transform
-dsh-forge probe --json                # machine-readable rows, per-class tallies, self-check
+promptkeel probe                       # dsh profile, no persona
+promptkeel probe --persona cipher      # persona-level base64 in effect
+promptkeel probe --transform morse     # whole-prompt transform
+promptkeel probe --json                # machine-readable rows, per-class tallies, self-check
 ```
 
 ## Checks
@@ -78,7 +78,7 @@ feeds three deliberately poisoned prompts through the same code path:
 
 The third and fourth columns are the point: they prove `loader` is not a
 duplicate of `scaffold` and `residue` is not a duplicate of `identity`. Every
-control must fail all of its rows. `dsh-forge probe` exits non-zero if either
+control must fail all of its rows. `promptkeel probe` exits non-zero if either
 the live armour fails or any control stops discriminating:
 
 ```

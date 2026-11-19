@@ -6,20 +6,20 @@ A profile decides *what* gets delivered; a channel is *how* it reaches the host.
 | --- | --- | --- | --- |
 | `project` | file, managed block, TOML, or YAML config inside the repository (`AGENTS.md`, `.codex/config.toml`, `.continue/config.yaml`, etc.) | next turn | 20 actions across 10 profiles |
 | `install` | host runtime state (`dsh.patches`, `~/.dsh/prompt-inject.md`, user-scope `.hermes/config.yaml`) | host restart / next session | 3 actions across 2 profiles (`dsh`, `hermes`) |
-| `shim` | executable `0755` wrapper script (`write-shim`) exporting `DSH_FORGE_PROMPT` / `GEMINI_SYSTEM_MD`, Codex `-c model_instructions_file`, or CLI append flags | shell restart | 3 automatic (`claude-code`, `codex`, `gemini`), plus `dsh-forge shim` |
+| `shim` | executable `0755` wrapper script (`write-shim`) exporting `DSH_FORGE_PROMPT` / `GEMINI_SYSTEM_MD`, Codex `-c model_instructions_file`, or CLI append flags | shell restart | 3 automatic (`claude-code`, `codex`, `gemini`), plus `promptkeel shim` |
 | `slash` | a command file the host registers inside a session (`.claude/commands/*.md`) | session start | 1 action, `claude-code` |
 | `none` | prompt composed but never written (`prompt-only`) | n/a | 2 profiles (`generic`, `muse`) |
 
-`dsh-forge channels` prints the rows for one profile; `dsh-forge channels --all` prints the matrix for every profile in `profiles/`. The matrix is measured from the compiled plans, so it cannot drift from what `apply` would actually do.
+`promptkeel channels` prints the rows for one profile; `promptkeel channels --all` prints the matrix for every profile in `profiles/`. The matrix is measured from the compiled plans, so it cannot drift from what `apply` would actually do.
 
 ## Shim
 
-`dsh-forge shim` renders a POSIX wrapper for a host that reads its system prompt from an environment variable:
+`promptkeel shim` renders a POSIX wrapper for a host that reads its system prompt from an environment variable:
 
 ```sh
-dsh-forge shim --binary /usr/local/bin/host \
-  --prompt "$PWD/.dsh-forge-state/prompt.md" \
-  --env HOST_SYSTEM_PROMPT="$PWD/.dsh-forge-state/prompt.md" \
+promptkeel shim --binary /usr/local/bin/host \
+  --prompt "$PWD/.promptkeel-state/prompt.md" \
+  --env HOST_SYSTEM_PROMPT="$PWD/.promptkeel-state/prompt.md" \
   --note "host cli" \
   --out bin/host-forged
 ```

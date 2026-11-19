@@ -13,8 +13,10 @@ Patch surface facts for this document are generated from `lib/table.mjs`:
 ```
 promptkeel/
 ├── bin/
-│   ├── dsh-forge.js        # Thin CLI dispatcher (+ `session` subcommand)
-│   ├── dsh-session.js      # Persistent session CLI (start/turn/record/status/matrix)
+│   ├── promptkeel.js       # Thin CLI dispatcher (+ `session` subcommand)
+│   ├── promptkeel-session.js # Persistent session CLI (start/turn/record/status/matrix)
+│   ├── dsh-forge.js        # Backwards-compatible forwarder to promptkeel.js
+│   ├── dsh-session.js      # Backwards-compatible forwarder to promptkeel-session.js
 │   └── commands/           # Split command handlers (shared, dsh, plan, runtime)
 ├── core/                   # Host-neutral compiler, strategies, gateway & transactional executor
 │   ├── index.mjs           # Curated public facade exporting stable core API
@@ -71,7 +73,7 @@ promptkeel/
 ```mermaid
 sequenceDiagram
   participant U as User
-  participant CLI as dsh-forge CLI
+  participant CLI as promptkeel CLI
   participant E as lib/engine.mjs
   participant A as lib/asar.mjs
   participant H as Host files
@@ -117,7 +119,7 @@ prompt/modes/*.md    ─┘        │
                                └─ <!-- dsh-forge vX.Y.Z sha256:... -->
 ```
 
-The plugin registers a `systemPrompt` section (`forge:prompt`) through Cordis. If `~/.dsh/prompt-inject.md` was installed via `dsh-forge prompt install` (identified by the `<!-- dsh-forge ` header), the plugin reads that file so local edits take effect on next session start; otherwise it composes directly from `prompt/`. Section order is `1000` when overriding the workspace baseline (`strict`, or `fallback` with an active custom/workspace file) and `500` when coexisting (`always`).
+The plugin registers a `systemPrompt` section (`forge:prompt`) through Cordis. If `~/.dsh/prompt-inject.md` was installed via `promptkeel prompt install` (identified by the `<!-- dsh-forge ` header), the plugin reads that file so local edits take effect on next session start; otherwise it composes directly from `prompt/`. Section order is `1000` when overriding the workspace baseline (`strict`, or `fallback` with an active custom/workspace file) and `500` when coexisting (`always`).
 
 ## 5. Runtime State Locations
 

@@ -24,15 +24,15 @@ Generate with `node scripts/check_docs.mjs`; `--check` fails when a document dis
 
 The <!-- forge-facts:begin kind=patches -->23<!-- forge-facts:end --> patches modify <!-- forge-facts:begin kind=files -->18<!-- forge-facts:end --> files across <!-- forge-facts:begin kind=packages -->17<!-- forge-facts:end --> packages under `node_modules/@deepseek-ai/`. When DSH updates:
 
-1. Run `dsh-forge adapt` to inspect all <!-- forge-facts:begin kind=patches -->23<!-- forge-facts:end --> patch anchors without modifying disk files.
-2. If all <!-- forge-facts:begin kind=patches -->23<!-- forge-facts:end --> report `ready`, run `dsh-forge upgrade --yes`.
-3. If any patch reports `miss` or `partial`, run `dsh-forge explain <patch-id>` to inspect the target file and add a versioned entry to `variants` in `lib/table.mjs`.
-4. `dsh-forge revert` checks `manifest.hostVersion` against the current DSH version and refuses to write older backups over a newer host unless `--force` is specified.
+1. Run `promptkeel adapt` to inspect all <!-- forge-facts:begin kind=patches -->23<!-- forge-facts:end --> patch anchors without modifying disk files.
+2. If all <!-- forge-facts:begin kind=patches -->23<!-- forge-facts:end --> report `ready`, run `promptkeel upgrade --yes`.
+3. If any patch reports `miss` or `partial`, run `promptkeel explain <patch-id>` to inspect the target file and add a versioned entry to `variants` in `lib/table.mjs`.
+4. `promptkeel revert` checks `manifest.hostVersion` against the current DSH version and refuses to write older backups over a newer host unless `--force` is specified.
 
 ## Runtime Requirements
 
 - **Node.js <!-- forge-facts:begin kind=nodeEngine -->`>=20`<!-- forge-facts:end -->** (uses built-in `node:test`, `util.parseArgs`, and `import.meta.dirname`; zero external npm runtime dependencies).
-- **`zstd`** in `PATH` (or `DSH_FORGE_ZSTD`) for decompressing `session.v4.jsonl.zstd` during `dsh-forge verify`.
+- **`zstd`** in `PATH` (or `DSH_FORGE_ZSTD`) for decompressing `session.v4.jsonl.zstd` during `promptkeel verify`.
 - **Operating Systems**:
   - macOS layout (`/Applications/DeepSeek Harness.app/Contents/Resources/app/dsh` or sealed `app.asar`) is verified.
   - Linux and Windows candidate paths are built into `lib/paths.mjs` and can be overridden with `--host-root` or `PROMPTKEEL_HOST_ROOT` (legacy: `DSH_FORGE_HOST_ROOT`).

@@ -44,7 +44,7 @@ if (hostStorageState(root).mode === "missing") {
   }
 }
 try {
-  const res = spawnSync(process.execPath, ["bin/dsh-forge.js", "adapt", "--json", "--host-root", root], { encoding: "utf8" });
+  const res = spawnSync(process.execPath, ["bin/promptkeel.js", "adapt", "--json", "--host-root", root], { encoding: "utf8" });
   const rows = JSON.parse(res.stdout);
   const bad = rows.filter((r) => r.status !== "ready");
   console.log(bad.length ? "drifted: " + bad.map((r) => r.id).join(", ") : `all ${rows.length} patches ready (${tempDir ? "synthetic fixture" : "local host"})`);

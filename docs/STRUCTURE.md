@@ -3,9 +3,9 @@
 `promptkeel` (**PromptKeel / 龙骨**) 按职责分为四层，由上而下贴近具体宿主（快速上手见 [ONBOARDING.md](ONBOARDING.md)，防回归约束见 [ENGINEERING_RULES.md](ENGINEERING_RULES.md)）：
 
 ```
-bin/dsh-forge.js       命令行统一分发入口（含 `session` 子命令转发）
+bin/promptkeel.js      命令行统一分发入口（含 `session` 子命令转发；保留 dsh-forge.js 兼容转发）
 bin/commands/          按域拆分的 CLI 处理器（shared / dsh / plan / runtime）
-bin/dsh-session.js     持续会话入口（start / turn / record / status / matrix）
+bin/promptkeel-session.js 持续会话入口（start / turn / record / status / matrix；保留 dsh-session.js 兼容转发）
 core/                  宿主无关核心：契约、编译、策略、网关、执行器、探针、审计、控制台
   index.mjs            core 显式策展公开导出入口（test/public-api.test.mjs 守卫）
   compile.mjs          纯编译器 + normalizeContext：组合 profile + model + 人设 -> 确定性 planId

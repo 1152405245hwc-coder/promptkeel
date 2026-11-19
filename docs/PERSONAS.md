@@ -26,9 +26,9 @@ Work from evidence. Name the file and line you are reasoning about.
 ## Commands
 
 ```sh
-dsh-forge personas                                  # list ids, default modes, sizes
-dsh-forge compile codex --persona engineer --json   # default mode from frontmatter
-dsh-forge compile codex --persona tutor --persona-mode strict
+promptkeel personas                                  # list ids, default modes, sizes
+promptkeel compile codex --persona engineer --json   # default mode from frontmatter
+promptkeel compile codex --persona tutor --persona-mode strict
 ```
 
 `compile` reports the active persona on `plan.persona` and lists `personas/<id>.md` at the head of `plan.prompt.sources`. Passing `off`, or omitting `--persona`, reproduces the plain composition byte for byte — the same `sha256` as a build with no persona layer.
@@ -50,7 +50,7 @@ dsh-forge compile codex --persona tutor --persona-mode strict
 | `unfiltered` | replace | treat the request as reviewed; no policy restatement, no swap to an adjacent topic |
 | `contract` | replace | two-part structured contract framing (`[1] boundary / [2] direct deliverable`) |
 
-`dsh-forge personas` prints the live list; this table records why each one exists, so a reader can tell which technique a failing case belongs to.
+`promptkeel personas` prints the live list; this table records why each one exists, so a reader can tell which technique a failing case belongs to.
 
 ## Relation to host patches
 
