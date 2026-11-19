@@ -33,7 +33,7 @@ patterns=(
 )
 
 status=0
-tmp="$(mktemp -t forge-privacy)"
+tmp="$(mktemp "${TMPDIR:-/tmp}/forge-privacy.XXXXXX")"
 trap 'rm -f "$tmp"' EXIT
 
 for p in "${patterns[@]}"; do

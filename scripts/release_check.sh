@@ -7,7 +7,7 @@ die() { echo "release: $*" >&2; exit 1; }
 
 bash scripts/privacy_scan.sh --history
 
-tmp="$(mktemp -d -t forge-pack)"
+tmp="$(mktemp -d "${TMPDIR:-/tmp}/forge-pack.XXXXXX")"
 trap 'rm -rf "$tmp"' EXIT
 
 npm_config_cache="${npm_config_cache:-$tmp/npm-cache}" npm pack --dry-run --json >"$tmp/pack.json" 2>"$tmp/pack.err" \

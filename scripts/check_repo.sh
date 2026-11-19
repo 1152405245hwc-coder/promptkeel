@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/dsh-forge-check.XXXXXX")"
+tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/promptkeel-check.XXXXXX")"
 trap 'rm -rf "$tmp_dir"' EXIT
 
 echo "== tracked generated state"
@@ -38,7 +38,7 @@ while IFS= read -r -d '' file; do
 done < <(find bin core hosts lib scripts test -type f \( -name '*.mjs' -o -name '*.js' \) -print0 | sort -z)
 
 echo "== core DSH import boundary"
-if rg -n 'from .*\.\./lib/' core/; then
+if grep -rnE 'from .*\.\./lib/' core/; then
   echo "core modules must not import DSH runtime modules in lib/" >&2
   exit 1
 fi

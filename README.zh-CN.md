@@ -7,7 +7,7 @@
 **面向 `DSH` / `Claude Code` / `Codex CLI` / `OpenCode` 四大主力验证宿主的确定性策略编译器、零漂移回滚执行器、持续自适应交付会话（`promptkeel session`）与本地工作台——零第三方运行时依赖。**
 
 [![Release](https://img.shields.io/badge/release-v0.2.0-F0B35B?style=flat-square)](https://github.com/liangsiweiethan-wq/promptkeel/releases)
-[![CI](https://img.shields.io/badge/CI-actions-2E7D32?style=flat-square)](https://github.com/liangsiweiethan-wq/promptkeel/actions/workflows/ci.yml)
+[![CI](https://github.com/liangsiweiethan-wq/promptkeel/actions/workflows/ci.yml/badge.svg)](https://github.com/liangsiweiethan-wq/promptkeel/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/Node.js-20%2B-339933?style=flat-square)](package.json)
 [![Runtime Dependencies: 0](https://img.shields.io/badge/Runtime%20Deps-0-2E7D32?style=flat-square)](package.json)
 [![Tests](https://img.shields.io/badge/tests-224_passing-2E7D32?style=flat-square)](#验证与质量闸门)
