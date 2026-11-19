@@ -15,7 +15,7 @@ export function cmdDoctor() {
   const report = doctor();
   process.exitCode = report.ok ? 0 : 1;
   if (flags.has("--json")) return out(report, true);
-  banner(`dsh-forge doctor · DSH ${report.version}`);
+  banner(`promptkeel doctor · DSH ${report.version}`);
   report.checks.forEach((c, i) => {
     const mark = c.status === "ok" ? "OK  " : c.status === "warn" ? "WARN" : "FAIL";
     process.stdout.write(`${String(i + 1).padStart(2)}. ${mark}  ${c.label.padEnd(18)} ${c.detail}\n`);
@@ -47,7 +47,7 @@ export function cmdApply() {
   const result = applyPatches();
   out(result, flags.has("--json"));
   if (!result.ok) process.exitCode = 1;
-  else if (result.dir) process.stdout.write(`\nBackup: ${displayPath(result.dir)}\nQuit DSH (Cmd+Q) and reopen, then run: dsh-forge verify\n`);
+  else if (result.dir) process.stdout.write(`\nBackup: ${displayPath(result.dir)}\nQuit DSH (Cmd+Q) and reopen, then run: promptkeel verify\n`);
 }
 
 export function cmdUpgrade() {
@@ -79,7 +79,7 @@ export function cmdVerify() {
   const proofs = verifyProofs();
   process.exitCode = proofs.ok ? 0 : 1;
   if (flags.has("--json")) return out(proofs, true);
-  banner("dsh-forge verify");
+  banner("promptkeel verify");
   for (const p of proofs.proofs) process.stdout.write(`${p.status.toUpperCase().padEnd(7)} ${p.name.padEnd(20)} ${p.detail}\n`);
   process.stdout.write(`\nBudget: ${proofs.composed.tokens}/${proofs.budget.max} tokens\nVERDICT: ${proofs.ok ? "PASS" : "FAIL"}\n`);
 }
@@ -204,7 +204,7 @@ export function cmdCollect() {
   ].join("\n"));
   const logFile = defaultLogFile();
   if (fs.existsSync(logFile)) fs.writeFileSync(path.join(dir, "forge.log.jsonl"), redactText(fs.readFileSync(logFile, "utf8")));
-  fs.writeFileSync(path.join(dir, "README.txt"), `dsh-forge diagnostics\nCreated: ${stamp}\nRun: dsh-forge doctor --json\n`);
+  fs.writeFileSync(path.join(dir, "README.txt"), `PromptKeel diagnostics\nCreated: ${stamp}\nRun: promptkeel doctor --json\n`);
   const archive = path.join(reportsDir(), `forge-diag-${stamp}.tar.gz`);
   execFileSync("tar", ["-czf", archive, "-C", dir, "."]);
   process.stdout.write(`${archive}\n`);

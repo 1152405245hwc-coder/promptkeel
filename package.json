@@ -1,11 +1,21 @@
 {
-  "name": "dsh-forge-kit",
+  "name": "promptkeel",
   "version": "0.2.0",
-  "description": "Prompt injection, declarative host adapters, and deterministic multi-platform profiles for DSH, Claude Code, Codex CLI, Gemini CLI, OpenCode, Cursor, Windsurf, Aider, and Continue",
+  "description": "Zero-drift prompt & policy compiler, transactional rollback executor, and adaptive delivery sessions for Claude Code, Codex CLI, OpenCode, and DeepSeek Harness (DSH).",
+  "author": "Ethan Liang",
+  "homepage": "https://github.com/liangsiweiethan-wq/promptkeel#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liangsiweiethan-wq/promptkeel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/liangsiweiethan-wq/promptkeel/issues"
+  },
   "type": "module",
   "license": "MIT",
   "bin": {
-    "dsh-forge-kit": "bin/dsh-forge.js",
+    "promptkeel": "bin/dsh-forge.js",
+    "promptkeel-session": "bin/dsh-session.js",
     "dsh-forge": "bin/dsh-forge.js",
     "dsh-session": "bin/dsh-session.js"
   },
@@ -27,6 +37,7 @@
     "LICENSE",
     "NOTICE.md",
     "docs/*.md",
+    "docs/assets/",
     "docs/ui-preview.png",
     "scripts/",
     "CHANGELOG.md"
@@ -49,20 +60,22 @@
     "node": ">=20"
   },
   "keywords": [
-    "deepseek-harness",
-    "dsh",
+    "promptkeel",
+    "prompt-compiler",
+    "ai-agents",
     "claude-code",
     "codex",
-    "gemini-cli",
     "opencode",
+    "deepseek-harness",
+    "dsh",
+    "zero-dependency",
+    "rollback",
+    "cli",
+    "gemini-cli",
     "cursor",
     "windsurf",
     "aider",
-    "continue",
-    "prompt",
-    "patching",
-    "cross-host",
-    "governance"
+    "continue"
   ],
   "main": "lib/index.js",
   "exports": {

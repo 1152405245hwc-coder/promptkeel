@@ -2,7 +2,7 @@ const React = require("react");
 const h = React.createElement;
 const { useState, useEffect, useCallback } = React;
 
-const NS = "dsh-forge-kit";
+const NS = "promptkeel";
 const TABS = [
   { id: "overview", label: "总览" },
   { id: "patches", label: "补丁" },
@@ -15,7 +15,7 @@ const TABS = [
 ];
 
 function api(path, options) {
-  return fetch("/dsh-forge-kit/api" + path, {
+  return fetch("/promptkeel/api" + path, {
     headers: { "content-type": "application/json" },
     ...options,
   }).then(async (res) => {
@@ -127,8 +127,8 @@ function Shell() {
   return h("div", { className: "df-root" },
     h("style", null, css),
     h("header", { className: "df-head" },
-      h("div", { className: "df-mark" }, "F"),
-      h("div", { className: "df-logo" }, "FORGE"),
+      h("div", { className: "df-mark" }, "K"),
+      h("div", { className: "df-logo" }, "PROMPTKEEL"),
       h("span", { className: "df-pill " + (doctor && doctor.ok ? "ok" : "bad") }, doctor ? (doctor.ok ? "PASS" : "FAIL") : "…"),
       h("span", { className: "df-pill" }, "DSH " + (data ? data.doctor.version : "…")),
       h("div", { className: "df-spacer" }),
@@ -350,13 +350,13 @@ function Personas({ data }) {
 }
 
 function ForgeIcon() {
-  return h("div", { style: { width: 18, height: 18, display: "grid", placeItems: "center", color: "#f0b35b", font: "700 11px 'SF Mono',monospace" } }, "F");
+  return h("div", { style: { width: 18, height: 18, display: "grid", placeItems: "center", color: "#f0b35b", font: "700 11px 'SF Mono',monospace" } }, "K");
 }
 
 export const name = NS;
 export const inject = ["slots", "locale", "connection"];
 
 export function apply(ctx) {
-  ctx.slots.inject("sidebar.panellist", () => ctx.slots.register({ name: "sidebar.panellist", id: "dsh-forge-kit", order: 40, label: "Forge" }, ForgeIcon));
-  ctx.slots.inject("main", () => ctx.slots.register({ name: "main", key: "dsh-forge-kit" }, Shell));
+  ctx.slots.inject("sidebar.panellist", () => ctx.slots.register({ name: "sidebar.panellist", id: "promptkeel", order: 40, label: "PromptKeel" }, ForgeIcon));
+  ctx.slots.inject("main", () => ctx.slots.register({ name: "main", key: "promptkeel" }, Shell));
 }

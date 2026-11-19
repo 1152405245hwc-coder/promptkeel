@@ -95,13 +95,13 @@ test("two writes in the same second get distinct backups", (t) => {
   assert.ok(fs.existsSync(second.backup));
 });
 
-test("enableProfile registers dsh-forge-kit after dsh-purge-community, migrates legacy dsh-forge, and disableProfile removes it", (t) => {
+test("enableProfile registers promptkeel after dsh-purge-community, migrates legacy ids, and disableProfile removes it", (t) => {
   const dshHome = tmpDir(t, "forge-prof-");
   const profDir = path.join(dshHome, "profiles", "desktop");
   fs.mkdirSync(profDir, { recursive: true });
   fs.writeFileSync(path.join(profDir, "package.json"), JSON.stringify({
     name: "desktop",
-    dsh: { profile: { bundles: ["dsh-forge", "dsh-purge-community"] } },
+    dsh: { profile: { bundles: ["dsh-forge", "dsh-forge-kit", "dsh-purge-community"] } },
   }, null, 2));
 
   const before = profileStatus({ dshHome });
@@ -109,7 +109,7 @@ test("enableProfile registers dsh-forge-kit after dsh-purge-community, migrates 
 
   const enabled = enableProfile({ dshHome });
   assert.equal(enabled.ok, true);
-  assert.deepEqual(enabled.bundles, ["dsh-purge-community", "dsh-forge-kit"]);
+  assert.deepEqual(enabled.bundles, ["dsh-purge-community", "promptkeel"]);
   assert.equal(profileStatus({ dshHome }).enabled, true);
   assert.equal(profileStatus({ dshHome }).orderOk, true);
 

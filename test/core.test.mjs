@@ -284,7 +284,7 @@ test("dsh profile applyPlan, verifyPlan, and revertPlan track patch state accura
   assert.equal(verifyPlan(applied.id, { stateRoot: state }).ok, false);
 });
 
-test("defaultStateRoot uses .dsh-forge-kit under home", () => {
+test("defaultStateRoot uses .promptkeel under home", () => {
   const home = tmp();
-  assert.equal(defaultStateRoot({ home }), path.join(home, ".dsh-forge-kit"));
+  assert.equal(defaultStateRoot({ home }), path.join(home, ".promptkeel"));
 });

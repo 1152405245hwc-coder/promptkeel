@@ -373,20 +373,20 @@ async function commandMatrix(options) {
   }
 }
 
-const HELP = `dsh-session — persistent, stability-tracked multi-model delivery sessions
+const HELP = `promptkeel-session (compat: dsh-session) — persistent, stability-tracked multi-model delivery sessions
 
 usage:
-  dsh-session start --model <id> --task <text> [--profile generic] [--strategy auto|<arm>] [--max-turns N] [--state <dir>]
-  dsh-session turn <id> [--task text] [--arm arm] [--send] [--provider openai|anthropic|glm|gateway] [--gateway URL] [--state <dir>]
-  dsh-session record <id> --reply <text|-> [--status ok|error] [--error msg] [--state <dir>]
-  dsh-session status <id> [--json] [--state <dir>]
-  dsh-session list [--json] [--state <dir>]
-  dsh-session export <id> [--out file] [--state <dir>]
-  dsh-session archive <id> [--state <dir>]
-  dsh-session matrix --models a,b,c --task <text> [--turns N] [--send] [--state <dir>]
+  promptkeel-session start --model <id> --task <text> [--profile generic] [--strategy auto|<arm>] [--max-turns N] [--state <dir>]
+  promptkeel-session turn <id> [--task text] [--arm arm] [--send] [--provider openai|anthropic|glm|gateway] [--gateway URL] [--state <dir>]
+  promptkeel-session record <id> --reply <text|-> [--status ok|error] [--error msg] [--state <dir>]
+  promptkeel-session status <id> [--json] [--state <dir>]
+  promptkeel-session list [--json] [--state <dir>]
+  promptkeel-session export <id> [--out file] [--state <dir>]
+  promptkeel-session archive <id> [--state <dir>]
+  promptkeel-session matrix --models a,b,c --task <text> [--turns N] [--send] [--state <dir>]
 
 notes:
-  - sessions persist under <state-root>/sessions; state root defaults to ~/.dsh-forge-kit (overridden by --state, DSH_FORGE_KIT_STATE, or DSH_FORGE_STATE)
+  - sessions persist under <state-root>/sessions; state root defaults to ~/.promptkeel (overridden by --state, PROMPTKEEL_STATE, DSH_FORGE_KIT_STATE, or DSH_FORGE_STATE)
   - every turn re-asserts the task frame; a withheld/blocked turn escalates to the next arm in the model family ladder
   - --send requires the provider API key in its environment variable (e.g. OPENAI_API_KEY)
   - a turn degrades on its own: message shape history -> single -> bare, and system placement

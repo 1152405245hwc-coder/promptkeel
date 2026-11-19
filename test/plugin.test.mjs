@@ -12,7 +12,7 @@ test("plugin registers a forge prompt section", () => {
       webServer: { register: () => { routes += 1; return () => {}; } },
     }),
   };
-  assert.equal(name, "dsh-forge-kit");
+  assert.equal(name, "promptkeel");
   assert.deepEqual(inject, ["systemPrompt"]);
   // Pin the policy so the test is independent of any AGENTS.md in the
   // checkout that happens to run it.

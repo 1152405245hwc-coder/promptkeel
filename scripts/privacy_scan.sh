@@ -43,6 +43,8 @@ for p in "${patterns[@]}"; do
     --exclude-dir=.dsh-forge-state \
     --exclude-dir=.dsh-forge-kit-state \
     --exclude-dir=.dsh-forge-kit \
+    --exclude-dir=.promptkeel-state \
+    --exclude-dir=.promptkeel \
     --exclude-dir=.privacy-allow \
     --exclude=privacy_scan.sh \
     "$p" . >"$tmp" 2>/dev/null; then

@@ -108,11 +108,11 @@ function layout(title, body, { route = "/", subtitle = "", modeLabel = "workbenc
   const links = NAV.map(([href, label]) => `<a href="${href}"${href === route ? ' aria-current="page"' : ""}>${label}</a>`).join("");
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>dsh-forge · ${escapeHtml(title)}</title>
+<title>PromptKeel · ${escapeHtml(title)}</title>
 <style>${CONSOLE_CSS}</style></head>
 <body>
 <header class="top">
-<div class="brand"><span class="mark">F</span>DSH FORGE</div>
+<div class="brand"><span class="mark">K</span>PROMPTKEEL</div>
 <nav class="nav">${links}</nav>
 <div class="spacer"></div>
 ${chip(modeLabel)}

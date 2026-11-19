@@ -181,9 +181,9 @@ test("CLI run infers forge model from live model id and compile accepts persona=
   assert.equal(JSON.parse(compileNone.stdout).persona, null);
 });
 
-test("dsh-forge session forwards to dsh-session CLI", () => {
+test("promptkeel session forwards to promptkeel-session CLI", () => {
   const res = run(["session", "--help"]);
   assert.equal(res.status, 0, res.stderr);
-  assert.match(res.stdout, /dsh-session — persistent/);
-  assert.match(res.stdout, /dsh-session matrix/);
+  assert.match(res.stdout, /promptkeel-session \(compat: dsh-session\) — persistent/);
+  assert.match(res.stdout, /promptkeel-session matrix/);
 });

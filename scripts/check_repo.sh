@@ -8,7 +8,7 @@ tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/dsh-forge-check.XXXXXX")"
 trap 'rm -rf "$tmp_dir"' EXIT
 
 echo "== tracked generated state"
-if git ls-files -z | grep -zEq '(^|/)(\.dsh-forge-state|\.dsh-forge|\.dsh-forge-kit-state|\.dsh-forge-kit|node_modules)(/|$)|\.tgz$'; then
+if git ls-files -z | grep -zEq '(^|/)(\.dsh-forge-state|\.dsh-forge|\.dsh-forge-kit-state|\.dsh-forge-kit|\.promptkeel-state|\.promptkeel|node_modules)(/|$)|\.tgz$'; then
   echo "generated or dependency artifacts are tracked" >&2
   exit 1
 fi
@@ -19,15 +19,15 @@ node scripts/verify-profiles.mjs
 echo "== CLI surface"
 help="$(node bin/dsh-forge.js --help)"
 for command in doctor status apply verify compile audit plans verify-plan revert-plan profiles hosts models session; do
-  grep -Fq "dsh-forge ${command}" <<<"$help" || {
+  grep -Fq "promptkeel ${command}" <<<"$help" || {
     echo "CLI help is missing command: ${command}" >&2
     exit 1
   }
 done
 session_help="$(node bin/dsh-session.js --help)"
 for command in start turn record status list export archive matrix; do
-  grep -Fq "dsh-session ${command}" <<<"$session_help" || {
-    echo "dsh-session help is missing command: ${command}" >&2
+  grep -Fq "promptkeel-session ${command}" <<<"$session_help" || {
+    echo "promptkeel-session help is missing command: ${command}" >&2
     exit 1
   }
 done
@@ -72,7 +72,7 @@ const files = new Set(report[0]?.files?.map((entry) => entry.path) || []);
 for (const required of ["package.json", "bin/dsh-forge.js", "bin/dsh-session.js", "client/client.js", "scripts/verify.sh"]) {
   if (!files.has(required)) throw new Error(`package is missing ${required}`);
 }
-for (const forbidden of [".dsh-forge-state/", ".dsh-forge-kit-state/", ".dsh-forge-kit/", "docs/research/", "tools/", "node_modules/", ".git/"]) {
+for (const forbidden of [".dsh-forge-state/", ".dsh-forge-kit-state/", ".dsh-forge-kit/", ".promptkeel-state/", ".promptkeel/", "docs/research/", "tools/", "node_modules/", ".git/"]) {
   if ([...files].some((file) => file.startsWith(forbidden))) throw new Error(`package contains ${forbidden}`);
 }
 console.log(`package files: ${files.size}`);

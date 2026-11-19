@@ -12,7 +12,7 @@ export function cmdConsole() {
   const projectRoot = optionValue("project", process.cwd());
   const home = optionValue("home", process.env.HOME || process.env.USERPROFILE);
   const dshHomeOpt = optionValue("dsh-home", null);
-  const hostRootOpt = optionValue("host-root", process.env.DSH_FORGE_KIT_HOST_ROOT || process.env.DSH_FORGE_HOST_ROOT || undefined);
+  const hostRootOpt = optionValue("host-root", process.env.PROMPTKEEL_HOST_ROOT || process.env.DSH_FORGE_KIT_HOST_ROOT || process.env.DSH_FORGE_HOST_ROOT || undefined);
   const env = {
     stateRoot,
     projectRoot,
