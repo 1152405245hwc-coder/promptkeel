@@ -56,7 +56,7 @@ export const HOST_TABLE = [
   {
     id: "opencode",
     label: "OpenCode",
-    support: "experimental",
+    support: "verified",
     candidates: ({ home, projectRoot }) => [project(projectRoot, "opencode.json"), project(projectRoot, "AGENTS.md"), ...homeDir(home, ".config/opencode")],
     configTargets: { promptFile: "AGENTS.md", settings: "opencode.json", agentOverride: "agent.build.prompt" },
   },

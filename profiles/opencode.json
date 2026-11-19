@@ -4,7 +4,7 @@
   "name": "OpenCode",
   "version": "0.1.0",
   "host": "opencode",
-  "support": "experimental",
+  "support": "verified",
   "prompt": {
     "core": "core.md"
   },

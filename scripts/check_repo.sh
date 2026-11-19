@@ -8,7 +8,7 @@ tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/dsh-forge-check.XXXXXX")"
 trap 'rm -rf "$tmp_dir"' EXIT
 
 echo "== tracked generated state"
-if git ls-files -z | grep -zEq '(^|/)(\.dsh-forge-state|\.dsh-forge|node_modules)(/|$)|\.tgz$'; then
+if git ls-files -z | grep -zEq '(^|/)(\.dsh-forge-state|\.dsh-forge|\.dsh-forge-kit-state|\.dsh-forge-kit|node_modules)(/|$)|\.tgz$'; then
   echo "generated or dependency artifacts are tracked" >&2
   exit 1
 fi
@@ -18,9 +18,16 @@ node scripts/verify-profiles.mjs
 
 echo "== CLI surface"
 help="$(node bin/dsh-forge.js --help)"
-for command in doctor status apply verify compile audit plans verify-plan revert-plan profiles hosts models; do
+for command in doctor status apply verify compile audit plans verify-plan revert-plan profiles hosts models session; do
   grep -Fq "dsh-forge ${command}" <<<"$help" || {
     echo "CLI help is missing command: ${command}" >&2
+    exit 1
+  }
+done
+session_help="$(node bin/dsh-session.js --help)"
+for command in start turn record status list export archive matrix; do
+  grep -Fq "dsh-session ${command}" <<<"$session_help" || {
+    echo "dsh-session help is missing command: ${command}" >&2
     exit 1
   }
 done
@@ -62,13 +69,27 @@ node --input-type=module - "$tmp_dir/pack.json" <<'NODE'
 import fs from "node:fs";
 const report = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const files = new Set(report[0]?.files?.map((entry) => entry.path) || []);
-for (const required of ["package.json", "bin/dsh-forge.js", "client/client.js", "scripts/verify.sh"]) {
+for (const required of ["package.json", "bin/dsh-forge.js", "bin/dsh-session.js", "client/client.js", "scripts/verify.sh"]) {
   if (!files.has(required)) throw new Error(`package is missing ${required}`);
 }
-for (const forbidden of [".dsh-forge-state/", "node_modules/", ".git/"]) {
+for (const forbidden of [".dsh-forge-state/", ".dsh-forge-kit-state/", ".dsh-forge-kit/", "docs/research/", "tools/", "node_modules/", ".git/"]) {
   if ([...files].some((file) => file.startsWith(forbidden))) throw new Error(`package contains ${forbidden}`);
 }
 console.log(`package files: ${files.size}`);
+NODE
+
+echo "== release metadata"
+node --input-type=module <<'NODE'
+import fs from "node:fs";
+const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+const log = fs.readFileSync("CHANGELOG.md", "utf8");
+const heading = new RegExp(`^## \\[${pkg.version.replace(/\./g, "\\.")}\\]`, "m");
+if (!heading.test(log)) throw new Error(`CHANGELOG.md has no section for ${pkg.version}`);
+const paths = fs.readFileSync("lib/paths.mjs", "utf8");
+const fallback = paths.match(/PKG\.version \|\| "([^"]+)"/);
+if (!fallback) throw new Error("lib/paths.mjs: VERSION fallback not found");
+if (fallback[1] !== pkg.version) throw new Error(`lib/paths.mjs fallback ${fallback[1]} != package.json ${pkg.version}`);
+console.log(`release: ${pkg.version} has a changelog section and a matching version fallback`);
 NODE
 
 echo "== diff hygiene"
