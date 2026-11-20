@@ -44,6 +44,7 @@ export const CONSOLE_ROUTES = [
 ];
 
 const WORKBENCH_JS_PATH = path.resolve(import.meta.dirname, "..", "ui", "workbench.js");
+const THEME_JS_PATH = path.resolve(import.meta.dirname, "..", "ui", "theme.js");
 const CSP_HEADER = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'none'";
 
 function alive(pid) {
@@ -79,62 +80,113 @@ export function acquireLock(dir, { pid = process.pid } = {}) {
   };
 }
 
-const NAV = [
-  ["/", "overview"],
-  ["/workbench", "workbench"],
-  ["/plans", "plans"],
-  ["/live", "live"],
-  ["/patches", "patches"],
-  ["/channels", "channels"],
-  ["/grades", "grades"],
-  ["/personas", "personas"],
-  ["/audit", "audit"],
-  ["/api/state", "api"],
+const NAV_GROUPS = [
+  ["Inspect", [["/", "overview"], ["/audit", "audit"], ["/api/state", "api"]]],
+  ["Author", [["/workbench", "workbench"], ["/live", "live"]]],
+  ["Plan", [["/plans", "plans"], ["/patches", "patches"]]],
+  ["Catalog", [["/channels", "channels"], ["/grades", "grades"], ["/personas", "personas"]]],
 ];
 
-function chip(text, tone) {
-  return `<span class="chip${tone ? ` ${tone}` : ""}">${escapeHtml(text)}</span>`;
+function chip(text, tone, attrs = "") {
+  return `<span class="chip${tone ? ` ${tone}` : ""}"${attrs}>${escapeHtml(text)}</span>`;
 }
 
 function toneOf(value) {
   const s = String(value ?? "").toLowerCase();
-  if (["ok", "ready", "hit", "applied", "pass", "replace-full", "delivered"].includes(s)) return "ok";
-  if (["warn", "partial", "research", "append-only", "configured", "verified-config", "reverted"].includes(s)) return "warn";
-  if (["fail", "miss", "missing", "ambiguous", "unobservable", "error", "shim-only", "blocked", "withheld"].includes(s)) return "bad";
+  if (["ok", "ready", "hit", "applied", "pass", "replace-full", "delivered", "active", "present", "clear", "live"].includes(s)) return "ok";
+  if (["warn", "partial", "research", "append-only", "configured", "verified-config", "reverted", "inactive", "idle", "pending", "restart", "unidentified", "unknown"].includes(s)) return "warn";
+  if (["fail", "miss", "missing", "ambiguous", "unobservable", "error", "shim-only", "blocked", "withheld", "unsupported", "bad"].includes(s)) return "bad";
   return "";
 }
 
+function renderNav(route) {
+  return NAV_GROUPS.map(([label, items]) => {
+    const current = items.some(([href]) => href === route);
+    const links = items.map(([href, text]) => `<a href="${href}"${href === route ? ' aria-current="page"' : ""}>${text}</a>`).join("");
+    return `<div class="nav-group${current ? " is-current" : ""}" role="group" aria-label="${escapeHtml(label)}"><span class="nav-k" aria-hidden="true">${escapeHtml(label)}</span><span class="nav-links">${links}</span></div>`;
+  }).join("");
+}
+
+function themeToggle() {
+  return `<button type="button" class="theme-toggle" id="theme-toggle" role="switch" aria-checked="false" aria-label="Switch color theme"><svg class="theme-icon theme-icon-moon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M9.5 1.6a5.8 5.8 0 1 0 4.9 8.8A4.9 4.9 0 0 1 9.5 1.6z"/></svg><svg class="theme-icon theme-icon-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M8 1.5v1.7M8 12.8v1.7M1.5 8h1.7M12.8 8h1.7M3.3 3.3l1.2 1.2M11.5 11.5l1.2 1.2M12.7 3.3l-1.2 1.2M4.5 11.5l-1.2 1.2"/></svg><span class="theme-label-dark">Dark</span><span class="theme-label-light">Light</span></button>`;
+}
+
 function layout(title, body, { route = "/", subtitle = "", modeLabel = "workbench" } = {}) {
-  const links = NAV.map(([href, label]) => `<a href="${href}"${href === route ? ' aria-current="page"' : ""}>${label}</a>`).join("");
   return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PromptKeel · ${escapeHtml(title)}</title>
 <style>${CONSOLE_CSS}</style></head>
 <body>
 <header class="top">
-<div class="brand"><span class="mark">K</span>PROMPTKEEL</div>
-<nav class="nav">${links}</nav>
-<div class="spacer"></div>
-${chip(modeLabel)}
-${chip("127.0.0.1")}
+<div class="brand"><span class="mark" aria-hidden="true">K</span><span class="brand-name">PROMPTKEEL</span></div>
+<nav class="nav" aria-label="Console">${renderNav(route)}</nav>
+<div class="top-meta">${chip(modeLabel)}${chip("127.0.0.1", "", ` title="loopback"`)}${themeToggle()}</div>
 </header>
 <main class="wrap">
 <div class="hero"><div><h1>${escapeHtml(title)}</h1><p>${escapeHtml(subtitle || "local host facts and prompt compiler")}</p></div></div>
 ${body}
 </main>
-<footer>dsh-forge workbench · loopback 127.0.0.1 · state recomputed per request</footer>
+<footer>PromptKeel console · loopback 127.0.0.1 · state recomputed per request</footer>
 </body></html>
 `;
 }
 
-function card(label, value, hint = "", { bar = null, warn = false } = {}) {
-  const meter = bar !== null && bar !== undefined ? `<div class="bar${warn ? " warn" : ""}"><span style="width:${bar}%"></span></div>` : "";
+function card(label, value, hint = "", { bar = null, warn = false, tone = "", status = "" } = {}) {
+  const toneName = tone || (warn ? "warn" : "");
+  const toneAttr = toneName ? ` data-tone="${escapeHtml(toneName)}"` : "";
+  const statusHtml = status ? `<div class="card-flag">${chip(status, toneName || (warn ? "warn" : ""))}</div>` : "";
+  const pct = bar === null || bar === undefined ? null : Math.max(0, Math.min(100, Math.round(Number(bar) || 0)));
+  const barClass = ["bar", (warn || toneName === "warn" || toneName === "bad") ? "warn" : "", toneName === "bad" ? "bad" : "", pct === 0 ? "is-empty" : ""].filter(Boolean).join(" ");
+  const meter = pct === null ? "" : `<div class="meter-row"><div class="${barClass}" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="${escapeHtml(`${label} ${pct} percent`)}"><span style="width:${pct}%"></span></div><span class="meter-pct">${pct}%</span></div>`;
   const note = hint ? `<div class="hint">${escapeHtml(hint)}</div>` : "";
-  return `<div class="card"><div class="k">${escapeHtml(label)}</div><div class="v">${escapeHtml(value)}</div>${note}${meter}</div>`;
+  return `<div class="card"${toneAttr}><div class="card-head"><div class="k">${escapeHtml(label)}</div>${statusHtml}</div><div class="v">${escapeHtml(value)}</div>${note}${meter}</div>`;
+}
+
+const STATUS_TOKEN = /^[a-z0-9][a-z0-9._-]*:[a-z0-9][a-z0-9._-]*$/i;
+
+/** Comma-separated `key:status` lists become chips. Ordinary sentences stay text. */
+function parseStatusList(detail) {
+  const text = String(detail ?? "").trim();
+  if (!text.includes(",")) return null;
+  const parts = text.split(",").map((part) => part.trim()).filter(Boolean);
+  if (parts.length < 2 || !parts.every((part) => STATUS_TOKEN.test(part))) return null;
+  return parts.map((part) => {
+    const index = part.indexOf(":");
+    return { key: part.slice(0, index), status: part.slice(index + 1) };
+  });
+}
+
+function renderStatusList(items) {
+  const groups = [];
+  const seen = new Map();
+  for (const item of items) {
+    let group = seen.get(item.status);
+    if (!group) {
+      group = { status: item.status, keys: [] };
+      seen.set(item.status, group);
+      groups.push(group);
+    }
+    group.keys.push(item.key);
+  }
+  const summary = `<div class="status-summary">${groups.map((group) => chip(`${group.keys.length} ${group.status}`, toneOf(group.status) || "warn")).join("")}</div>`;
+  const body = groups.map((group) => {
+    const tone = toneOf(group.status);
+    const chips = group.keys.map((key) => `<span class="chip${tone ? ` ${tone}` : ""}" role="listitem" title="${escapeHtml(`${key}: ${group.status}`)}">${escapeHtml(key)}</span>`).join("");
+    const heading = groups.length > 1 ? `<div class="chip-k">${escapeHtml(group.status)} <span class="chip-n">${group.keys.length}</span></div>` : "";
+    return `${heading}<div class="chip-cloud" role="list" aria-label="${escapeHtml(`${group.keys.length} ${group.status}`)}">${chips}</div>`;
+  }).join("");
+  const n = items.length;
+  return `<div class="status-detail">${summary}<details class="status-fold"><summary><span class="when-closed">Show ${n} items</span><span class="when-open">Hide ${n} items</span></summary>${body}</details></div>`;
+}
+
+function detailCell(detail) {
+  const items = parseStatusList(detail);
+  if (!items) return { v: detail || "", mono: true };
+  return { rawHtml: renderStatusList(items) };
 }
 
 function table(columns, rows, rowAttrs = null) {
-  const head = `<tr>${columns.map((c) => `<th>${escapeHtml(c)}</th>`).join("")}</tr>`;
+  const head = `<tr>${columns.map((c) => `<th scope="col">${escapeHtml(c)}</th>`).join("")}</tr>`;
   const body = rows
     .map((row, index) => {
       const attr = rowAttrs ? rowAttrs(row, index) : "";
@@ -156,20 +208,34 @@ function section(title, inner, rightHtml = "") {
 
 export function renderOverview(state = {}) {
   const checks = state.doctor?.checks || [];
-  const failing = checks.filter((c) => c.status !== "ok").length;
+  const fails = checks.filter((c) => c.status === "fail").length;
+  const warns = checks.filter((c) => c.status === "warn").length;
+  const failing = fails + warns;
   const ready = Number(state.patches?.ready ?? 0);
   const total = Number(state.patches?.total ?? 0);
   const pct = total ? Math.round((ready / total) * 100) : 0;
   const activation = state.doctor?.activation;
+  const hostVersion = state.host?.version || "unknown";
+  const hostRooted = Boolean(state.host?.root);
+  const hostIdentified = Boolean(state.host?.version) && hostVersion !== "unknown";
+  const hostTone = !hostRooted ? "bad" : hostIdentified ? "ok" : "warn";
+  const hostStatus = !hostRooted ? "no root" : hostIdentified ? "present" : "unidentified";
+  const patchTone = !total || pct === 0 ? "bad" : pct === 100 ? "ok" : "warn";
+  const patchStatus = !total ? "empty" : pct === 100 ? "ready" : pct === 0 ? "none ready" : "partial";
+  const checkTone = fails ? "bad" : warns ? "warn" : "ok";
+  const checkStatus = fails ? `${fails} fail` : warns ? `${warns} warn` : "clear";
+  const actState = activation?.state || "unknown";
+  const actTone = actState === "active" ? "ok" : "warn";
+  const actStatus = actState === "active" ? "live" : activation?.requiresRestart ? "restart" : actState === "inactive" ? "idle" : actState === "configured" ? "pending" : actState;
   const cards = [
-    card("host", state.host?.version || "unknown", state.host?.root ? "root resolved" : "root unknown"),
-    card("patches ready", `${ready}/${total}`, pct === 100 ? "all layers armed" : "anchor drift present", { bar: pct, warn: pct < 100 }),
-    card("checks", `${checks.length - failing}/${checks.length}`, failing ? `${failing} need attention` : "no drift"),
-    card("activation", activation?.state || "unknown", activation?.requiresRestart ? "restart required" : "no restart pending"),
+    card("host", hostIdentified ? hostVersion : "unknown", hostRooted ? "root resolved" : "root unknown", { tone: hostTone, status: hostStatus }),
+    card("patches ready", `${ready}/${total}`, pct === 100 ? "all layers armed" : "anchor drift present", { bar: pct, warn: pct < 100, tone: patchTone, status: patchStatus }),
+    card("checks", `${checks.length - failing}/${checks.length}`, failing ? `${failing} need attention` : "no drift", { tone: checkTone, status: checkStatus }),
+    card("activation", actState, activation?.requiresRestart ? "restart required" : "no restart pending", { tone: actTone, status: actStatus }),
   ];
   const parts = [`<div class="grid">${cards.join("")}</div>`];
   if (checks.length) {
-    parts.push(section("checks", table(["check", "status", "detail"], checks.map((c) => [c.label || c.id, { v: c.status, chip: true, tone: toneOf(c.status) }, { v: c.detail || "", mono: true }]))));
+    parts.push(section("checks", table(["check", "status", "detail"], checks.map((c) => [c.label || c.id, { v: c.status, chip: true, tone: toneOf(c.status) }, detailCell(c.detail)]))));
   }
   if (activation) {
     parts.push(section("activation evidence", `<div class="kv">
@@ -194,28 +260,38 @@ export function renderWorkbench(state = {}) {
   const modes = ["", ...(state.modes?.length ? state.modes : listModes())].map((m) => `<option value="${escapeHtml(m)}">${escapeHtml(m || "(auto)")}</option>`).join("");
 
   const controls = `<div class="pad" id="forge-workbench-root">
-<div class="form-grid">
+<div class="wb-main">
   <label class="field">Profile<select id="wb-profile">${profiles}</select></label>
   <label class="field">Model<select id="wb-model">${models}</select></label>
-  <label class="field">Persona<select id="wb-persona">${personas}</select></label>
-  <label class="field">Persona Mode<select id="wb-persona-mode">${personaModes}</select></label>
-  <label class="field">Transform<select id="wb-transform">${transforms}</select></label>
-  <label class="field">Strategy<select id="wb-strategy">${strategies}</select></label>
   <label class="field">Task Mode<select id="wb-mode">${modes}</select></label>
+  <div class="wb-compile"><button type="button" class="btn primary" id="wb-compile-btn">Compile Plan</button></div>
 </div>
-<div class="btn-row" style="margin-top:12px">
-  <button type="button" class="btn primary" id="wb-compile-btn">Compile Plan</button>
-  <button type="button" class="btn" id="wb-probe-btn">Run Static Probe (${PROBES.length})</button>
-  <button type="button" class="btn ok" id="wb-apply-btn">Preview &amp; Apply Plan</button>
-  <button type="button" class="btn" id="wb-copy-btn">Copy Prompt</button>
-  <button type="button" class="btn" id="wb-snapshot-btn">Save Snapshot</button>
+<details class="advanced" id="wb-advanced">
+  <summary>Advanced <span class="hint" id="wb-advanced-values">persona, persona mode, transform, strategy</span></summary>
+  <div class="form-grid form-advanced">
+    <label class="field">Persona<select id="wb-persona">${personas}</select></label>
+    <label class="field">Persona Mode<select id="wb-persona-mode">${personaModes}</select></label>
+    <label class="field">Transform<select id="wb-transform">${transforms}</select></label>
+    <label class="field">Strategy<select id="wb-strategy">${strategies}</select></label>
+  </div>
+</details>
+<div class="btn-groups" role="toolbar" aria-label="Plan actions">
+  <div class="btn-row" role="group" aria-label="Check and keep">
+    <button type="button" class="btn" id="wb-probe-btn">Run Static Probe (${PROBES.length})</button>
+    <button type="button" class="btn" id="wb-copy-btn" aria-label="Copy compiled prompt">Copy Prompt</button>
+    <button type="button" class="btn" id="wb-snapshot-btn">Save Snapshot</button>
+  </div>
+  <div class="btn-row" role="group" aria-label="Write to workspace">
+    <button type="button" class="btn apply" id="wb-apply-btn">Preview &amp; Apply Plan</button>
+  </div>
 </div>
-<div class="hint mono" id="wb-meta" style="margin-top:10px;color:var(--dim)">Select a profile and compile.</div>
-<div class="hint mono" id="wb-probe-out" style="margin-top:4px;color:var(--green)"></div>
+<div class="hint mono wb-note" id="wb-meta" aria-live="polite">Select a profile and compile.</div>
+<div class="hint mono wb-probe" id="wb-probe-out" aria-live="polite"></div>
 </div>`;
 
-  const actionSec = section("compiled target actions", `<div class="scroll"><table><thead><tr><th>op</th><th>kind</th><th>change</th><th>target path</th></tr></thead><tbody id="wb-actions"></tbody></table></div>`);
-  const promptSec = section("compiled prompt", `<pre class="codebox" id="wb-prompt-out"></pre>`);
+  const actionSec = section("compiled target actions", `<div class="scroll"><table><thead><tr><th scope="col">op</th><th scope="col">kind</th><th scope="col">change</th><th scope="col">target path</th></tr></thead><tbody id="wb-actions"></tbody></table></div>`);
+  const promptTools = `<span class="sec-tools"><button type="button" class="btn" id="wb-copy-side" aria-label="Copy compiled prompt">Copy Prompt</button><button type="button" class="btn is-on" id="wb-wrap-btn" aria-pressed="true" aria-label="Toggle prompt line wrap">Wrap</button></span>`;
+  const promptSec = section("compiled prompt", `<pre class="codebox" id="wb-prompt-out" tabindex="0" aria-label="Compiled prompt"></pre>`, promptTools);
   return layout("workbench", [section("prompt & plan compiler", controls), actionSec, promptSec].join("\n"), {
     route: "/workbench",
     subtitle: "compile profiles, run static armour probes, save snapshots, and apply reversible workspace plans",
@@ -270,7 +346,7 @@ export function renderLive(state = {}) {
 <div class="btn-row" style="margin-top:10px">
   <button type="button" class="btn" id="live-fetch-models">Fetch Gateway Models</button>
   <button type="button" class="btn primary" id="live-send-btn">Send Bounded Request</button>
-  <span class="mono" id="live-status" style="font-size:12px;color:var(--dim)">ready · Magpie loopback :3425</span>
+  <span class="mono" id="live-status" style="font-size:12px;color:var(--dim)" aria-live="polite">ready · Magpie loopback :3425</span>
 </div>
 </div>`;
   const replySec = section("model response & refusal classification", `<pre class="codebox" id="live-reply">(no response yet)</pre>`);
@@ -433,7 +509,7 @@ async function readJsonBody(req) {
 
 function attachWorkbenchShell(html, csrfToken) {
   return html
-    .replace("</head>", `<meta name="forge-csrf" content="${escapeHtml(csrfToken)}">\n</head>`)
+    .replace("</head>", `<meta name="forge-csrf" content="${escapeHtml(csrfToken)}">\n<script src="/assets/theme.js"></script>\n</head>`)
     .replace("</body>", `<script src="/assets/workbench.js" defer></script>\n</body>`);
 }
 
@@ -479,9 +555,10 @@ export function createConsole({ state = () => ({}), env = {}, handlers = null, p
   return http.createServer(async (req, res) => {
     const url = (req.url || "/").split("?")[0];
 
-    if (req.method === "GET" && url === "/assets/workbench.js") {
+    if (req.method === "GET" && (url === "/assets/workbench.js" || url === "/assets/theme.js")) {
       if (!allowConsoleRequest(req, res)) return;
-      const js = fs.existsSync(WORKBENCH_JS_PATH) ? fs.readFileSync(WORKBENCH_JS_PATH, "utf8") : "";
+      const file = url === "/assets/theme.js" ? THEME_JS_PATH : WORKBENCH_JS_PATH;
+      const js = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
       res.writeHead(200, {
         "content-type": "application/javascript; charset=utf-8",
         "cache-control": "no-store",

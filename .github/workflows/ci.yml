@@ -15,6 +15,11 @@ jobs:
         node: [20, 22]
     steps:
       - uses: actions/checkout@v4
+        with:
+          # pull_request otherwise checks out GitHub's synthetic merge commit.
+          # That commit is not part of the branch, and its author fails release:check.
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
