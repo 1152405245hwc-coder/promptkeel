@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { acquireLock, createConsole, escapeHtml, renderOverview, CONSOLE_HOST, CONSOLE_ROUTES } from "../core/console.mjs";
+import { acquireLock, createConsole, escapeHtml, renderOverview, renderWorkbench, CONSOLE_HOST, CONSOLE_ROUTES } from "../core/console.mjs";
 import { consoleState } from "../lib/console-state.mjs";
 
 const fixture = {
@@ -91,6 +91,72 @@ test("pages carry the console design system and highlight the current route", ()
   assert.match(html, /class="card"/);
   assert.match(html, /aria-current="page">overview/);
   assert.doesNotMatch(html, /<script/);
+});
+
+test("overview keeps locked hooks, tones status, and splits key:status walls into chips", () => {
+  const html = renderOverview({
+    host: { version: "unknown", root: "/opt/host" },
+    doctor: {
+      checks: [
+        { id: "patches", label: "Patches", status: "fail", detail: "alpha:unsupported, beta:miss" },
+        { id: "host-root", label: "Host root", status: "fail", detail: "not found: /tmp/<script>, leftover" },
+      ],
+      activation: { state: "inactive", requiresRestart: false },
+    },
+    patches: { ready: 0, total: 23, rows: [] },
+    profiles: [],
+  });
+  assert.match(html, /class="top"/);
+  assert.match(html, /class="grid"/);
+  assert.match(html, /class="card"/);
+  assert.match(html, /aria-current="page">overview/);
+  assert.match(html, /data-tone="warn"/);
+  assert.match(html, /data-tone="bad"/);
+  assert.match(html, /role="meter"/);
+  assert.match(html, /aria-valuenow="0"/);
+  assert.match(html, /0%/);
+  assert.match(html, /Show 2 items/);
+  assert.match(html, />alpha</);
+  assert.match(html, />beta</);
+  assert.doesNotMatch(html, /alpha:unsupported, beta/);
+  assert.match(html, /&lt;script&gt;/);
+  assert.doesNotMatch(html, /<script/);
+  assert.match(html, /PromptKeel console/);
+  assert.doesNotMatch(html, /dsh-forge workbench/);
+  assert.match(html, /prefers-reduced-motion/);
+  for (const href of ["/", "/workbench", "/plans", "/live", "/patches", "/channels", "/grades", "/personas", "/audit", "/api/state"]) {
+    assert.match(html, new RegExp(`href="${href === "/" ? "/" : href}"`));
+  }
+  assert.match(html, /href="\/"/);
+  assert.match(html, /Inspect/);
+  assert.match(html, /Author/);
+  assert.match(html, /Catalog/);
+});
+
+test("workbench groups the primary path and keeps option values and control ids", () => {
+  const html = renderWorkbench();
+  assert.match(html, /id="forge-workbench-root"/);
+  for (const id of ["wb-profile", "wb-model", "wb-mode", "wb-persona", "wb-persona-mode", "wb-transform", "wb-strategy", "wb-compile-btn", "wb-probe-btn", "wb-apply-btn", "wb-copy-btn", "wb-snapshot-btn", "wb-prompt-out", "wb-advanced"]) {
+    assert.match(html, new RegExp(`id="${id}"`));
+  }
+  assert.match(html, /<option value="writing">writing<\/option>/);
+  assert.match(html, /<option value="research">research<\/option>/);
+  assert.doesNotMatch(html, /<option value="chat">/);
+  assert.doesNotMatch(html, /<option value="review">/);
+  assert.match(html, /aria-current="page">workbench/);
+  assert.match(html, /PromptKeel console/);
+  assert.doesNotMatch(html, /dsh-forge workbench/);
+  assert.match(html, /aria-live="polite"/);
+  assert.match(html, /:focus-visible/);
+  const main = html.slice(html.indexOf('class="wb-main"'), html.indexOf('id="wb-advanced"'));
+  assert.match(main, /id="wb-profile"/);
+  assert.match(main, /id="wb-model"/);
+  assert.match(main, /id="wb-mode"/);
+  assert.match(main, /id="wb-compile-btn"/);
+  assert.doesNotMatch(main, /id="wb-persona"/);
+  const advanced = html.slice(html.indexOf('id="wb-advanced"'), html.indexOf('class="btn-groups"'));
+  assert.match(advanced, /id="wb-persona"/);
+  assert.match(advanced, /id="wb-strategy"/);
 });
 
 test("the sidebar bundle ships the grade and persona tabs", async () => {

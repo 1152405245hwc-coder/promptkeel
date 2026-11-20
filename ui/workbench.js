@@ -20,7 +20,7 @@
   let toastTimer = null;
   function showToast(msg, tone = "ok") {
     document.querySelectorAll(".toast").forEach((n) => n.remove());
-    const box = el("div", { className: `toast ${tone}`, role: "status", textContent: msg });
+    const box = el("div", { className: `toast ${tone}`, role: "status", "aria-live": "polite", "aria-atomic": "true", textContent: msg });
     document.body.appendChild(box);
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => box.remove(), 4200);
@@ -28,11 +28,17 @@
 
   function confirmDialog({ title, message, confirmLabel = "Confirm", danger = false }) {
     return new Promise((resolve) => {
-      const backdrop = el("div", { className: "modal-backdrop", role: "dialog", "aria-modal": "true" });
-      const close = (ok) => {
-        backdrop.remove();
-        resolve(ok);
-      };
+      const previouslyFocused = document.activeElement;
+      const titleId = "pk-dialog-title";
+      const bodyId = "pk-dialog-body";
+      const backdrop = el("div", {
+        className: "modal-backdrop",
+        role: "dialog",
+        "aria-modal": "true",
+        "aria-labelledby": titleId,
+        "aria-describedby": bodyId,
+      });
+      let settled = false;
       const cancelBtn = el("button", { type: "button", className: "btn", textContent: "Cancel", onClick: () => close(false) });
       const okBtn = el("button", {
         type: "button",
@@ -40,12 +46,39 @@
         textContent: confirmLabel,
         onClick: () => close(true),
       });
+      const close = (ok) => {
+        if (settled) return;
+        settled = true;
+        document.removeEventListener("keydown", onKey);
+        backdrop.remove();
+        if (previouslyFocused && typeof previouslyFocused.focus === "function") previouslyFocused.focus();
+        resolve(ok);
+      };
+      const onKey = (event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          close(false);
+          return;
+        }
+        if (event.key !== "Tab") return;
+        const items = [cancelBtn, okBtn];
+        const current = items.indexOf(document.activeElement);
+        event.preventDefault();
+        const next = event.shiftKey
+          ? (current <= 0 ? items.length - 1 : current - 1)
+          : (current === -1 || current === items.length - 1 ? 0 : current + 1);
+        items[next].focus();
+      };
       const modal = el("div", { className: "modal" }, [
-        el("h3", { textContent: title }),
-        el("div", { className: "mbody", textContent: message }),
+        el("h3", { id: titleId, textContent: title }),
+        el("div", { className: "mbody", id: bodyId, textContent: message }),
         el("div", { className: "mfoot" }, [cancelBtn, okBtn]),
       ]);
+      backdrop.addEventListener("click", (event) => {
+        if (event.target === backdrop) close(false);
+      });
       backdrop.appendChild(modal);
+      document.addEventListener("keydown", onKey);
       document.body.appendChild(backdrop);
       okBtn.focus();
     });
@@ -96,7 +129,29 @@
       strategy: controls.strategy?.value || "none",
     });
 
-    async function doCompile() {
+    function paintAdvanced() {
+      const slot = document.getElementById("wb-advanced-values");
+      if (!slot) return;
+      const bits = [];
+      const persona = controls.persona?.value;
+      const mode = controls.personaMode?.value;
+      const transform = controls.transform?.value;
+      const strategy = controls.strategy?.value;
+      if (persona) bits.push(`persona ${persona}`);
+      if (mode) bits.push(`mode ${mode}`);
+      if (transform && transform !== "none") bits.push(`transform ${transform}`);
+      if (strategy && strategy !== "none") bits.push(`strategy ${strategy}`);
+      slot.textContent = bits.length ? bits.join(", ") : "persona, persona mode, transform, strategy";
+    }
+
+    async function doCompile({ user = false } = {}) {
+      const btn = document.getElementById("wb-compile-btn");
+      if (user && btn) {
+        btn.disabled = true;
+        btn.setAttribute("aria-busy", "true");
+        btn.dataset.label = btn.dataset.label || "Compile Plan";
+        btn.textContent = "Compiling…";
+      }
       try {
         const res = await api("/api/compile", "POST", params());
         const plan = res.plan;
@@ -123,19 +178,52 @@
       } catch (err) {
         showToast(err.message, "bad");
         return null;
+      } finally {
+        if (user && btn) {
+          btn.disabled = false;
+          btn.removeAttribute("aria-busy");
+          btn.textContent = btn.dataset.label || "Compile Plan";
+        }
       }
     }
 
-    document.getElementById("wb-compile-btn")?.addEventListener("click", doCompile);
-    document.getElementById("wb-copy-btn")?.addEventListener("click", async () => {
+    let copyReset = null;
+    async function copyPrompt() {
       const text = promptOut?.textContent || "";
-      if (!text) return;
+      const buttons = ["wb-copy-btn", "wb-copy-side"].map((id) => document.getElementById(id)).filter(Boolean);
+      if (!text.trim()) {
+        showToast("Compile a plan before copying", "bad");
+        return;
+      }
       try {
         await navigator.clipboard.writeText(text);
+        clearTimeout(copyReset);
+        buttons.forEach((btn) => {
+          if (!btn.dataset.label) btn.dataset.label = btn.textContent;
+          btn.textContent = "Copied";
+          btn.classList.add("is-copied");
+        });
+        copyReset = setTimeout(() => {
+          buttons.forEach((btn) => {
+            btn.textContent = btn.dataset.label || "Copy Prompt";
+            btn.classList.remove("is-copied");
+          });
+        }, 1600);
         showToast("Copied compiled prompt to clipboard", "ok");
       } catch {
         showToast("Clipboard unavailable; select prompt block directly", "bad");
       }
+    }
+
+    document.getElementById("wb-compile-btn")?.addEventListener("click", () => doCompile({ user: true }));
+    document.getElementById("wb-copy-btn")?.addEventListener("click", copyPrompt);
+    document.getElementById("wb-copy-side")?.addEventListener("click", copyPrompt);
+    document.getElementById("wb-wrap-btn")?.addEventListener("click", (event) => {
+      const nowrap = promptOut?.classList.toggle("is-nowrap");
+      const wrapped = !nowrap;
+      const btn = event.currentTarget;
+      btn.setAttribute("aria-pressed", wrapped ? "true" : "false");
+      btn.classList.toggle("is-on", wrapped);
     });
     document.getElementById("wb-probe-btn")?.addEventListener("click", async () => {
       try {
@@ -170,7 +258,13 @@
         showToast(err.message, "bad");
       }
     });
-    for (const node of Object.values(controls)) node?.addEventListener("change", doCompile);
+    for (const node of Object.values(controls)) {
+      node?.addEventListener("change", () => {
+        paintAdvanced();
+        doCompile();
+      });
+    }
+    paintAdvanced();
     doCompile();
   }
 
