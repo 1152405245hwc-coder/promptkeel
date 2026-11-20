@@ -131,6 +131,44 @@ test("overview keeps locked hooks, tones status, and splits key:status walls int
   assert.match(html, /Inspect/);
   assert.match(html, /Author/);
   assert.match(html, /Catalog/);
+  assert.match(html, /data-theme="light"/);
+  assert.match(html, /id="theme-toggle"/);
+  assert.match(html, /#FAF9F5/);
+  assert.match(html, /#1E1E1C/);
+  assert.match(html, /\[data-theme="dark"\]/);
+});
+
+test("the served console applies the theme before paint and keeps overview free of inline scripts", async () => {
+  const rendered = renderOverview(fixture);
+  assert.doesNotMatch(rendered, /<script/);
+  assert.match(rendered, /id="theme-toggle"/);
+  assert.match(rendered, /aria-label="Switch color theme"/);
+  assert.match(rendered, />Dark</);
+  assert.match(rendered, />Light</);
+  const server = createConsole({ state: () => fixture });
+  const port = await listen(server);
+  const base = `http://${CONSOLE_HOST}:${port}`;
+  try {
+    const overviewRes = await fetch(`${base}/`);
+    const overview = await overviewRes.text();
+    for (const route of CONSOLE_ROUTES.filter((item) => item !== "/api/state")) {
+      const html = route === "/" ? overview : await (await fetch(`${base}${route}`)).text();
+      assert.match(html, /id="theme-toggle"/, route);
+      assert.match(html, /<script src="\/assets\/theme.js"><\/script>/, route);
+      assert.doesNotMatch(html, /<script(?![^>]*\ssrc=)/, route);
+    }
+    const themeJs = await (await fetch(`${base}/assets/theme.js`)).text();
+    const workbenchJs = await (await fetch(`${base}/assets/workbench.js`)).text();
+    assert.match(themeJs, /promptkeel\.theme/);
+    assert.match(themeJs, /"light"/);
+    assert.match(workbenchJs, /theme-toggle/);
+    assert.match(workbenchJs, /promptkeel\.theme/);
+    const csp = overviewRes.headers.get("content-security-policy");
+    assert.match(csp, /script-src 'self'/);
+    assert.doesNotMatch(csp, /script-src[^;]*unsafe-inline/);
+  } finally {
+    server.close();
+  }
 });
 
 test("workbench groups the primary path and keeps option values and control ids", () => {

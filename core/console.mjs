@@ -44,6 +44,7 @@ export const CONSOLE_ROUTES = [
 ];
 
 const WORKBENCH_JS_PATH = path.resolve(import.meta.dirname, "..", "ui", "workbench.js");
+const THEME_JS_PATH = path.resolve(import.meta.dirname, "..", "ui", "theme.js");
 const CSP_HEADER = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'none'";
 
 function alive(pid) {
@@ -106,16 +107,20 @@ function renderNav(route) {
   }).join("");
 }
 
+function themeToggle() {
+  return `<button type="button" class="theme-toggle" id="theme-toggle" role="switch" aria-checked="false" aria-label="Switch color theme"><svg class="theme-icon theme-icon-moon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M9.5 1.6a5.8 5.8 0 1 0 4.9 8.8A4.9 4.9 0 0 1 9.5 1.6z"/></svg><svg class="theme-icon theme-icon-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M8 1.5v1.7M8 12.8v1.7M1.5 8h1.7M12.8 8h1.7M3.3 3.3l1.2 1.2M11.5 11.5l1.2 1.2M12.7 3.3l-1.2 1.2M4.5 11.5l-1.2 1.2"/></svg><span class="theme-label-dark">Dark</span><span class="theme-label-light">Light</span></button>`;
+}
+
 function layout(title, body, { route = "/", subtitle = "", modeLabel = "workbench" } = {}) {
   return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PromptKeel · ${escapeHtml(title)}</title>
 <style>${CONSOLE_CSS}</style></head>
 <body>
 <header class="top">
 <div class="brand"><span class="mark" aria-hidden="true">K</span><span class="brand-name">PROMPTKEEL</span></div>
 <nav class="nav" aria-label="Console">${renderNav(route)}</nav>
-<div class="top-meta">${chip(modeLabel)}${chip("127.0.0.1", "", ` title="loopback"`)}</div>
+<div class="top-meta">${chip(modeLabel)}${chip("127.0.0.1", "", ` title="loopback"`)}${themeToggle()}</div>
 </header>
 <main class="wrap">
 <div class="hero"><div><h1>${escapeHtml(title)}</h1><p>${escapeHtml(subtitle || "local host facts and prompt compiler")}</p></div></div>
@@ -504,7 +509,7 @@ async function readJsonBody(req) {
 
 function attachWorkbenchShell(html, csrfToken) {
   return html
-    .replace("</head>", `<meta name="forge-csrf" content="${escapeHtml(csrfToken)}">\n</head>`)
+    .replace("</head>", `<meta name="forge-csrf" content="${escapeHtml(csrfToken)}">\n<script src="/assets/theme.js"></script>\n</head>`)
     .replace("</body>", `<script src="/assets/workbench.js" defer></script>\n</body>`);
 }
 
@@ -550,9 +555,10 @@ export function createConsole({ state = () => ({}), env = {}, handlers = null, p
   return http.createServer(async (req, res) => {
     const url = (req.url || "/").split("?")[0];
 
-    if (req.method === "GET" && url === "/assets/workbench.js") {
+    if (req.method === "GET" && (url === "/assets/workbench.js" || url === "/assets/theme.js")) {
       if (!allowConsoleRequest(req, res)) return;
-      const js = fs.existsSync(WORKBENCH_JS_PATH) ? fs.readFileSync(WORKBENCH_JS_PATH, "utf8") : "";
+      const file = url === "/assets/theme.js" ? THEME_JS_PATH : WORKBENCH_JS_PATH;
+      const js = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
       res.writeHead(200, {
         "content-type": "application/javascript; charset=utf-8",
         "cache-control": "no-store",

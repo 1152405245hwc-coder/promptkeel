@@ -408,6 +408,23 @@
     document.getElementById("dsh-revert")?.addEventListener("click", () => runDsh("revert", "Revert DSH Patches", true));
   }
 
+  function mountThemeToggle() {
+    const btn = document.getElementById("theme-toggle");
+    if (!btn) return;
+    const key = "promptkeel.theme";
+    const apply = (theme) => {
+      const next = theme === "dark" ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", next);
+      btn.setAttribute("aria-checked", next === "dark" ? "true" : "false");
+      try { localStorage.setItem(key, next); } catch { /* keep the in-memory theme */ }
+    };
+    apply(document.documentElement.getAttribute("data-theme"));
+    btn.addEventListener("click", () => {
+      apply(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
+    });
+  }
+
+  mountThemeToggle();
   mountWorkbench();
   mountLiveRunner();
   mountPlanActions();
